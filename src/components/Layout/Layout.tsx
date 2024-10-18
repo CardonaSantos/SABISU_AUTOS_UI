@@ -95,7 +95,7 @@ export default function Layout({ children }: LayoutProps) {
   }
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("authTokenPos");
     if (token) {
       try {
         const decodedToken = jwtDecode<UserToken>(token);
