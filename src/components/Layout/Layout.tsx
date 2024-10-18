@@ -93,22 +93,26 @@ export default function Layout({ children }: LayoutProps) {
 
     throw new Error("Function not implemented.");
   }
+  const token = localStorage.getItem("authTokenPos");
 
   useEffect(() => {
-    const token = localStorage.getItem("authTokenPos");
-    if (token) {
+    const storedToken = localStorage.getItem("authTokenPos");
+    if (storedToken) {
       try {
-        const decodedToken = jwtDecode<UserToken>(token);
+        const decodedToken = jwtDecode<UserToken>(storedToken);
         setTokenUser(decodedToken);
       } catch (error) {
         console.error("Error decoding token:", error);
       }
     }
-  }, []);
+  }, []); // Solo ejecutarlo una vez al montar el componente
+
   function handleDeletToken() {
     localStorage.removeItem("authTokenPos");
     window.location.reload();
   }
+  console.log("El token es: ", token);
+  console.log("La info del token es: ", tokenUser);
 
   return (
     <div className="flex h-screen flex-col bg-background">

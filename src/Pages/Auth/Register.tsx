@@ -64,6 +64,7 @@ export default function RegisterView() {
       if (response.status === 201) {
         toast.success("Usuario creado existosamente");
         localStorage.setItem("authTokenPos", response.data.access_token);
+
         window.location.href = "/dashboard";
       }
     } catch (error) {
