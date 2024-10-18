@@ -115,7 +115,11 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
           </Text>
         </View>
         <View>
-          <Text style={styles.addressTitle}>Ubicación de mi sucursal</Text>
+          <Text style={styles.addressTitle}>
+            {" "}
+            Sucursal: C. Central Juan Pablo II, Jacaltenango
+          </Text>
+          <Text style={styles.addressTitle}>Teléfono: +502 5375 2853</Text>
         </View>
       </View>
     </View>
