@@ -36,6 +36,7 @@ export default function Login() {
       if (response.status === 200 || response.status === 201) {
         toast.success("Usuario logueado correctamente");
         localStorage.setItem("authTokenPos", response.data.access_token);
+
         setTimeout(() => {
           window.location.href = "/dashboard";
         }, 1000);

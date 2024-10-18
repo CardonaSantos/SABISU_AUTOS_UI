@@ -67,144 +67,144 @@ function App() {
             <Route
               path="/punto-venta"
               element={
-                // <ProtectedRoute>
-                <PuntoVenta />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <PuntoVenta />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/venta/generar-factura/:id"
               element={
-                // <ProtectedRoute>
-                <Invoice />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <Invoice />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/inventario"
               element={
-                // <ProtectedRoute>
-                <Inventario />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <Inventario />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/agregar-proveedor"
               element={
-                // <ProtectedRoute>
-                <AgregarProveedor />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <AgregarProveedor />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/categorias"
               element={
-                // <ProtectedRoute>
-                <CreateCategory />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <CreateCategory />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/adicion-stock"
               element={
-                // <ProtectedRoute>
-                <Stock />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <Stock />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/clientes"
               element={
-                // <ProtectedRoute>
-                <Clientes />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <Clientes />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/reportes"
               element={
-                // <ProtectedRoute>
-                <Reportes />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <Reportes />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/productos"
               element={
-                // <ProtectedRoute>
-                <Productos />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <Productos />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/proveedores"
               element={
-                // <ProtectedRoute>
-                <Proveedores />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <Proveedores />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/entregas-stock"
               element={
-                // <ProtectedRoute>
-                <EntregasStock />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <EntregasStock />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/devoluciones"
               element={
-                // <ProtectedRoute>
-                <Devoluciones />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <Devoluciones />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/vencimientos"
               element={
-                // <ProtectedRoute>
-                <Vencimientos />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <Vencimientos />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/categorias-de-productos"
               element={
-                // <ProtectedRoute>
-                <CategoriasDeProductos />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <CategoriasDeProductos />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/historial/ventas"
               element={
-                // <ProtectedRoute>
-                <HistorialVentas />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <HistorialVentas />
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/notificaciones"
               element={
-                // <ProtectedRoute>
-                <Notificaciones />
-                // </ProtectedRoute>
+                <ProtectedRoute>
+                  <Notificaciones />/{" "}
+                </ProtectedRoute>
               }
             />
           </Route>
