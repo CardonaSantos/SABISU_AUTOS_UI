@@ -26,6 +26,7 @@ import RegisterView from "./Pages/Auth/Register";
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
 import NotFoundPage from "./Pages/NotFount/NotFoundPage";
 import AgregarProveedor from "./Pages/Provider/AgregarProveedor";
+import CreateCategory from "./Pages/Category/CreateCategory";
 
 function App() {
   return (
@@ -95,6 +96,15 @@ function App() {
               element={
                 // <ProtectedRoute>
                 <AgregarProveedor />
+                // </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/categorias"
+              element={
+                // <ProtectedRoute>
+                <CreateCategory />
                 // </ProtectedRoute>
               }
             />

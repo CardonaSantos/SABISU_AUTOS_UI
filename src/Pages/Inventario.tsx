@@ -340,7 +340,7 @@ export default function Inventario() {
                             value: categoria.id,
                             label: categoria.nombre,
                           }))}
-                          className="basic-multi-select"
+                          className="basic-multi-select text-black"
                           classNamePrefix="select"
                           onChange={(
                             selectedOptions: MultiValue<{

@@ -18,6 +18,8 @@ import {
   Clock,
   MailIcon,
   LogOut,
+  Badge,
+  TruckIcon,
 } from "lucide-react";
 import {
   Dialog,
@@ -66,6 +68,9 @@ export default function Layout({ children }: LayoutProps) {
 
     { icon: Box, label: "Añadir Stock", href: "/adicion-stock" },
     { icon: Clock, label: "Historial de Ventas", href: "/historial/ventas" },
+    { icon: Badge, label: "Categorias", href: "/categorias" },
+
+    { icon: TruckIcon, label: "Proveedores", href: "/agregar-proveedor" },
 
     { icon: Users, label: "Clientes", href: "/clientes" },
     { icon: BarChart2, label: "Reportes", href: "/reportes" },
@@ -211,7 +216,7 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* Footer */}
       <footer className="bg-background py-4 text-center text-sm text-muted-foreground">
-        <p>&copy; 2024 Empresa. Todos los derechos reservados</p>
+        <p>&copy; 2024 Novas Sistemas. Todos los derechos reservados</p>
       </footer>
 
       {/* Floating Action Button (FAB) for mobile */}

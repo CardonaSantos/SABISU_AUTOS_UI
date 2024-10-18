@@ -35,7 +35,7 @@ function Invoice() {
 
   return (
     <div>
-      {venta ? (
+      {venta && venta ? (
         <PDFViewer width="100%" height="600">
           <Factura venta={venta} />
         </PDFViewer>

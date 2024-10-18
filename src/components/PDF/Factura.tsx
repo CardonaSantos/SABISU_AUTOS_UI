@@ -101,7 +101,6 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
     <View style={styles.titleContainer}>
       <View style={styles.spaceBetween}>
         <Image style={styles.logo} src={logo} />
-        {/* <Text style={styles.reportTitle}>Xpress Enterprises</Text> */}
       </View>
     </View>
   );
@@ -110,13 +109,13 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
     <View style={styles.titleContainer}>
       <View style={styles.spaceBetween}>
         <View>
-          <Text style={styles.invoice}>Nova Sistemas </Text>
+          <Text style={styles.invoice}>Nova Sistemas</Text>
           <Text style={styles.invoiceNumber}>
-            Factura número: #{venta?.id}{" "}
+            Factura número: #{venta?.id ? venta.id : "No disponible"}
           </Text>
         </View>
         <View>
-          <Text style={styles.addressTitle}>Ubicación de mi sucursal </Text>
+          <Text style={styles.addressTitle}>Ubicación de mi sucursal</Text>
         </View>
       </View>
     </View>
@@ -126,12 +125,14 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
     <View style={styles.titleContainer}>
       <View style={styles.spaceBetween}>
         <View style={{ maxWidth: 200 }}>
-          <Text style={styles.addressTitle}>Factura a </Text>
+          <Text style={styles.addressTitle}>Factura a</Text>
           <Text style={styles.address}>
             {venta?.cliente ? venta.cliente.nombre : "CF"}
           </Text>
           <Text style={styles.address}>
-            {venta?.metodoPago ? venta.metodoPago.metodoPago : ""}
+            {venta?.metodoPago
+              ? venta.metodoPago.metodoPago
+              : "Sin método de pago"}
           </Text>
         </View>
         <Text style={styles.addressTitle}>
@@ -142,7 +143,6 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
       </View>
     </View>
   );
-
   const TableHead = () => (
     <View style={{ width: "100%", flexDirection: "row", marginTop: 10 }}>
       <View style={[styles.theader, styles.theader2]}>
@@ -159,42 +159,52 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
       </View>
     </View>
   );
-
   const TableBody = () =>
-    venta?.productos.map((productoVenta) => (
-      <Fragment key={productoVenta.id}>
-        <View style={{ width: "100%", flexDirection: "row" }}>
-          <View style={[styles.tbody, styles.tbody2]}>
-            <Text>{productoVenta.producto.nombre}</Text>{" "}
-            {/* Mapea el nombre del producto */}
+    venta?.productos?.length ? (
+      venta.productos.map((productoVenta) => (
+        <Fragment key={productoVenta.id}>
+          <View style={{ width: "100%", flexDirection: "row" }}>
+            <View style={[styles.tbody, styles.tbody2]}>
+              <Text>
+                {productoVenta?.producto?.nombre
+                  ? productoVenta.producto.nombre
+                  : "Producto no disponible"}
+              </Text>
+            </View>
+            <View style={styles.tbody}>
+              <Text>
+                {productoVenta?.producto?.precioVenta
+                  ? new Intl.NumberFormat("es-GT", {
+                      style: "currency",
+                      currency: "GTQ",
+                    }).format(productoVenta.producto.precioVenta)
+                  : "No disponible"}
+              </Text>
+            </View>
+            <View style={styles.tbody}>
+              <Text>
+                {productoVenta?.cantidad ? productoVenta.cantidad : "N/A"}
+              </Text>
+            </View>
+            <View style={styles.tbody}>
+              <Text>
+                {productoVenta?.producto?.precioVenta && productoVenta.cantidad
+                  ? new Intl.NumberFormat("es-GT", {
+                      style: "currency",
+                      currency: "GTQ",
+                    }).format(
+                      productoVenta.producto.precioVenta *
+                        productoVenta.cantidad
+                    )
+                  : "N/A"}
+              </Text>
+            </View>
           </View>
-          <View style={styles.tbody}>
-            <Text>
-              {new Intl.NumberFormat("es-GT", {
-                style: "currency",
-                currency: "GTQ",
-              }).format(productoVenta.producto.precioVenta)}
-            </Text>{" "}
-            {/* Mapea el precio de venta */}
-          </View>
-          <View style={styles.tbody}>
-            <Text>{productoVenta.cantidad}</Text>{" "}
-            {/* Mapea la cantidad del producto */}
-          </View>
-          <View style={styles.tbody}>
-            <Text>
-              {new Intl.NumberFormat("es-GT", {
-                style: "currency",
-                currency: "GTQ",
-              }).format(
-                productoVenta.producto.precioVenta * productoVenta.cantidad
-              )}
-            </Text>{" "}
-            {/* Calcula el total por producto */}
-          </View>
-        </View>
-      </Fragment>
-    ));
+        </Fragment>
+      ))
+    ) : (
+      <Text>No hay productos disponibles</Text>
+    );
 
   const TableTotal = () => (
     <View style={{ width: "100%", flexDirection: "row" }}>
@@ -209,16 +219,21 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
       </View>
       <View style={styles.tbody}>
         <Text>
-          {venta &&
-            new Intl.NumberFormat("es-GT", {
-              style: "currency",
-              currency: "GTQ",
-            }).format(
-              venta.productos.reduce(
-                (sum, item) => sum + item.producto.precioVenta * item.cantidad,
-                0
+          {venta?.productos
+            ? new Intl.NumberFormat("es-GT", {
+                style: "currency",
+                currency: "GTQ",
+              }).format(
+                venta.productos.reduce(
+                  (sum, item) =>
+                    sum +
+                    (item?.producto?.precioVenta
+                      ? item.producto.precioVenta * item.cantidad
+                      : 0),
+                  0
+                )
               )
-            )}
+            : "N/A"}
         </Text>
       </View>
     </View>

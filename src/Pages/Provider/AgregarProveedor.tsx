@@ -195,7 +195,7 @@ export default function AgregarProveedor() {
                   onChange={handleInputChange}
                 />
               </div>
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="latitud">Latitud</Label>
                 <Input
                   id="latitud"
@@ -216,7 +216,7 @@ export default function AgregarProveedor() {
                   value={formData.longitud || ""}
                   onChange={handleInputChange}
                 />
-              </div>
+              </div> */}
             </div>
             <div className="space-y-2">
               <Label htmlFor="notas">Notas</Label>
