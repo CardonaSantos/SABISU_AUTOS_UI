@@ -299,7 +299,9 @@ export default function Inventario() {
 
       if (response.status === 200 || response.status === 201) {
         toast.success("Producto actualizado");
-        // setOpenEdit(false);
+        getProductosInventario();
+
+        setOpenEdit(false);
       }
     } catch (error) {
       console.log(error);
