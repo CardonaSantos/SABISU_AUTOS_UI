@@ -122,3 +122,6 @@ body {
   padding: 0;
   box-sizing: border-box;
 }
+.custom-overlay::before {
+  background-color: rgba(0, 0, 0, 0.4); /* Ajusta el valor de opacidad aquí */
+}

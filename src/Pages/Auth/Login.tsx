@@ -20,7 +20,7 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Aquí iría la lógica para enviar los datos al servidor
-    console.log("Login submitted", { email, password });
+    console.log("Login submitted", { correo: email, contrasena: password });
 
     try {
       if (!email || !password) {
@@ -29,9 +29,11 @@ export default function Login() {
       }
 
       const response = await axios.post(`${API_URL}/auth/login-user`, {
-        email: email,
+        correo: email,
         contrasena: password,
       });
+
+      console.log("Response data:", response.data); // Verifica si el token existe y es válido
 
       if (response.status === 200 || response.status === 201) {
         toast.success("Usuario logueado correctamente");

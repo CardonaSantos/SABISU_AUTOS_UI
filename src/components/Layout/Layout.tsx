@@ -20,6 +20,7 @@ import {
   LogOut,
   Badge,
   TruckIcon,
+  Building,
 } from "lucide-react";
 import {
   Dialog,
@@ -71,6 +72,7 @@ export default function Layout({ children }: LayoutProps) {
     { icon: Badge, label: "Categorias", href: "/categorias" },
 
     { icon: TruckIcon, label: "Proveedores", href: "/agregar-proveedor" },
+    { icon: Building, label: "Sucursales", href: "/sucursal" },
 
     { icon: Users, label: "Clientes", href: "/clientes" },
     { icon: BarChart2, label: "Reportes", href: "/reportes" },
@@ -157,7 +159,7 @@ export default function Layout({ children }: LayoutProps) {
                 </div>
               </DialogContent>
             </Dialog>
-            <div className="relative">
+            <div className="relative ">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="default">

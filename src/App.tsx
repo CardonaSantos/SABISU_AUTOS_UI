@@ -27,6 +27,7 @@ import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
 import NotFoundPage from "./Pages/NotFount/NotFoundPage";
 import AgregarProveedor from "./Pages/Provider/AgregarProveedor";
 import CreateCategory from "./Pages/Category/CreateCategory";
+import CreateSucursal from "./Pages/Sucursal/CreateSucursal";
 
 function App() {
   return (
@@ -64,6 +65,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/punto-venta"
               element={
@@ -78,6 +80,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Invoice />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/sucursal"
+              element={
+                <ProtectedRoute>
+                  <CreateSucursal />
                 </ProtectedRoute>
               }
             />

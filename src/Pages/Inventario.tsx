@@ -134,6 +134,15 @@ export default function Inventario() {
     precioVenta: 0,
   });
 
+  const [openEdit, setOpenEdit] = useState(false);
+  const [editProduct, setEditProduct] = useState<ProductCreate>({
+    codigoProducto: "",
+    categorias: [],
+    descripcion: "",
+    nombre: "",
+    precioVenta: 0,
+  });
+
   useEffect(() => {
     const getCategories = async () => {
       try {
@@ -280,6 +289,24 @@ export default function Inventario() {
     return sum + stockQuantity;
   }, 0);
 
+  async function handleEditProduct(id: number) {
+    console.log("Los datos para editar son: ", editProduct, "El ID: ", id);
+    try {
+      const response = await axios.patch(
+        `${API_URL}/products/${id}`,
+        editProduct
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        toast.success("Producto actualizado");
+        // setOpenEdit(false);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al actualizar producto");
+    }
+  }
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Administrador de inventario</h1>
@@ -290,7 +317,7 @@ export default function Inventario() {
           </div>
           <div className="flex space-x-2">
             <Dialog>
-              <DialogTrigger asChild>
+              <DialogTrigger>
                 <Button>Añadir Producto</Button>
               </DialogTrigger>
               <DialogContent>
@@ -642,23 +669,35 @@ export default function Inventario() {
 
                 <TableCell>
                   <div className="flex space-x-2">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
+                    <Dialog open={openEdit} onOpenChange={setOpenEdit}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Al abrir el diálogo, inicializa los valores del producto
+                          setEditProduct({
+                            codigoProducto: product.codigoProducto,
+                            categorias: product.categorias.map((cat) => cat.id),
+                            descripcion: product.descripcion,
+                            nombre: product.nombre,
+                            precioVenta: product.precioVenta,
+                          });
+                          setOpenEdit(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <DialogContent className="bg-opacity-40 backdrop-filter backdrop-blur-sm">
                         <DialogHeader>
-                          <DialogTitle>Editar Product</DialogTitle>
+                          <DialogTitle>Editar Producto</DialogTitle>
                           <DialogDescription>
-                            Detalles a actualizar{" "}
+                            Detalles a actualizar
                           </DialogDescription>
                         </DialogHeader>
                         <form
                           onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
                             e.preventDefault();
-                            handleAddProduct;
+                            handleEditProduct(product.id); // Enviar los datos al backend y cerrar el diálogo
                           }}
                         >
                           <div className="grid gap-4 py-4">
@@ -669,11 +708,17 @@ export default function Inventario() {
                               <Input
                                 id="edit-name"
                                 name="name"
-                                defaultValue={product.nombre}
+                                value={editProduct.nombre}
+                                onChange={(e) =>
+                                  setEditProduct({
+                                    ...editProduct,
+                                    nombre: e.target.value,
+                                  })
+                                }
                                 className="col-span-3"
                               />
                             </div>
-                            {/* Dropdown de categorías con selección múltiple */}
+
                             <div className="grid grid-cols-4 items-center gap-4">
                               <Label
                                 htmlFor="categorias"
@@ -683,6 +728,12 @@ export default function Inventario() {
                               </Label>
                               <div className="col-span-3">
                                 <SelectM
+                                  defaultValue={product.categorias.map(
+                                    (categoria) => ({
+                                      value: categoria.id, // Asegúrate de que aquí estás usando el ID de la categoría
+                                      label: categoria.nombre, // El nombre de la categoría para mostrar
+                                    })
+                                  )}
                                   placeholder="Seleccionar..."
                                   isMulti
                                   name="categorias"
@@ -701,14 +752,14 @@ export default function Inventario() {
                                     const selectedIds = selectedOptions.map(
                                       (option) => option.value
                                     );
-                                    setProductCreate({
-                                      ...productCreate,
+                                    setEditProduct({
+                                      ...editProduct,
                                       categorias: selectedIds,
                                     });
                                   }}
                                   value={categorias
                                     .filter((categoria) =>
-                                      productCreate.categorias.includes(
+                                      editProduct.categorias.includes(
                                         categoria.id
                                       )
                                     )
@@ -725,10 +776,10 @@ export default function Inventario() {
                                 Código Producto
                               </Label>
                               <Input
-                                value={productCreate.codigoProducto}
+                                value={editProduct.codigoProducto}
                                 onChange={(e) =>
-                                  setProductCreate({
-                                    ...productCreate,
+                                  setEditProduct({
+                                    ...editProduct,
                                     codigoProducto: e.target.value,
                                   })
                                 }
@@ -744,10 +795,10 @@ export default function Inventario() {
                                 Descripción
                               </Label>
                               <Textarea
-                                value={productCreate.descripcion}
+                                value={editProduct.descripcion}
                                 onChange={(e) =>
-                                  setProductCreate({
-                                    ...productCreate,
+                                  setEditProduct({
+                                    ...editProduct,
                                     descripcion: e.target.value,
                                   })
                                 }
@@ -770,7 +821,13 @@ export default function Inventario() {
                                 name="price"
                                 type="number"
                                 step="0.5"
-                                defaultValue={product.precioVenta}
+                                value={editProduct.precioVenta}
+                                onChange={(e) =>
+                                  setEditProduct({
+                                    ...editProduct,
+                                    precioVenta: parseFloat(e.target.value),
+                                  })
+                                }
                                 className="col-span-3"
                               />
                             </div>
@@ -781,6 +838,7 @@ export default function Inventario() {
                         </form>
                       </DialogContent>
                     </Dialog>
+
                     <Button
                       variant="destructive"
                       size="sm"

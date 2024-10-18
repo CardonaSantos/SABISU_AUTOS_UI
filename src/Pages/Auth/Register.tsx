@@ -27,6 +27,7 @@ export default function RegisterView() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState("");
+  const [sucursalId, setSucursalId] = useState<number>(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,12 +55,19 @@ export default function RegisterView() {
       correo: email,
       contrasena: password,
       rol: role,
+      sucursalId: sucursalId,
     };
+
+    console.log("los datos a enviar son el register: ", {
+      ...nuevoUsuario,
+    });
 
     try {
       const response = await axios.post(`${API_URL}/auth/regist-user`, {
         ...nuevoUsuario,
       });
+
+      console.log("Response data:", response.data); // Verifica si el token existe y es válido
 
       if (response.status === 201) {
         toast.success("Usuario creado existosamente");
@@ -126,6 +134,19 @@ export default function RegisterView() {
                 required
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sucursal">Sucursal Id</Label>
+              <Input
+                id="sucursal"
+                type="number"
+                placeholder="1"
+                value={sucursalId}
+                onChange={(e) => setSucursalId(Number(e.target.value))}
+                required
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="role">Rol</Label>
               <Select onValueChange={setRole} required>
