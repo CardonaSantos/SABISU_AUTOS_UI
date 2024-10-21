@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,11 @@ import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+interface Sucursal {
+  id: number;
+  nombre: string;
+}
+
 export default function RegisterView() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -28,6 +33,8 @@ export default function RegisterView() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState("");
   const [sucursalId, setSucursalId] = useState<number>(0);
+
+  const [sucursales, setSucursales] = useState<Sucursal[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +45,7 @@ export default function RegisterView() {
       password,
       confirmPassword,
       role,
+      sucursalId,
     });
 
     if (password !== confirmPassword) {
@@ -45,7 +53,7 @@ export default function RegisterView() {
       return;
     }
 
-    if (!name || !email || !password || !role) {
+    if (!name || !email || !password || !role || !sucursalId) {
       toast.info("Debe llenar todos los campos");
       return;
     }
@@ -80,6 +88,25 @@ export default function RegisterView() {
       toast.error("Error al crear usuario");
     }
   };
+
+  useEffect(() => {
+    const getSucursales = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/sucursales/`, {});
+
+        console.log("Response data:", response.data); // Verifica si el token existe y es válido
+
+        if (response.status === 200) {
+          setSucursales(response.data);
+        }
+      } catch (error) {
+        console.log(error);
+        toast.error("Error al cargar sucursales");
+      }
+    };
+    getSucursales();
+  }, []);
+  console.log("Las sucursales son: ", sucursales);
 
   return (
     <div className="min-h-screen flex items-center justify-center  px-4 py-12 sm:px-6 lg:px-8">
@@ -136,15 +163,21 @@ export default function RegisterView() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sucursal">Sucursal Id</Label>
-              <Input
-                id="sucursal"
-                type="number"
-                placeholder="1"
-                value={sucursalId}
-                onChange={(e) => setSucursalId(Number(e.target.value))}
-                required
-              />
+              <Label htmlFor="sucursal">Pertenece a la sucursal</Label>
+              <Select onValueChange={(value) => setSucursalId(Number(value))}>
+                {/* El select espera operar con un string, asi que eso le pasamos en el onValueChange y en el value delos items, un string parseado porque el id es number al inicion */}
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione una sucursal" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sucursales &&
+                    sucursales.map((sucursal) => (
+                      <SelectItem key={sucursal.id} value={String(sucursal.id)}>
+                        {sucursal.nombre}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -159,6 +192,7 @@ export default function RegisterView() {
                 </SelectContent>
               </Select>
             </div>
+
             <Button type="submit" className="w-full">
               Registrarse
             </Button>

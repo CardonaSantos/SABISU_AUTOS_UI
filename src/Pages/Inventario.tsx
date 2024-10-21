@@ -35,12 +35,12 @@ import axios from "axios";
 import { toast } from "sonner";
 import { SimpleProvider } from "@/Types/Proveedor/SimpleProveedor";
 import { ProductsInventary } from "@/Types/Inventary/ProductsInventary";
-
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Link } from "react-router-dom";
 const API_URL = import.meta.env.VITE_API_URL;
 
 interface ProductCreate {
@@ -109,17 +109,11 @@ export default function Inventario() {
     }
   };
 
-  // const handleEditProduct = async (productId: number, formData: FormData) => {
-  //   console.log("Editing product:", productId, formData);
-  // };
-
   const handleDeleteProduct = (productId: number) => {
-    // Logic to delete product
     console.log("Deleting product:", productId);
   };
 
   const handleExport = (format: string) => {
-    // Logic to export inventory data
     console.log("Exporting inventory data as:", format);
   };
 
@@ -127,15 +121,6 @@ export default function Inventario() {
   const [proveedores, setProveedores] = useState<SimpleProvider[]>([]);
 
   const [productCreate, setProductCreate] = useState<ProductCreate>({
-    codigoProducto: "",
-    categorias: [],
-    descripcion: "",
-    nombre: "",
-    precioVenta: 0,
-  });
-
-  const [openEdit, setOpenEdit] = useState(false);
-  const [editProduct, setEditProduct] = useState<ProductCreate>({
     codigoProducto: "",
     categorias: [],
     descripcion: "",
@@ -175,18 +160,9 @@ export default function Inventario() {
     getProveedores();
   }, []);
 
-  console.log("El producto a crear es: ", productCreate);
-
-  console.log("las categorias son: ", categorias);
-  console.log("Los proveedores son: ", proveedores);
-
   const [productsInventary, setProductsInventary] = useState<
     ProductsInventary[]
   >([]);
-
-  console.log("Los productos del inventario son: ", productsInventary);
-
-  console.log("Los productos del inventario son: ", productsInventary);
 
   const getProductosInventario = async () => {
     try {
@@ -289,25 +265,10 @@ export default function Inventario() {
     return sum + stockQuantity;
   }, 0);
 
-  async function handleEditProduct(id: number) {
-    console.log("Los datos para editar son: ", editProduct, "El ID: ", id);
-    try {
-      const response = await axios.patch(
-        `${API_URL}/products/${id}`,
-        editProduct
-      );
-
-      if (response.status === 200 || response.status === 201) {
-        toast.success("Producto actualizado");
-        getProductosInventario();
-
-        setOpenEdit(false);
-      }
-    } catch (error) {
-      console.log(error);
-      toast.error("Error al actualizar producto");
-    }
-  }
+  console.log("Los productos del inventario son: ", productsInventary);
+  console.log("El producto a crear es: ", productCreate);
+  console.log("las categorias son: ", categorias);
+  console.log("Los proveedores son: ", proveedores);
 
   return (
     <div className="container mx-auto p-4">
@@ -560,7 +521,7 @@ export default function Inventario() {
                   <ArrowDownUp className="inline ml-1" size={16} />
                 )}
               </TableHead>
-              <TableHead>Proveedor</TableHead>
+              <TableHead>Distribución de Stock por Sucursal</TableHead>
 
               <TableHead>Acciones</TableHead>
             </TableRow>
@@ -570,8 +531,11 @@ export default function Inventario() {
               <TableRow key={product.id}>
                 <TableCell>{product.nombre}</TableCell>
                 <TableCell>
-                  {product.categorias.map((cat) => cat.nombre).join(",")}
+                  <p className="text-xs ">
+                    {product.categorias.map((cat) => cat.nombre).join(", ")}
+                  </p>
                 </TableCell>
+
                 <TableCell>
                   {product.stock.length === 0 ? (
                     <Badge className="bg-red-600 text-white">
@@ -654,13 +618,12 @@ export default function Inventario() {
                       </PopoverTrigger>
                       <PopoverContent>
                         <div className="p-4">
-                          <p className="font-bold">Proveedores</p>
-                          {product.stock
-                            .map(
-                              (stock) =>
-                                stock.entregaStock?.proveedor?.nombre ?? "N/A"
-                            )
-                            .join(", ")}
+                          {product.stock.map((stock) => (
+                            <div key={stock.id} className="flex gap-1">
+                              <p>{stock.sucursal.nombre}: </p>
+                              <p>{stock.cantidad}</p>
+                            </div>
+                          ))}
                         </div>
                       </PopoverContent>
                     </Popover>
@@ -671,183 +634,48 @@ export default function Inventario() {
 
                 <TableCell>
                   <div className="flex space-x-2">
-                    <Dialog open={openEdit} onOpenChange={setOpenEdit}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // Al abrir el diálogo, inicializa los valores del producto
-                          setEditProduct({
-                            codigoProducto: product.codigoProducto,
-                            categorias: product.categorias.map((cat) => cat.id),
-                            descripcion: product.descripcion,
-                            nombre: product.nombre,
-                            precioVenta: product.precioVenta,
-                          });
-                          setOpenEdit(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <DialogContent className="bg-opacity-40 backdrop-filter backdrop-blur-sm">
+                    {/* Enlace para editar el producto */}
+                    <Link
+                      to={`/editar-producto/${product.id}`} // Cambia a la ruta correcta que maneje la edición del producto
+                      className="flex items-center text-blue-500 hover:underline"
+                    >
+                      <Edit className="h-4 w-4" />
+                      <span className="ml-1">Editar</span>
+                    </Link>
+
+                    {/* Botón para eliminar el producto */}
+                    <Dialog>
+                      <DialogTrigger>
+                        <Button variant="destructive" size="sm">
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Editar Producto</DialogTitle>
+                          <DialogTitle className="text-center">
+                            Eliminación de Producto
+                          </DialogTitle>
                           <DialogDescription>
-                            Detalles a actualizar
+                            Al eliminar el producto, se eliminarán sus
+                            referencias tanto a stocks como a registros de
+                            ventas en todas las sucursales donde haya sido
+                            referenciado. Esto podría causar huecos de
+                            información. ¿Continuar?
+                          </DialogDescription>
+                          <DialogDescription className="text-center">
+                            ¿Continuar?
                           </DialogDescription>
                         </DialogHeader>
-                        <form
-                          onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                            e.preventDefault();
-                            handleEditProduct(product.id); // Enviar los datos al backend y cerrar el diálogo
-                          }}
-                        >
-                          <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="edit-name" className="text-right">
-                                Producto
-                              </Label>
-                              <Input
-                                id="edit-name"
-                                name="name"
-                                value={editProduct.nombre}
-                                onChange={(e) =>
-                                  setEditProduct({
-                                    ...editProduct,
-                                    nombre: e.target.value,
-                                  })
-                                }
-                                className="col-span-3"
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label
-                                htmlFor="categorias"
-                                className="text-right"
-                              >
-                                Categoría
-                              </Label>
-                              <div className="col-span-3">
-                                <SelectM
-                                  defaultValue={product.categorias.map(
-                                    (categoria) => ({
-                                      value: categoria.id, // Asegúrate de que aquí estás usando el ID de la categoría
-                                      label: categoria.nombre, // El nombre de la categoría para mostrar
-                                    })
-                                  )}
-                                  placeholder="Seleccionar..."
-                                  isMulti
-                                  name="categorias"
-                                  options={categorias.map((categoria) => ({
-                                    value: categoria.id,
-                                    label: categoria.nombre,
-                                  }))}
-                                  className="basic-multi-select"
-                                  classNamePrefix="select"
-                                  onChange={(
-                                    selectedOptions: MultiValue<{
-                                      value: number;
-                                      label: string;
-                                    }>
-                                  ) => {
-                                    const selectedIds = selectedOptions.map(
-                                      (option) => option.value
-                                    );
-                                    setEditProduct({
-                                      ...editProduct,
-                                      categorias: selectedIds,
-                                    });
-                                  }}
-                                  value={categorias
-                                    .filter((categoria) =>
-                                      editProduct.categorias.includes(
-                                        categoria.id
-                                      )
-                                    )
-                                    .map((categoria) => ({
-                                      value: categoria.id,
-                                      label: categoria.nombre,
-                                    }))}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="code" className="text-right">
-                                Código Producto
-                              </Label>
-                              <Input
-                                value={editProduct.codigoProducto}
-                                onChange={(e) =>
-                                  setEditProduct({
-                                    ...editProduct,
-                                    codigoProducto: e.target.value,
-                                  })
-                                }
-                                id="code"
-                                name="code"
-                                placeholder="Código de producto"
-                                className="col-span-3"
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="desc" className="text-right">
-                                Descripción
-                              </Label>
-                              <Textarea
-                                value={editProduct.descripcion}
-                                onChange={(e) =>
-                                  setEditProduct({
-                                    ...editProduct,
-                                    descripcion: e.target.value,
-                                  })
-                                }
-                                placeholder="Breve descripción..."
-                                id="desc"
-                                name="desc"
-                                className="col-span-3"
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label
-                                htmlFor="edit-price"
-                                className="text-right"
-                              >
-                                Precio venta
-                              </Label>
-                              <Input
-                                id="edit-price"
-                                name="price"
-                                type="number"
-                                step="0.5"
-                                value={editProduct.precioVenta}
-                                onChange={(e) =>
-                                  setEditProduct({
-                                    ...editProduct,
-                                    precioVenta: parseFloat(e.target.value),
-                                  })
-                                }
-                                className="col-span-3"
-                              />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button type="submit">Update Product</Button>
-                          </DialogFooter>
-                        </form>
+                        <div className="flex gap-2 mt-4 justify-center items-center">
+                          <Button
+                            variant="destructive"
+                            onClick={() => handleDeleteProduct(product.id)}
+                          >
+                            Confirmar Eliminación
+                          </Button>
+                        </div>
                       </DialogContent>
                     </Dialog>
-
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteProduct(product.id)}
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
                   </div>
                 </TableCell>
               </TableRow>

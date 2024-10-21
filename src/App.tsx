@@ -28,6 +28,7 @@ import NotFoundPage from "./Pages/NotFount/NotFoundPage";
 import AgregarProveedor from "./Pages/Provider/AgregarProveedor";
 import CreateCategory from "./Pages/Category/CreateCategory";
 import CreateSucursal from "./Pages/Sucursal/CreateSucursal";
+import ProductEditForm from "./Pages/Edit/EditProduct";
 
 function App() {
   return (
@@ -215,6 +216,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Notificaciones />/{" "}
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/editar-producto/:id"
+              element={
+                <ProtectedRoute>
+                  <ProductEditForm />/{" "}
                 </ProtectedRoute>
               }
             />

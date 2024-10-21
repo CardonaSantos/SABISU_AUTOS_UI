@@ -38,6 +38,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { ProductosResponse } from "@/Types/Venta/ProductosResponse";
 import React from "react";
+import { useStore } from "@/components/Context/ContextSucursal";
 const API_URL = import.meta.env.VITE_API_URL;
 
 // Mock data for products and customers
@@ -69,12 +70,16 @@ const customers: Customer[] = [
 ];
 
 export default function PuntoVenta() {
+  const userId = useStore((state) => state.userId);
+  console.log("El id del user en el punto venta es: ", userId);
+
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
   console.log(selectedCustomer);
+  const sucursalId = useStore((state) => state.sucursalId);
 
   const [paymentMethod, setPaymentMethod] = useState<string>("CONTADO");
 
@@ -137,6 +142,7 @@ export default function PuntoVenta() {
         })),
         metodoPago: paymentMethod || "CONTADO",
         monto: cart.reduce((acc, prod) => acc + prod.price * prod.quantity, 0),
+        sucursalId: sucursalId,
       });
 
       if (response.status === 201) {
@@ -165,19 +171,24 @@ export default function PuntoVenta() {
 
   const getProducts = async () => {
     try {
-      const response = await axios.get(`${API_URL}/products`);
+      const response = await axios.get(
+        `${API_URL}/products/sucursal/${sucursalId}`
+      );
       if (response.status === 200) {
         setProductos(response.data);
       }
     } catch (error) {
       console.log(error);
-      toast.error("Error");
+      toast.error("Error al obtener productos.");
     }
   };
 
   useEffect(() => {
-    getProducts();
-  }, []);
+    if (sucursalId) {
+      // Verificar que sucursalId está disponible
+      getProducts();
+    }
+  }, [sucursalId]);
   console.log("Los productos son: ", productos);
 
   const filteredProducts = productos.filter(

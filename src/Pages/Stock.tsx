@@ -33,6 +33,7 @@ import {
 import axios from "axios";
 import { ProductsInventary } from "@/Types/Inventary/ProductsInventary";
 import { toast } from "sonner";
+import { useStore } from "@/components/Context/ContextSucursal";
 
 type Provider = {
   id: number;
@@ -66,6 +67,8 @@ export default function Stock() {
   const [isDialogInspect, setIsDialogInspect] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
 
+  const sucursalId = useStore((state) => state.sucursalId);
+  const recibidoPorId = useStore((state) => state.userId);
   console.log("Lo que vamos a enviar es: ", stockEntries);
 
   const calculateTotalCost = (
@@ -146,10 +149,13 @@ export default function Stock() {
     });
 
     console.log("Enviando entradas de stock:", stockEntries);
+
     try {
       const response = await axios.post(`${API_URL}/stock`, {
         stockEntries,
         proveedorId: Number(selectedProviderId),
+        sucursalId: sucursalId,
+        recibidoPorId: recibidoPorId,
       });
       if (response.status === 201) {
         toast.success("Stocks añadidos exitosamente");
@@ -371,7 +377,7 @@ export default function Stock() {
           <div className="flex items-center space-x-2 mt-4">
             <User className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              Registrado por: Usuario Actual
+              Registrado por:{recibidoPorId}
             </span>
           </div>
           <Button type="button" onClick={handleAddEntry} className="w-full">
@@ -386,7 +392,7 @@ export default function Stock() {
                 Ver Lista
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="w-full max-w-[800px]">
               <DialogHeader>
                 <h3 className="text-lg font-semibold mb-4 text-center">
                   Productos a añadirles stock

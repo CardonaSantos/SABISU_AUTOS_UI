@@ -41,6 +41,10 @@ import {
 import { Button } from "../ui/button";
 import { UserToken } from "@/Types/UserToken/UserToken";
 import { jwtDecode } from "jwt-decode";
+import { useStore } from "../Context/ContextSucursal";
+import axios from "axios";
+import { Sucursal } from "@/Types/Sucursal/Sucursal_Info";
+const API_URL = import.meta.env.VITE_API_URL;
 interface LayoutProps {
   children?: React.ReactNode;
 }
@@ -48,19 +52,15 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [tokenUser, setTokenUser] = useState<UserToken | null>(null);
+  const setUserNombre = useStore((state) => state.setUserNombre);
+  const setUserCorreo = useStore((state) => state.setUserCorreo);
+  const setUserId = useStore((state) => state.setUserId);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 1024);
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const toggleSideMenu = () => {
-    setIsSideMenuOpen(!isSideMenuOpen);
-  };
+  const setActivo = useStore((state) => state.setActivo);
+  const setRol = useStore((state) => state.setRol);
+  const setSucursalId = useStore((state) => state.setSucursalId);
+  const sucursalId = useStore((state) => state.sucursalId);
 
   const menuItems = [
     { icon: Home, label: "Home", href: "/" },
@@ -88,14 +88,18 @@ export default function Layout({ children }: LayoutProps) {
     { icon: Bell, label: "Notificaciones", href: "/notificaciones" },
   ];
 
-  const [tokenUser, setTokenUser] = useState<UserToken | null>(null);
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-  function setShowLogoutModal(arg0: boolean): void {
-    console.log(arg0);
-
-    throw new Error("Function not implemented.");
-  }
-  const token = localStorage.getItem("authTokenPos");
+  const toggleSideMenu = () => {
+    setIsSideMenuOpen(!isSideMenuOpen);
+  };
 
   useEffect(() => {
     const storedToken = localStorage.getItem("authTokenPos");
@@ -103,18 +107,46 @@ export default function Layout({ children }: LayoutProps) {
       try {
         const decodedToken = jwtDecode<UserToken>(storedToken);
         setTokenUser(decodedToken);
+        setUserNombre(decodedToken.nombre);
+        setUserCorreo(decodedToken.correo);
+        setActivo(decodedToken.activo);
+        setRol(decodedToken.rol);
+        setUserId(decodedToken.sub);
+        setSucursalId(decodedToken.sucursalId);
       } catch (error) {
         console.error("Error decoding token:", error);
       }
     }
-  }, []); // Solo ejecutarlo una vez al montar el componente
+  }, []);
 
   function handleDeletToken() {
     localStorage.removeItem("authTokenPos");
     window.location.reload();
   }
-  console.log("El token es: ", token);
-  console.log("La info del token es: ", tokenUser);
+
+  const [sucursalInfo, setSucursalInfo] = useState<Sucursal>();
+
+  useEffect(() => {
+    const getInfoSucursal = async () => {
+      try {
+        const response = await axios.get(
+          `${API_URL}/sucursales/get-info-sucursal/${sucursalId}`
+        );
+        if (response.status === 200) {
+          setSucursalInfo(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching sucursal info:", error);
+      }
+    };
+
+    // Solo hace la petición si sucursalId es válido
+    if (sucursalId) {
+      getInfoSucursal();
+    }
+  }, [sucursalId]); // Ahora depende de sucursalId
+
+  console.log("La info de la sucursal actual es: ", sucursalInfo);
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -176,9 +208,9 @@ export default function Layout({ children }: LayoutProps) {
                     <MailIcon className="mr-2 h-4 w-4" />
                     <span>{tokenUser?.correo}</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowLogoutModal(true)}>
+                  <DropdownMenuItem onClick={handleDeletToken}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span onClick={handleDeletToken}>Cerrar Sesión</span>
+                    <span>Cerrar Sesión</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
