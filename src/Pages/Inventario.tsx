@@ -617,13 +617,45 @@ export default function Inventario() {
                         {/* Botón que activa el popover */}
                       </PopoverTrigger>
                       <PopoverContent>
-                        <div className="p-4">
-                          {product.stock.map((stock) => (
-                            <div key={stock.id} className="flex gap-1">
-                              <p>{stock.sucursal.nombre}: </p>
-                              <p>{stock.cantidad}</p>
-                            </div>
-                          ))}
+                        <div className="p-4 space-y-2">
+                          {product.stock
+                            .reduce(
+                              (
+                                acc: {
+                                  sucursal: { nombre: string };
+                                  cantidad: number;
+                                }[],
+                                stock: {
+                                  sucursal: { nombre: string };
+                                  cantidad: number;
+                                }
+                              ) => {
+                                const existingStock = acc.find(
+                                  (s) =>
+                                    s.sucursal.nombre === stock.sucursal.nombre
+                                );
+                                if (existingStock) {
+                                  existingStock.cantidad += stock.cantidad;
+                                } else {
+                                  acc.push({ ...stock });
+                                }
+                                return acc;
+                              },
+                              []
+                            )
+                            .map((stock) => (
+                              <div
+                                key={stock.sucursal.nombre} // Usar nombre como key temporal si no tienes un id
+                                className="flex items-center gap-2 bg-gray-100 p-2 rounded-lg shadow-sm"
+                              >
+                                <p className="font-semibold text-gray-700">
+                                  {stock.sucursal.nombre}:
+                                </p>
+                                <p className="text-gray-600">
+                                  {stock.cantidad} Uds
+                                </p>
+                              </div>
+                            ))}
                         </div>
                       </PopoverContent>
                     </Popover>

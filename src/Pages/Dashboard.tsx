@@ -17,16 +17,16 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import {
-  AlertCircle,
-  DollarSign,
-  Package,
-  ShoppingCart,
-  TrendingUp,
-  UserPlus,
-} from "lucide-react";
+import { AlertCircle, CoinsIcon, Package, ShoppingCart } from "lucide-react";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useStore } from "@/components/Context/ContextSucursal";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function Dashboard() {
+  const sucursalId = useStore((state) => state.sucursalId);
+
   // Datos de ejemplo para los gráficos y tablas
   const salesData = [
     { name: "Lun", ventas: 4000 },
@@ -58,49 +58,99 @@ export default function Dashboard() {
     { id: "003", product: "Producto C", amount: 70, date: "2023-06-14" },
   ];
 
+  const [ventasMes, setVentasMes] = useState(0);
+  const [ventasSemana, setVentasSemana] = useState(0);
+  const [ventasDia, setVentasDia] = useState(0);
+
+  const getInfo = async () => {
+    try {
+      // Realiza las tres peticiones en paralelo
+      const [ventasMes, ventasDia, ventasSemana] = await Promise.all([
+        axios.get(`${API_URL}/analytics/get-ventas/mes/${sucursalId}`),
+        axios.get(`${API_URL}/analytics/get-ventas/dia/${sucursalId}`),
+        axios.get(`${API_URL}/analytics/get-ventas/semana/${sucursalId}`),
+      ]);
+
+      // Accede a los datos de cada respuesta
+      console.log("Ventas del mes:", ventasMes.data);
+      console.log("Ventas del día:", ventasDia.data);
+      console.log("Ventas de la semana:", ventasSemana.data);
+
+      // Si necesitas combinar la información de alguna manera, puedes hacerlo aquí
+      setVentasMes(ventasMes.data);
+      setVentasSemana(ventasSemana.data);
+      setVentasDia(ventasDia.data);
+    } catch (error) {
+      console.error("Error al obtener los datos:", error);
+      // Maneja los errores aquí
+      toast.error("Error al recuperar informacion de ventas del servidor");
+    }
+  };
+
+  // Llamar a la función
+  useEffect(() => {
+    if (sucursalId) {
+      getInfo();
+    }
+  }, [sucursalId]);
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold">Dashboard de Administrador</h1>
 
       {/* Resumen de ventas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="shadow-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Ventas del mes{" "}
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CoinsIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Q15,231</div>
+            <div className="text-2xl font-bold">
+              {new Intl.NumberFormat("es-GT", {
+                style: "currency",
+                currency: "GTQ",
+              }).format(ventasMes)}
+            </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Ingresos de la semana
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CoinsIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Q2,231</div>
+            <div className="text-2xl font-bold">
+              {new Intl.NumberFormat("es-GT", {
+                style: "currency",
+                currency: "GTQ",
+              }).format(ventasSemana)}
+            </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Ingresos del dia{" "}
             </CardTitle>
-            <UserPlus className="h-4 w-4 text-muted-foreground" />
+            <CoinsIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Q350</div>
+            <div className="text-2xl font-bold">
+              {new Intl.NumberFormat("es-GT", {
+                style: "currency",
+                currency: "GTQ",
+              }).format(ventasDia)}
+            </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Gráfico de ventas */}
-      <Card>
+      <Card className="shadow-xl">
         <CardHeader>
           <CardTitle>Ventas de la Semana</CardTitle>
         </CardHeader>
@@ -119,7 +169,7 @@ export default function Dashboard() {
 
       {/* Productos e inventario */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
+        <Card className="shadow-xl">
           <CardHeader>
             <CardTitle>Productos Más Vendidos</CardTitle>
           </CardHeader>
@@ -142,7 +192,7 @@ export default function Dashboard() {
             </Table>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-xl">
           <CardHeader>
             <CardTitle>Inventario Bajo</CardTitle>
           </CardHeader>
@@ -169,7 +219,7 @@ export default function Dashboard() {
 
       {/* Actividades recientes y Calendario */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
+        <Card className="shadow-xl">
           <CardHeader>
             <CardTitle>Transacciones Recientes</CardTitle>
           </CardHeader>
@@ -199,7 +249,7 @@ export default function Dashboard() {
       </div>
 
       {/* Acciones rápidas */}
-      <Card>
+      <Card className="shadow-xl">
         <CardHeader>
           <CardTitle>Acciones Rápidas</CardTitle>
         </CardHeader>
@@ -217,7 +267,7 @@ export default function Dashboard() {
       </Card>
 
       {/* Notificaciones y alertas */}
-      <Card>
+      <Card className="shadow-xl">
         <CardHeader>
           <CardTitle>Notificaciones y Alertas</CardTitle>
         </CardHeader>
@@ -232,7 +282,7 @@ export default function Dashboard() {
       </Card>
 
       {/* Configuraciones y gestión de la tienda */}
-      <Card>
+      <Card className="shadow-xl">
         <CardHeader>
           <CardTitle>Configuraciones y Gestión</CardTitle>
         </CardHeader>

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import axios from "axios";
 import { useParams } from "react-router-dom";
-import SelectM, { MultiValue } from "react-select"; // Importar react-select
+import SelectM from "react-select"; // Importar react-select
 const API_URL = import.meta.env.VITE_API_URL;
 
 type Category = {
@@ -27,15 +25,6 @@ type Product = {
   categorias: Category[]; // Categorías como un array de objetos
 };
 
-// Las categorías disponibles
-const allCategories: Category[] = [
-  { id: 1, nombre: "Lácteos" },
-  { id: 2, nombre: "Carnes y Embutidos" },
-  { id: 3, nombre: "Frutas y Verduras" },
-  { id: 4, nombre: "Panadería" },
-  { id: 5, nombre: "Bebidas" },
-];
-
 export default function ProductEditForm() {
   const { id } = useParams();
   const [formData, setFormData] = useState<Product | null>(null);
@@ -53,18 +42,6 @@ export default function ProductEditForm() {
     const value = parseFloat(e.target.value);
     setFormData((prev) =>
       prev ? { ...prev, precioVenta: isNaN(value) ? 0 : value } : prev
-    );
-  };
-
-  // Manejar el cambio de las categorías seleccionadas
-  const handleCategoryChange = (
-    selectedOptions: MultiValue<{ value: number; label: string }>
-  ) => {
-    const selectedIds = selectedOptions.map((option) => option.value);
-    setFormData((prev) =>
-      prev
-        ? { ...prev, categorias: selectedIds.map((id) => ({ id, nombre: "" })) }
-        : prev
     );
   };
 
@@ -108,11 +85,25 @@ export default function ProductEditForm() {
     getProducto();
   }, []);
 
+  const [categories, setCategories] = useState<Category[]>([]);
+  const getCategorias = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/categoria`);
+      if (response.status === 200) {
+        setCategories(response.data);
+      }
+    } catch (error) {}
+  };
+  useEffect(() => {
+    getCategorias();
+  }, []);
+
   return formData ? (
     <form
       onSubmit={handleSubmit}
       className="space-y-6 max-w-2xl mx-auto p-6 bg-card rounded-lg shadow"
     >
+      <h2 className="text-center font-bold text-xl">Edición de Producto</h2>
       <div>
         <Label htmlFor="nombre">Nombre del Producto</Label>
         <Input
@@ -166,17 +157,29 @@ export default function ProductEditForm() {
           placeholder="Seleccionar..."
           isMulti
           name="categorias"
-          options={allCategories.map((categoria) => ({
+          options={categories.map((categoria) => ({
             value: categoria.id,
             label: categoria.nombre,
-          }))}
+          }))} // Mostramos todas las categorías disponibles
           className="basic-multi-select text-black"
           classNamePrefix="select"
-          onChange={handleCategoryChange}
+          onChange={(selectedOptions) => {
+            // Manejamos la selección de categorías actualizando el formData
+            setFormData((prev) => {
+              if (!prev) return prev; // Si prev es null, no hacer nada
+              return {
+                ...prev,
+                categorias: selectedOptions.map((option) => ({
+                  id: option.value,
+                  nombre: option.label,
+                })),
+              };
+            });
+          }}
           value={formData.categorias.map((cat) => ({
             value: cat.id,
-            label: allCategories.find((c) => c.id === cat.id)?.nombre || "",
-          }))}
+            label: categories.find((c) => c.id === cat.id)?.nombre || "",
+          }))} // Mapeamos las categorías seleccionadas
         />
       </div>
 

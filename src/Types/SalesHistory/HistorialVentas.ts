@@ -56,6 +56,10 @@ export interface Venta {
   productos: ProductoVenta[];
   totalVenta: number; //TOTAL
   metodoPago: MetodoPago;
+  //OTROS CAMPOS
+  nombreClienteFinal: string;
+  telefonoClienteFinal: string;
+  direccionClienteFinal: string;
 }
 
 export type VentasHistorial = Venta[];

@@ -6,6 +6,13 @@ interface MetodoPago {
   fechaPago: string; // Formato ISO string
 }
 
+interface Cliente {
+  nombre: string;
+  correo: string;
+  telefono: string;
+  direccion: string;
+}
+
 interface ProductoInfo {
   id: number;
   nombre: string;
@@ -31,9 +38,13 @@ interface Venta {
   fechaVenta: string; // Formato ISO string
   horaVenta: string; // Formato ISO string
   totalVenta: number;
-  cliente: any | null; // Ajusta según los datos reales del cliente si existe
+  cliente: Cliente | null; // Ajusta según los datos reales del cliente si existe
   metodoPago: MetodoPago;
   productos: ProductoVenta[];
+  //NUEVOS CAMPOS
+  nombreClienteFinal: string;
+  telefonoClienteFinal: string;
+  direccionClienteFinal: string;
 }
 
 export type VentaHistorialPDF = Venta;

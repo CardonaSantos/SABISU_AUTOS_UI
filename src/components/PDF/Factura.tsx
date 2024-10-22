@@ -30,7 +30,7 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
   const styles = StyleSheet.create({
     page: {
       fontSize: 11,
-      paddingTop: 20,
+      paddingTop: 10,
       paddingLeft: 40,
       paddingRight: 40,
       lineHeight: 1.5,
@@ -47,13 +47,13 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
 
     titleContainer: { flexDirection: "row", marginTop: 24 },
 
-    logo: { width: 80 },
+    logo: { width: 70 },
 
     reportTitle: { fontSize: 16, textAlign: "center" },
 
     addressTitle: { fontSize: 11, fontWeight: "bold" },
 
-    invoice: { fontWeight: "bold", fontSize: 20 },
+    invoice: { fontWeight: "bold", fontSize: 15 },
 
     invoiceNumber: { fontSize: 11, fontWeight: "bold" },
 
@@ -131,12 +131,27 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
         <View style={{ maxWidth: 200 }}>
           <Text style={styles.addressTitle}>Factura a</Text>
           <Text style={styles.address}>
-            {venta?.cliente ? venta.cliente.nombre : "CF"}
+            {venta?.cliente?.nombre || venta?.nombreClienteFinal || "CF"}
           </Text>
+
           <Text style={styles.address}>
+            {venta?.cliente?.telefono ?? venta?.telefonoClienteFinal ?? null}
+          </Text>
+
+          <Text style={styles.address}>
+            {venta?.cliente?.direccion ?? venta?.direccionClienteFinal ?? null}
+          </Text>
+
+          <Text style={styles.address}>
+            Pago:{" "}
             {venta?.metodoPago
               ? venta.metodoPago.metodoPago
               : "Sin método de pago"}
+          </Text>
+
+          <Text style={styles.address}>
+            {/* {venta?.cliente?.direccion ?? venta?.direccionClienteFinal ?? null} */}
+            Encargado: Kandyy
           </Text>
         </View>
         <Text style={styles.addressTitle}>

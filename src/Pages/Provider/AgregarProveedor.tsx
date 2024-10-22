@@ -73,7 +73,7 @@ export default function AgregarProveedor() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Card className="w-full max-w-4xl mx-auto">
+      <Card className="w-full max-w-4xl mx-auto shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">
             Agregar Nuevo Proveedor

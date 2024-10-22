@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Package, Truck, User, Plus, X, Edit, Send } from "lucide-react";
+import { Truck, User, Plus, X, Edit, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +34,7 @@ import axios from "axios";
 import { ProductsInventary } from "@/Types/Inventary/ProductsInventary";
 import { toast } from "sonner";
 import { useStore } from "@/components/Context/ContextSucursal";
+import SelectM from "react-select"; // Importación correcta de react-select
 
 type Provider = {
   id: number;
@@ -55,7 +56,7 @@ export default function Stock() {
   const [precioCosto, setPrecioCosto] = useState<string>("");
   const [costoTotal, setCostoTotal] = useState<number>(0);
   const [fechaIngreso, setFechaIngreso] = useState<Date>(new Date());
-  const [fechaVencimiento, setFechaVencimiento] = useState<Date | undefined>();
+  const [fechaVencimiento, setFechaVencimiento] = useState<Date | null>();
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [selectedProviderId, setSelectedProviderId] = useState<string>("");
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -69,6 +70,7 @@ export default function Stock() {
 
   const sucursalId = useStore((state) => state.sucursalId);
   const recibidoPorId = useStore((state) => state.userId);
+  const usuarioNombre = useStore((state) => state.userNombre);
   console.log("Lo que vamos a enviar es: ", stockEntries);
 
   const calculateTotalCost = (
@@ -125,6 +127,14 @@ export default function Stock() {
         precioCosto: parseFloat(precioCosto),
         proveedorId: parseInt(selectedProviderId),
       };
+
+      if (
+        stockEntries.some((prod) => prod.productoId === newEntry.productoId)
+      ) {
+        toast.info("El producto ya está en la lista. Añade uno nuevo");
+        return;
+      }
+
       setStockEntries([...stockEntries, newEntry]);
       resetForm();
       toast.success("Producto añadido");
@@ -132,17 +142,23 @@ export default function Stock() {
   };
 
   const resetForm = () => {
-    setCantidad("");
-    setPrecioCosto("");
-    setCostoTotal(0);
-    setFechaIngreso(new Date());
-    setFechaVencimiento(undefined);
-    setSelectedProductId("");
+    setSelectedProductId(""); // Reseteamos el valor del select a un valor vacío
+    setCantidad(""); // Reseteamos la cantidad
+    setPrecioCosto(""); // Reseteamos el precio de costo
+    // setSelectedProviderId(""); // Reseteamos el proveedor
+    setFechaIngreso(new Date()); // Reseteamos la fecha de ingreso
+    setFechaVencimiento(null); // Reseteamos la fecha de vencimiento
     // setSelectedProviderId("");
     setErrors({});
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  console.log("id proveedor: ", selectedProviderId);
+
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
     console.log("LOS DATOS A ENVIAR SON: ", {
       stockEntries,
       proveedorId: Number(selectedProviderId),
@@ -167,10 +183,12 @@ export default function Stock() {
     } catch (error) {
       console.log(error);
       toast.error("Error al registrar los stocks");
+    } finally {
+      setIsSubmitting(false);
+      setIsDialogOpen(false);
     }
     // Aquí iría la lógica para enviar los datos al backend
     // setStockEntries([]);
-    setIsDialogOpen(false);
   };
 
   const removeEntry = (index: number) => {
@@ -251,7 +269,7 @@ export default function Stock() {
       <CardContent>
         <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="product">Producto</Label>
               <Select
                 onValueChange={setSelectedProductId}
@@ -278,7 +296,47 @@ export default function Stock() {
               {errors.product && (
                 <p className="text-sm text-red-500">{errors.product}</p>
               )}
+            </div> */}
+
+            <div className="space-y-2">
+              <div className="space-y-2">
+                <Label htmlFor="product">Producto</Label>
+                <SelectM
+                  placeholder="Seleccionar producto"
+                  options={productsInventary.map((product) => ({
+                    value: product.id.toString(),
+                    label: `${product.nombre} (${product.codigoProducto})`,
+                  }))}
+                  className="basic-select text-black "
+                  classNamePrefix="select"
+                  onChange={(selectedOption) => {
+                    if (selectedOption) {
+                      setSelectedProductId(selectedOption.value.toString());
+                    } else {
+                      setSelectedProductId(""); // Resetea el valor si no hay selección
+                    }
+                  }}
+                  value={
+                    selectedProductId
+                      ? productsInventary
+                          .filter(
+                            (product) =>
+                              product.id.toString() === selectedProductId
+                          )
+                          .map((product) => ({
+                            value: product.id.toString(),
+                            label: `${product.nombre} (${product.codigoProducto})`,
+                          }))[0]
+                      : null // Si no hay valor seleccionado, el select queda vacío
+                  }
+                />
+
+                {errors.product && (
+                  <p className="text-sm text-red-500">{errors.product}</p>
+                )}
+              </div>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="provider">Proveedor</Label>
               <Select
@@ -377,7 +435,7 @@ export default function Stock() {
           <div className="flex items-center space-x-2 mt-4">
             <User className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              Registrado por:{recibidoPorId}
+              Registrado por: {usuarioNombre}
             </span>
           </div>
           <Button type="button" onClick={handleAddEntry} className="w-full">
@@ -505,7 +563,11 @@ export default function Stock() {
                     </h3>
                   </div>
                   <div className="flex gap-2 justify-center items-center ">
-                    <Button type="button" onClick={handleSubmit}>
+                    <Button
+                      disabled={isSubmitting} // Deshabilitar cuando se está enviando
+                      type="button"
+                      onClick={handleSubmit}
+                    >
                       Confirmar
                     </Button>
                     <Button

@@ -26,7 +26,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Barcode, CirclePlus, X } from "lucide-react";
+import { Barcode, CirclePlus, User2Icon, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,11 @@ import { toast } from "sonner";
 import { ProductosResponse } from "@/Types/Venta/ProductosResponse";
 import React from "react";
 import { useStore } from "@/components/Context/ContextSucursal";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 const API_URL = import.meta.env.VITE_API_URL;
 
 // Mock data for products and customers
@@ -143,6 +148,9 @@ export default function PuntoVenta() {
         metodoPago: paymentMethod || "CONTADO",
         monto: cart.reduce((acc, prod) => acc + prod.price * prod.quantity, 0),
         sucursalId: sucursalId,
+        nombreClienteFinal: nombreClienteFinal.trim(),
+        telefonoClienteFinal: telefonoClienteFinal.trim(),
+        direccionClienteFinal: direccionClienteFinal.trim(),
       });
 
       if (response.status === 201) {
@@ -152,6 +160,7 @@ export default function PuntoVenta() {
         setSelectedCustomer(null);
         setPaymentMethod("CONTADO");
         setCart([]);
+        getProducts();
       } else {
         toast.error("Error al completar la venta");
       }
@@ -196,11 +205,25 @@ export default function PuntoVenta() {
       product.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.codigoProducto.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const [openCustomerDetails, setOpenCustomerDetails] = useState(false);
+  const [openSelectCustomer, setOpenSelectCustomer] = useState(false);
+
+  const [nombreClienteFinal, setNombreClienteFinal] = useState<string>("");
+  const [telefonoClienteFinal, setTelefonoClienteFinal] = useState<string>("");
+  const [direccionClienteFinal, setDireccionClienteFinal] =
+    useState<string>("");
+  console.log("Los datos de cf final son: ", {
+    nombreClienteFinal,
+    telefonoClienteFinal,
+    direccionClienteFinal,
+  });
+
   return (
     <div className="container  ">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <div className="space-y-2">
-          <Card>
+          <Card className="shadow-xl">
             <CardHeader>
               <CardTitle>Buscar productos</CardTitle>
             </CardHeader>
@@ -218,7 +241,7 @@ export default function PuntoVenta() {
               </div>
             </CardContent>
           </Card>
-          <Card className="overflow-y-auto max-h-96">
+          <Card className="overflow-y-auto max-h-96 shadow-xl">
             <CardHeader>{/* <CardTitle>Productos</CardTitle> */}</CardHeader>
             <CardContent>
               <Table>
@@ -235,14 +258,18 @@ export default function PuntoVenta() {
                   {filteredProducts.map((product) => (
                     <TableRow key={product.id}>
                       {/* Nombre del producto */}
-                      <TableCell>{product.nombre}</TableCell>
+                      <TableCell>
+                        <p style={{ fontSize: "12px" }}>{product.nombre}</p>
+                      </TableCell>
 
                       {/* Precio del producto */}
                       <TableCell>
-                        {new Intl.NumberFormat("es-GT", {
-                          style: "currency",
-                          currency: "GTQ",
-                        }).format(product.precioVenta)}
+                        <p style={{ fontSize: "13px" }}>
+                          {new Intl.NumberFormat("es-GT", {
+                            style: "currency",
+                            currency: "GTQ",
+                          }).format(product.precioVenta)}
+                        </p>
                       </TableCell>
 
                       {/* Verificación de existencia de stock */}
@@ -314,8 +341,8 @@ export default function PuntoVenta() {
             </CardContent>
           </Card>
         </div>
-        <div className="space-y-2">
-          <Card className="flex flex-col h-80">
+        <div className="space-y-2 ">
+          <Card className="flex flex-col h-80 shadow-xl">
             <CardHeader>
               <CardTitle className="text-xl">Cart</CardTitle>
             </CardHeader>
@@ -386,7 +413,7 @@ export default function PuntoVenta() {
               </span>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button>Completar</Button>
+                  <Button disabled={cart.length <= 0}>Completar</Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -417,60 +444,143 @@ export default function PuntoVenta() {
               </Dialog>
             </CardFooter>
           </Card>
-
-          <Card>
+          <Card className="shadow-xl">
             <CardContent>
               <div className="flex justify-center p-2 items-center">
-                <h2 className="font-bold text-xl">Metodo pago & cliente</h2>
+                <h2 className="font-bold text-xl">Método de Pago & Cliente</h2>
               </div>
-              <div className="space-y-2">
-                <div>
-                  <Label htmlFor="customer">Cliente</Label>
-                  <Select
-                    onValueChange={(value) => {
-                      // Busca el cliente por el ID seleccionado y lo asigna a selectedCustomer
-                      const selected = customers.find(
-                        (customer) => customer.id === parseInt(value)
-                      );
-                      setSelectedCustomer(selected || null);
-                    }}
-                  >
-                    <SelectTrigger id="customer">
-                      <SelectValue placeholder="Seleccionar cliente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem key="none" value="none">
-                        Ninguno
-                      </SelectItem>{" "}
-                      {/* Asegúrate de tener un valor único y comprensible */}
-                      {customers.map((customer) => (
-                        <SelectItem
-                          key={customer.id}
-                          value={customer.id.toString()}
-                        >
-                          {customer.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+
+              <Collapsible
+                open={openCustomerDetails}
+                onOpenChange={setOpenCustomerDetails}
+              >
+                <div className="flex justify-center items-center space-x-4 px-4">
+                  <CollapsibleTrigger className="flex gap-1" asChild>
+                    <Button
+                      className="w-full mb-3"
+                      variant="destructive"
+                      size="sm"
+                    >
+                      Añadir información del cliente final
+                      <User2Icon className="h-4 w-4" />
+                      <span className="sr-only">Toggle</span>
+                    </Button>
+                  </CollapsibleTrigger>
                 </div>
+
+                <CollapsibleContent>
+                  <div className="space-y-1 px-4">
+                    {/* Selección de cliente */}
+                    <div>
+                      <Label htmlFor="customer">Nombre</Label>
+                      <Input
+                        value={nombreClienteFinal}
+                        onChange={(e) => setNombreClienteFinal(e.target.value)}
+                        placeholder="algún nombre..."
+                      />
+                    </div>
+
+                    {/* Selección de método de pago */}
+                    <div>
+                      <Label htmlFor="payment-method">Telefono</Label>
+                      <Input
+                        value={telefonoClienteFinal}
+                        onChange={(e) =>
+                          setTelefonoClienteFinal(e.target.value)
+                        }
+                        placeholder="+502 5060 7080"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="payment-method">Dirección</Label>
+                      <Input
+                        value={direccionClienteFinal}
+                        onChange={(e) =>
+                          setDireccionClienteFinal(e.target.value)
+                        }
+                        placeholder="Jacaltenango, Huehuetenango, Cantón Parroquia Zona 2"
+                      />
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* SELECCION DE CLIENTE YA CREADO */}
+
+              <div className="flex gap-1 justify-between mt-4">
+                {/* Selección de método de pago */}
                 <div>
+                  <Label htmlFor="payment-method">Método de Pago</Label>
                   <Select
                     value={paymentMethod}
                     onValueChange={(value) => setPaymentMethod(value)}
                   >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="METODO PAGO" />
+                    <SelectTrigger id="payment-method" className="w-[180px]">
+                      <SelectValue placeholder="Método de Pago" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="CONTADO">CONTADO</SelectItem>
-                      <SelectItem value="TARJETA">TARJETA</SelectItem>
+                      <SelectItem value="CONTADO">Contado</SelectItem>
+                      <SelectItem value="TARJETA">Tarjeta</SelectItem>
                       <SelectItem value="TRANSFERENCIA">
-                        TRANSFERENCIA BANCARIA
+                        Transferencia Bancaria
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+                <Collapsible
+                  open={openSelectCustomer}
+                  onOpenChange={setOpenSelectCustomer}
+                >
+                  <div className="flex items-center justify-between space-x-4 px-4">
+                    <CollapsibleTrigger className="flex gap-1" asChild>
+                      <Button variant="default" size="sm">
+                        Seleccionar Cliente
+                        <User2Icon className="h-4 w-4" />
+                        <span className="sr-only">Toggle</span>
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
+
+                  <CollapsibleContent>
+                    <div className="space-y-4 px-4">
+                      {/* Selección de cliente */}
+                      <div>
+                        <Label htmlFor="customer">Cliente</Label>
+                        <Select
+                          value={
+                            selectedCustomer
+                              ? selectedCustomer.id.toString()
+                              : "none"
+                          }
+                          onValueChange={(value) => {
+                            const selected = customers.find(
+                              (customer) => customer.id === parseInt(value)
+                            );
+                            setSelectedCustomer(selected || null);
+                          }}
+                        >
+                          <SelectTrigger id="customer" className="w-[180px]">
+                            <SelectValue placeholder="Seleccionar cliente" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem key="none" value="none">
+                              Ninguno
+                            </SelectItem>
+                            {customers.map((customer) => (
+                              <SelectItem
+                                key={customer.id}
+                                value={customer.id.toString()}
+                              >
+                                {customer.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
             </CardContent>
           </Card>

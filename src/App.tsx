@@ -29,6 +29,7 @@ import AgregarProveedor from "./Pages/Provider/AgregarProveedor";
 import CreateCategory from "./Pages/Category/CreateCategory";
 import CreateSucursal from "./Pages/Sucursal/CreateSucursal";
 import ProductEditForm from "./Pages/Edit/EditProduct";
+import Sucursales from "./Pages/Sucursal/Sucursales";
 
 function App() {
   return (
@@ -86,7 +87,7 @@ function App() {
             />
 
             <Route
-              path="/sucursal"
+              path="/add-sucursal"
               element={
                 <ProtectedRoute>
                   <CreateSucursal />
@@ -224,7 +225,16 @@ function App() {
               path="/editar-producto/:id"
               element={
                 <ProtectedRoute>
-                  <ProductEditForm />/{" "}
+                  <ProductEditForm />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/sucursal"
+              element={
+                <ProtectedRoute>
+                  <Sucursales />
                 </ProtectedRoute>
               }
             />

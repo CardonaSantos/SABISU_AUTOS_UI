@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Eye, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,15 @@ import type {
 } from "../Types/SalesHistory/HistorialVentas";
 import axios from "axios";
 import { toast } from "sonner";
+import {
+  Pagination,
+  PaginationContent,
+  // PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function HistorialVentas() {
@@ -81,12 +90,16 @@ export default function HistorialVentas() {
             <h3 className="font-semibold">Cliente</h3>
             {venta.cliente ? (
               <>
-                <p>Nombre: {venta.cliente.nombre}</p>
-                <p>Correo: {venta.cliente.correo}</p>
-                <p>Teléfono: {venta.cliente.telefono}</p>
+                <p>Nombre: {venta.cliente.nombre || "N/A"}</p>
+                <p>Correo: {venta.cliente.correo || "N/A"}</p>
+                <p>Teléfono: {venta.cliente.telefono || "N/A"}</p>
               </>
             ) : (
-              <p>CF</p>
+              <>
+                <p>Nombre: {venta.nombreClienteFinal || "CF"}</p>
+                <p>Teléfono: {venta.telefonoClienteFinal || "N/A"}</p>
+                <p>Dirección: {venta.direccionClienteFinal || "N/A"}</p>
+              </>
             )}
           </div>
         </div>
@@ -145,6 +158,22 @@ export default function HistorialVentas() {
     </Card>
   );
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(ventas.length / itemsPerPage);
+
+  // Calcular el índice del último elemento de la página actual
+  const indexOfLastItem = currentPage * itemsPerPage;
+  // Calcular el índice del primer elemento de la página actual
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  // Obtener los elementos de la página actual
+  const currentItems = ventas.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Cambiar de página
+  const onPageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Historial de Ventas</h1>
@@ -166,7 +195,7 @@ export default function HistorialVentas() {
           onChange={(e) => setFiltroFecha(e.target.value)}
         />
       </div>
-      <Card>
+      <Card className="shadow-xl">
         <CardContent>
           <ScrollArea className="h-[600px]">
             <Table>
@@ -180,52 +209,132 @@ export default function HistorialVentas() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {ventas &&
-                  ventas.map((venta) => (
-                    <TableRow key={venta.id}>
-                      <TableCell>#{venta.id}</TableCell>
-                      <TableCell>
-                        {venta.cliente ? venta.cliente.nombre : "CF"}
-                      </TableCell>
-                      <TableCell>{formatearFecha(venta.fechaVenta)}</TableCell>
-                      <TableCell>
-                        {new Intl.NumberFormat("es-GT", {
-                          style: "currency",
-                          currency: "GTQ",
-                        }).format(venta.totalVenta)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="icon">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className=" w-full justify-center items-center max-w-2xl">
-                              {" "}
-                              {/* Ajusta el ancho aquí */}
-                              <DetallesVenta venta={venta} />
-                            </DialogContent>
-                          </Dialog>
-
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => abrirPDF(venta.id)}
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                {currentItems.map((venta) => (
+                  <TableRow key={venta.id}>
+                    <TableCell>#{venta.id}</TableCell>
+                    <TableCell>
+                      {venta.cliente
+                        ? venta.cliente.nombre
+                        : venta.nombreClienteFinal
+                        ? venta.nombreClienteFinal
+                        : "CF"}
+                    </TableCell>
+                    <TableCell>{formatearFecha(venta.fechaVenta)}</TableCell>
+                    <TableCell>
+                      {new Intl.NumberFormat("es-GT", {
+                        style: "currency",
+                        currency: "GTQ",
+                      }).format(venta.totalVenta)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="icon">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="w-full justify-center items-center max-w-2xl">
+                            <DetallesVenta venta={venta} />
+                          </DialogContent>
+                        </Dialog>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => abrirPDF(venta.id)}
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </ScrollArea>
         </CardContent>
       </Card>
+      <div className="flex items-center justify-center py-4">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <Button onClick={() => onPageChange(1)}>Primero</Button>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </PaginationPrevious>
+            </PaginationItem>
+
+            {/* Sistema de truncado */}
+            {currentPage > 3 && (
+              <>
+                <PaginationItem>
+                  <PaginationLink onClick={() => onPageChange(1)}>
+                    1
+                  </PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="text-muted-foreground">...</span>
+                </PaginationItem>
+              </>
+            )}
+
+            {Array.from({ length: totalPages }, (_, index) => {
+              const page = index + 1;
+              if (
+                page === currentPage ||
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <PaginationItem key={index}>
+                    <PaginationLink
+                      onClick={() => onPageChange(page)}
+                      isActive={page === currentPage}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              }
+              return null;
+            })}
+
+            {currentPage < totalPages - 2 && (
+              <>
+                <PaginationItem>
+                  <span className="text-muted-foreground">...</span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink onClick={() => onPageChange(totalPages)}>
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              </>
+            )}
+
+            <PaginationItem>
+              <PaginationNext
+                onClick={() =>
+                  onPageChange(Math.min(totalPages, currentPage + 1))
+                }
+              >
+                <ChevronRight className="h-4 w-4" />
+              </PaginationNext>
+            </PaginationItem>
+            <PaginationItem>
+              <Button
+                variant={"destructive"}
+                onClick={() => onPageChange(totalPages)}
+              >
+                Último
+              </Button>
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
     </div>
   );
 }
-// export default ;

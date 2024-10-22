@@ -9,18 +9,16 @@ import {
   Package,
   Users,
   BarChart2,
-  Plus,
   Box,
-  Truck,
   RotateCw,
   AlertCircle,
   Layers,
   Clock,
   MailIcon,
   LogOut,
-  Badge,
-  TruckIcon,
   Building,
+  CircleUser,
+  NotebookIcon,
 } from "lucide-react";
 import {
   Dialog,
@@ -69,22 +67,17 @@ export default function Layout({ children }: LayoutProps) {
 
     { icon: Box, label: "Añadir Stock", href: "/adicion-stock" },
     { icon: Clock, label: "Historial de Ventas", href: "/historial/ventas" },
-    { icon: Badge, label: "Categorias", href: "/categorias" },
+    { icon: Layers, label: "Categorias", href: "/categorias" },
 
-    { icon: TruckIcon, label: "Proveedores", href: "/agregar-proveedor" },
+    { icon: CircleUser, label: "Proveedores", href: "/agregar-proveedor" },
     { icon: Building, label: "Sucursales", href: "/sucursal" },
+    { icon: Building, label: "Añadir Sucursal", href: "/add-sucursal" },
 
     { icon: Users, label: "Clientes", href: "/clientes" },
     { icon: BarChart2, label: "Reportes", href: "/reportes" },
-    { icon: Truck, label: "Proveedores", href: "/proveedores" },
-    { icon: Truck, label: "Entregas Stock", href: "/entregas-stock" },
+    { icon: NotebookIcon, label: "Entregas Stock", href: "/entregas-stock" },
     { icon: RotateCw, label: "Devoluciones", href: "/devoluciones" },
     { icon: AlertCircle, label: "Vencimientos", href: "/vencimientos" },
-    {
-      icon: Layers,
-      label: "Categorías de Productos",
-      href: "/categorias-de-productos",
-    },
     { icon: Bell, label: "Notificaciones", href: "/notificaciones" },
   ];
 
@@ -153,9 +146,9 @@ export default function Layout({ children }: LayoutProps) {
       {/* Top Navigation Bar */}
       <header className="bg-background shadow-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
             <button
-              className="mr-4 rounded-md bg-secondary p-2 text-secondary-foreground hover:bg-secondary-hover focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 lg:hidden"
+              className="rounded-md bg-secondary p-2 text-secondary-foreground hover:bg-secondary-hover focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 lg:hidden"
               onClick={toggleSideMenu}
             >
               {isSideMenuOpen ? (
@@ -164,12 +157,18 @@ export default function Layout({ children }: LayoutProps) {
                 <Menu className="h-6 w-6" />
               )}
             </button>
-            <div className="">
+            <div className="flex items-center space-x-2">
               <Link to={"/"}>
-                <img className="h-16 w-16" src={nv2} />
+                <img className="h-12 w-12" src={nv2} />
+              </Link>
+              <Link to={"/"}>
+                <h2 className="text-lg font-semibold">
+                  {sucursalInfo?.nombre}
+                </h2>
               </Link>
             </div>
           </div>
+
           <div className="flex items-center">
             <div className="flex justify-center items-center p-4">
               <ModeToggle />
@@ -258,9 +257,6 @@ export default function Layout({ children }: LayoutProps) {
       </footer>
 
       {/* Floating Action Button (FAB) for mobile */}
-      <button className="fixed bottom-4 right-4 rounded-full bg-primary p-4 text-primary-foreground shadow-lg transition-all hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 lg:hidden">
-        <Plus className="h-6 w-6" />
-      </button>
     </div>
   );
 }

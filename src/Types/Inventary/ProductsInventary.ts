@@ -38,3 +38,5 @@ type Producto = {
 };
 
 export type ProductsInventary = Producto;
+
+export type Producto2 = Producto;
