@@ -148,11 +148,11 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
               ? venta.metodoPago.metodoPago
               : "Sin método de pago"}
           </Text>
+          {/* {venta?.cliente?.direccion ?? venta?.direccionClienteFinal ?? null} */}
 
-          <Text style={styles.address}>
-            {/* {venta?.cliente?.direccion ?? venta?.direccionClienteFinal ?? null} */}
+          {/* <Text style={styles.address}>
             Encargado: Kandyy
-          </Text>
+          </Text> */}
         </View>
         <Text style={styles.addressTitle}>
           {venta?.fechaVenta
