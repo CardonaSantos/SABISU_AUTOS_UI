@@ -29,7 +29,15 @@ import {
 } from "@/components/ui/dialog";
 
 import { Badge } from "@/components/ui/badge";
-import { ArrowDownUp, Barcode, Download, Edit, Trash } from "lucide-react";
+import {
+  ArrowDownUp,
+  Barcode,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Edit,
+  Trash,
+} from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import axios from "axios";
 import { toast } from "sonner";
@@ -41,6 +49,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Link } from "react-router-dom";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 const API_URL = import.meta.env.VITE_API_URL;
 
 interface ProductCreate {
@@ -60,7 +76,7 @@ export default function Inventario() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [supplierFilter, setSupplierFilter] = useState<string>("");
-  const [stockFilter, setStockFilter] = useState<string>("");
+  const [stockFilter, setStockFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -183,10 +199,22 @@ export default function Inventario() {
   }, []);
 
   //FILTER =====>
+
+  console.log("Los productos del inventario son: ", productsInventary);
+  console.log("El producto a crear es: ", productCreate);
+  console.log("las categorias son: ", categorias);
+  console.log("Los proveedores son: ", proveedores);
+
+  // PAGINACIÓN
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Filtrar productos antes de la paginación
   const filteredProducts = productsInventary
     .filter((product) => {
       const hasStock = product.stock.length > 0;
-      const firstStock = hasStock ? product.stock[0] : null;
+      const firstStock = hasStock ? product.stock : null;
 
       // Filtrado por nombre de producto o código de producto
       const matchesSearchTerm =
@@ -197,20 +225,27 @@ export default function Inventario() {
       const matchesCategory =
         categoryFilter === "" ||
         (product.categorias.length > 0 &&
-          product.categorias[0].nombre === categoryFilter);
+          product.categorias.some((cat) => cat.nombre === categoryFilter));
 
       // Filtrado por proveedor
       const matchesSupplier =
         supplierFilter === "" ||
         (firstStock &&
-          firstStock.entregaStock?.proveedor?.nombre === supplierFilter);
+          firstStock.some(
+            (stock) =>
+              stock.entregaStock.proveedor.nombre.trim().toLocaleLowerCase() ===
+              supplierFilter.trim().toLocaleLowerCase()
+          ));
 
       // Filtrado por cantidad en stock
+      // Filtrado por cantidad en stock
       const matchesStockFilter =
-        stockFilter === "" ||
+        stockFilter === "all" || // Mostrar todos si se selecciona "all"
         (firstStock &&
-          ((stockFilter === "low" && firstStock.cantidad <= 10) ||
-            (stockFilter === "out" && firstStock.cantidad === 0)));
+          ((stockFilter === "low" &&
+            firstStock.some((stock) => stock.cantidad <= 10)) ||
+            (stockFilter === "out" &&
+              firstStock.some((stock) => stock.cantidad <= 0))));
 
       // Se filtra por el término de búsqueda y luego por los demás filtros
       return (
@@ -258,17 +293,30 @@ export default function Inventario() {
       return 0;
     });
 
+  // PAGINACIÓN
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+  // Calcular el índice del último elemento de la página actual
+  const indexOfLastItem = currentPage * itemsPerPage;
+  // Calcular el índice del primer elemento de la página actual
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  // Obtener los elementos de la página actual
+  const currentItems = filteredProducts.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+
+  // Cambiar de página
+  const onPageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   // Calcular el total del inventario
   const totalInventoryCount = filteredProducts.reduce((sum, product) => {
     const stockQuantity =
       product.stock.length > 0 ? product.stock[0].cantidad : 0;
     return sum + stockQuantity;
   }, 0);
-
-  console.log("Los productos del inventario son: ", productsInventary);
-  console.log("El producto a crear es: ", productCreate);
-  console.log("las categorias son: ", categorias);
-  console.log("Los proveedores son: ", proveedores);
 
   return (
     <div className="container mx-auto p-4">
@@ -527,7 +575,7 @@ export default function Inventario() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredProducts.map((product) => (
+            {currentItems.map((product) => (
               <TableRow key={product.id}>
                 <TableCell>{product.nombre}</TableCell>
                 <TableCell>
@@ -714,6 +762,87 @@ export default function Inventario() {
             ))}
           </TableBody>
         </Table>
+      </div>
+      <div className="flex items-center justify-center py-4">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <Button onClick={() => onPageChange(1)}>Primero</Button>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </PaginationPrevious>
+            </PaginationItem>
+
+            {/* Sistema de truncado */}
+            {currentPage > 3 && (
+              <>
+                <PaginationItem>
+                  <PaginationLink onClick={() => onPageChange(1)}>
+                    1
+                  </PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="text-muted-foreground">...</span>
+                </PaginationItem>
+              </>
+            )}
+
+            {Array.from({ length: totalPages }, (_, index) => {
+              const page = index + 1;
+              if (
+                page === currentPage ||
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <PaginationItem key={index}>
+                    <PaginationLink
+                      onClick={() => onPageChange(page)}
+                      isActive={page === currentPage}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              }
+              return null;
+            })}
+
+            {currentPage < totalPages - 2 && (
+              <>
+                <PaginationItem>
+                  <span className="text-muted-foreground">...</span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink onClick={() => onPageChange(totalPages)}>
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              </>
+            )}
+
+            <PaginationItem>
+              <PaginationNext
+                onClick={() =>
+                  onPageChange(Math.min(totalPages, currentPage + 1))
+                }
+              >
+                <ChevronRight className="h-4 w-4" />
+              </PaginationNext>
+            </PaginationItem>
+            <PaginationItem>
+              <Button
+                variant={"destructive"}
+                onClick={() => onPageChange(totalPages)}
+              >
+                Último
+              </Button>
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </div>
     </div>
   );

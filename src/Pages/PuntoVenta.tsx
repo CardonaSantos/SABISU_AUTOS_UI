@@ -250,7 +250,7 @@ export default function PuntoVenta() {
                     <TableHead>Nombre</TableHead>
                     <TableHead>Precio</TableHead>
                     <TableHead>Stock</TableHead>
-                    <TableHead>Expira</TableHead>
+                    {/* <TableHead>Expira</TableHead> */}
                     <TableHead>Acción</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -292,13 +292,13 @@ export default function PuntoVenta() {
                           </TableCell>
 
                           {/* Fecha de vencimiento (mostrar solo la primera fecha o más lógica si se necesita) */}
-                          <TableCell>
+                          {/* <TableCell>
                             {product.stock[0]?.fechaVencimiento
                               ? new Date(
                                   product.stock[0].fechaVencimiento
                                 ).toLocaleDateString("es-GT")
                               : "N/A"}
-                          </TableCell>
+                          </TableCell> */}
 
                           {/* Botón para añadir al carrito (solo un botón) */}
                           <TableCell>
@@ -476,7 +476,7 @@ export default function PuntoVenta() {
                       <Input
                         value={nombreClienteFinal}
                         onChange={(e) => setNombreClienteFinal(e.target.value)}
-                        placeholder="algún nombre..."
+                        placeholder="Referencia"
                       />
                     </div>
 
@@ -499,7 +499,7 @@ export default function PuntoVenta() {
                         onChange={(e) =>
                           setDireccionClienteFinal(e.target.value)
                         }
-                        placeholder="Jacaltenango, Huehuetenango, Cantón Parroquia Zona 2"
+                        placeholder=" C. Central Juan Pablo II, Jacaltenango Canton Pila"
                       />
                     </div>
                   </div>
