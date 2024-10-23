@@ -26,7 +26,6 @@ function Invoice() {
     } catch (error) {
       console.log("Error al conseguir el registro de venta");
       toast.error("Error al encontrar registro de venta");
-      setError("Error al cargar el registro de venta");
     }
   };
 
@@ -40,7 +39,6 @@ function Invoice() {
 
   const sucursalId = useStore((state) => state.sucursalId);
   const [sucursal, setSucursal] = useState<Sucursal>();
-  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     const getInfoSucursal = async () => {
       try {
@@ -51,7 +49,6 @@ function Invoice() {
       } catch (error) {
         console.log(error);
         toast.error("Error al conseguir datos de la sucursal");
-        setError("Error al cargar los datos de la sucursal");
       }
     };
 
@@ -64,16 +61,12 @@ function Invoice() {
 
   return (
     <div>
-      {error ? (
-        <p className="text-center font-extrabold text-xl text-red-500">
-          {error}
-        </p>
-      ) : venta && sucursal ? (
+      {venta && sucursal ? (
         <PDFViewer width="100%" height="600">
           <Factura venta={venta} sucursal={sucursal} />
         </PDFViewer>
       ) : (
-        <p className="text-center font-extrabold text-xl">Cargando PDF...</p>
+        <p className="text-center font-extrabold text-xl">Cargando PDF</p>
       )}
     </div>
   );
