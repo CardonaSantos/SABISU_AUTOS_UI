@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
+const API_URL = import.meta.env.VITE_API_URL;
 
 type Sucursal = {
   id: number;
@@ -54,26 +55,34 @@ type Sucursal = {
 };
 
 export default function Sucursales() {
-  const API_URL = import.meta.env.VITE_API_URL;
-
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [editingSucursal, setEditingSucursal] = useState<Sucursal | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  console.log(loading);
+
+  // Log para verificar la URL de la API
+  console.log("API_URL:", API_URL);
 
   const getSucursales = async () => {
-    setLoading(true); // Set loading state
+    setLoading(true);
+    console.log("Cargando sucursales...");
+
     try {
       const response = await axios.get(
         `${API_URL}/sucursales/info/sucursales-infor`
       );
+      console.log("Respuesta de la API:", response);
+
       if (response.status === 200) {
         setSucursales(response.data);
+        console.log("Sucursales cargadas:", response.data);
+      } else {
+        console.log("Error al recuperar sucursales. Status:", response.status);
       }
     } catch (error) {
+      console.error("Error en getSucursales:", error);
       toast.error("Error al recuperar sucursales");
     } finally {
-      setLoading(false); // Reset loading state
+      setLoading(false);
     }
   };
 
@@ -82,47 +91,66 @@ export default function Sucursales() {
   }, []);
 
   const handleEdit = async () => {
-    if (!editingSucursal) return; // Guard against null editingSucursal
+    if (!editingSucursal) {
+      console.log("No hay sucursal en edición");
+      return;
+    }
 
     const confirmEdit = window.confirm(
       "¿Estás seguro de que deseas guardar los cambios?"
     );
-    if (!confirmEdit) return; // Only proceed if confirmed
+    if (!confirmEdit) return;
+
+    console.log("Editando sucursal con datos:", editingSucursal);
 
     try {
       const response = await axios.patch(
         `${API_URL}/sucursales/editar-sucursal/${editingSucursal.id}`,
-        editingSucursal // Include data to update
+        editingSucursal
       );
+      console.log("Respuesta de edición:", response);
+
       if (response.status === 200) {
         toast.success("Sucursal Actualizada");
         getSucursales();
+      } else {
+        console.log(
+          "Error al actualizar la sucursal. Status:",
+          response.status
+        );
       }
     } catch (error) {
+      console.error("Error en handleEdit:", error);
       toast.error("Error al editar sucursal");
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (editingSucursal) {
-      setEditingSucursal({
+      const newSucursal = {
         ...editingSucursal,
         [e.target.name]: e.target.value,
-      });
+      };
+      setEditingSucursal(newSucursal);
+      console.log("Sucursal actualizada en edición:", newSucursal);
     }
   };
 
   const handleSelectChange = (value: string) => {
     if (editingSucursal) {
-      setEditingSucursal({
+      const newSucursal = {
         ...editingSucursal,
         tipoSucursal: value as "TIENDA" | "BODEGA",
-      });
+      };
+      setEditingSucursal(newSucursal);
+      console.log("Tipo de sucursal actualizado:", newSucursal);
     }
   };
 
   return (
     <div className="container mx-auto p-4">
+      {/* Renderiza un spinner o algún indicador de carga */}
+      {loading && <div>Cargando sucursales...</div>}
       <h1 className="text-2xl font-bold mb-4">Sucursales</h1>
 
       {/* Tabla para pantallas grandes */}
