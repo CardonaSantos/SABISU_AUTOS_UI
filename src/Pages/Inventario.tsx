@@ -241,11 +241,12 @@ export default function Inventario() {
       // Filtrado por cantidad en stock
       const matchesStockFilter =
         stockFilter === "all" || // Mostrar todos si se selecciona "all"
-        (firstStock &&
+        (product.stock.length === 0 && stockFilter === "out") || // Considerar productos sin stock como "fuera de stock"
+        (product.stock.length > 0 &&
           ((stockFilter === "low" &&
-            firstStock.some((stock) => stock.cantidad <= 10)) ||
+            product.stock.some((stock) => stock.cantidad <= 5)) ||
             (stockFilter === "out" &&
-              firstStock.some((stock) => stock.cantidad <= 0))));
+              product.stock.some((stock) => stock.cantidad === 0))));
 
       // Se filtra por el término de búsqueda y luego por los demás filtros
       return (
@@ -292,6 +293,15 @@ export default function Inventario() {
 
       return 0;
     });
+
+  const handleLimpiarFiltro = () => {
+    setSearchTerm("");
+    setSupplierFilter("");
+    setCategoryFilter("");
+    setStockFilter("all");
+    setSortBy("");
+    setSortOrder("asc");
+  };
 
   // PAGINACIÓN
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -529,7 +539,11 @@ export default function Inventario() {
           </Select>
 
           <div className="">
-            <Button variant={"destructive"} className="w-full md:w-[180px]">
+            <Button
+              onClick={handleLimpiarFiltro}
+              variant={"destructive"}
+              className="w-full md:w-[180px]"
+            >
               Limpiar filtro
             </Button>
           </div>
