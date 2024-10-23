@@ -7,13 +7,12 @@ import {
   Document,
   StyleSheet,
 } from "@react-pdf/renderer";
-import logo from "../../assets/LOGONOVA.jpg";
+import logo from "../../assets/nv2.png";
 import { VentaHistorialPDF } from "@/Types/PDF/VentaHistorialPDF";
 import dayjs from "dayjs";
 import "dayjs/locale/es"; // Importa el idioma español
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { Sucursal } from "@/Types/Sucursal/Sucursal_Info";
 
 dayjs.extend(localizedFormat);
 dayjs.extend(customParseFormat);
@@ -25,12 +24,9 @@ const formatearFecha = (fecha: string) => {
 
 interface VentaProps {
   venta: VentaHistorialPDF | undefined;
-  sucursal: Sucursal | undefined;
 }
 
-const Factura: React.FC<VentaProps> = ({ venta, sucursal }) => {
-  console.log("Los datos en el PDF: ", sucursal);
-
+const Factura: React.FC<VentaProps> = ({ venta }) => {
   const styles = StyleSheet.create({
     page: {
       fontSize: 11,
@@ -51,13 +47,13 @@ const Factura: React.FC<VentaProps> = ({ venta, sucursal }) => {
 
     titleContainer: { flexDirection: "row", marginTop: 24 },
 
-    logo: { width: 100 },
+    logo: { width: 70 },
 
     reportTitle: { fontSize: 16, textAlign: "center" },
 
     addressTitle: { fontSize: 11, fontWeight: "bold" },
 
-    invoice: { fontWeight: "bold", fontSize: 13 },
+    invoice: { fontWeight: "bold", fontSize: 15 },
 
     invoiceNumber: { fontSize: 11, fontWeight: "bold" },
 
@@ -113,20 +109,17 @@ const Factura: React.FC<VentaProps> = ({ venta, sucursal }) => {
     <View style={styles.titleContainer}>
       <View style={styles.spaceBetween}>
         <View>
-          <Text style={styles.invoice}>Nova Sistemas S.A.</Text>
+          <Text style={styles.invoice}>Nova Sistemas</Text>
           <Text style={styles.invoiceNumber}>
             Factura número: #{venta?.id ? venta.id : "No disponible"}
           </Text>
         </View>
         <View>
           <Text style={styles.addressTitle}>
-            Sucursal:{" "}
-            {sucursal?.direccion ? sucursal?.direccion : "No disponible"}
+            {" "}
+            Sucursal: C. Central Juan Pablo II, Jacaltenango
           </Text>
-          <Text style={styles.addressTitle}>
-            Teléfono: {sucursal?.telefono ? sucursal?.telefono : "3045 3676"}
-          </Text>
-          <Text style={styles.addressTitle}>PBX: 22968040</Text>
+          <Text style={styles.addressTitle}>Teléfono: +502 5375 2853</Text>
         </View>
       </View>
     </View>
@@ -136,7 +129,7 @@ const Factura: React.FC<VentaProps> = ({ venta, sucursal }) => {
     <View style={styles.titleContainer}>
       <View style={styles.spaceBetween}>
         <View style={{ maxWidth: 200 }}>
-          <Text style={styles.address}>Factura a</Text>
+          <Text style={styles.addressTitle}>Factura a</Text>
           <Text style={styles.address}>
             {venta?.cliente?.nombre || venta?.nombreClienteFinal || "CF"}
           </Text>
