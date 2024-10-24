@@ -7,7 +7,7 @@ import {
   Document,
   StyleSheet,
 } from "@react-pdf/renderer";
-import logo from "../../assets/nv2.png";
+import logo from "../../assets/LOGONOVA.jpg";
 import { VentaHistorialPDF } from "@/Types/PDF/VentaHistorialPDF";
 import dayjs from "dayjs";
 import "dayjs/locale/es"; // Importa el idioma español
@@ -47,13 +47,13 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
 
     titleContainer: { flexDirection: "row", marginTop: 24 },
 
-    logo: { width: 70 },
+    logo: { width: 110 },
 
     reportTitle: { fontSize: 16, textAlign: "center" },
 
     addressTitle: { fontSize: 11, fontWeight: "bold" },
 
-    invoice: { fontWeight: "bold", fontSize: 15 },
+    invoice: { fontWeight: "bold", fontSize: 13 },
 
     invoiceNumber: { fontSize: 11, fontWeight: "bold" },
 
@@ -109,17 +109,19 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
     <View style={styles.titleContainer}>
       <View style={styles.spaceBetween}>
         <View>
-          <Text style={styles.invoice}>Nova Sistemas</Text>
+          <Text style={styles.invoice}>Nova Sistemas S.A.</Text>
           <Text style={styles.invoiceNumber}>
             Factura número: #{venta?.id ? venta.id : "No disponible"}
           </Text>
         </View>
         <View>
-          <Text style={styles.addressTitle}>
-            {" "}
+          {/* <Text style={styles.addressTitle}>
             Sucursal: C. Central Juan Pablo II, Jacaltenango
+          </Text> */}
+          <Text style={styles.addressTitle}>
+            Teléfono: 5375-2853 / 3750-9695
           </Text>
-          <Text style={styles.addressTitle}>Teléfono: +502 5375 2853</Text>
+          <Text style={styles.addressTitle}>PBX: 22968040</Text>
         </View>
       </View>
     </View>
