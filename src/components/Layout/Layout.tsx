@@ -19,6 +19,8 @@ import {
   Building,
   CircleUser,
   NotebookIcon,
+  SendToBackIcon,
+  NotepadText,
 } from "lucide-react";
 import {
   Dialog,
@@ -72,6 +74,18 @@ export default function Layout({ children }: LayoutProps) {
     { icon: CircleUser, label: "Proveedores", href: "/agregar-proveedor" },
     { icon: Building, label: "Sucursales", href: "/sucursal" },
     { icon: Building, label: "Añadir Sucursal", href: "/add-sucursal" },
+
+    {
+      icon: SendToBackIcon,
+      label: "Transferir Productos",
+      href: "/transferencia",
+    },
+
+    {
+      icon: NotepadText,
+      label: "Transferencia Historial",
+      href: "/transferencia-historial",
+    },
 
     { icon: Users, label: "Clientes", href: "/clientes" },
     { icon: BarChart2, label: "Reportes", href: "/reportes" },

@@ -73,6 +73,8 @@ export default function Stock() {
   const usuarioNombre = useStore((state) => state.userNombre);
   console.log("Lo que vamos a enviar es: ", stockEntries);
 
+  console.log("El id del user logueado es: ", recibidoPorId);
+
   const calculateTotalCost = (
     cantidad: number,
     precioCosto: number

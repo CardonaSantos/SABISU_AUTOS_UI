@@ -30,6 +30,8 @@ import CreateCategory from "./Pages/Category/CreateCategory";
 import CreateSucursal from "./Pages/Sucursal/CreateSucursal";
 import ProductEditForm from "./Pages/Edit/EditProduct";
 import Sucursales from "./Pages/Sucursal/Sucursales";
+import TransferenciaProductos from "./Pages/Transferencia/TransferenciaProductos";
+import TransferenciaProductosHistorial from "./Pages/Transferencia/TransferenciaHistorial";
 
 function App() {
   return (
@@ -235,6 +237,24 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Sucursales />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/transferencia"
+              element={
+                <ProtectedRoute>
+                  <TransferenciaProductos />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/transferencia-historial"
+              element={
+                <ProtectedRoute>
+                  <TransferenciaProductosHistorial />
                 </ProtectedRoute>
               }
             />
