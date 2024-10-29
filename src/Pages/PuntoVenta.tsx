@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -22,6 +24,7 @@ import {
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -30,6 +33,7 @@ import { Barcode, CirclePlus, User2Icon, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -44,28 +48,50 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+
+import SelectM from "react-select"; // Importación correcta de react-select
+import { useNavigate } from "react-router-dom";
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 // Mock data for products and customers
 // Define interfaces for Product, Customer, and CartItem
-interface Product {
-  id: number;
-  name: string;
-  category: string;
-  price: number;
-  stock: number;
-  expiry: string;
-  codigo: string;
-}
 
 interface Customer {
   id: number;
   name: string;
 }
 
-interface CartItem extends Product {
-  quantity: number;
+//========================================>
+type Stock = {
+  id: number;
+  cantidad: number;
+  fechaIngreso: string;
+  fechaVencimiento: string;
+};
+
+type Precios = {
+  id: number;
+  precio: number;
+};
+
+type Producto = {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  precioVenta?: number; // Este campo no lo veo en el objeto, pero lo mencionas en el botón
+  codigoProducto: string;
+  creadoEn: string;
+  actualizadoEn: string;
+  stock: Stock[];
+  precios: Precios[];
+};
+interface CartItem extends Producto {
+  quantity: number; // Cantidad del producto en el carrito
+  selectedPriceId: number; // ID del precio seleccionado
+  selectedPrice: number; // Precio para mostrar en el resumen
 }
+
 // Mock data for products and customers
 
 const customers: Customer[] = [
@@ -75,6 +101,8 @@ const customers: Customer[] = [
 ];
 
 export default function PuntoVenta() {
+  const navigate = useNavigate();
+
   const userId = useStore((state) => state.userId);
   console.log("El id del user en el punto venta es: ", userId);
 
@@ -90,8 +118,9 @@ export default function PuntoVenta() {
 
   console.log("El cart a enviar es: ", cart);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Producto) => {
     const existingItem = cart.find((item) => item.id === product.id);
+
     if (existingItem) {
       setCart(
         cart.map((item) =>
@@ -101,7 +130,17 @@ export default function PuntoVenta() {
         )
       );
     } else {
-      setCart([...cart, { ...product, quantity: 1 }]);
+      const initialPriceId = product.precios[0]?.id; // Guardar solo el ID del primer precio
+      const initialPrice = product.precios[0]?.precio || 0; // Precio para mostrar en el resumen
+
+      const newCartItem: CartItem = {
+        ...product,
+        quantity: 1,
+        selectedPriceId: initialPriceId, // Cambiar a ID del precio
+        selectedPrice: initialPrice, // Mantener el precio para mostrar
+      };
+
+      setCart([...cart, newCartItem]);
     }
   };
 
@@ -118,7 +157,10 @@ export default function PuntoVenta() {
   };
 
   const calculateTotal = (): number => {
-    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    return cart.reduce(
+      (total, item) => total + item.selectedPrice * item.quantity,
+      0
+    );
   };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,41 +168,40 @@ export default function PuntoVenta() {
   };
 
   const handleCompleteSale = async () => {
-    let x = {
-      clienteId: null, // Removí el signo de interrogación
+    const saleData = {
+      sucursalId: sucursalId,
+
+      clienteId: null, // Aquí puedes agregar el cliente si corresponde
       productos: cart.map((prod) => ({
         productoId: prod.id,
         cantidad: prod.quantity,
+        selectedPriceId: prod.selectedPriceId, // Enviando solo el ID del precio
       })),
-      metodoPago: paymentMethod || "CONTADO", // Removí el punto y coma
-      monto: cart.reduce((acc, prod) => acc + prod.price * prod.quantity, 0), // Removí el punto y coma
+      metodoPago: paymentMethod || "CONTADO",
+      monto: cart.reduce(
+        (acc, prod) => acc + prod.selectedPrice * prod.quantity,
+        0
+      ),
+      nombreClienteFinal: nombreClienteFinal.trim(),
+      telefonoClienteFinal: telefonoClienteFinal.trim(),
+      direccionClienteFinal: direccionClienteFinal.trim(),
     };
 
-    console.log("El cart es: ", x);
+    console.log("El cart es: ", saleData);
 
     try {
-      const response = await axios.post(`${API_URL}/venta`, {
-        clienteId: null, // Removí el signo de interrogación
-        productos: cart.map((prod) => ({
-          productoId: prod.id,
-          cantidad: prod.quantity,
-        })),
-        metodoPago: paymentMethod || "CONTADO",
-        monto: cart.reduce((acc, prod) => acc + prod.price * prod.quantity, 0),
-        sucursalId: sucursalId,
-        nombreClienteFinal: nombreClienteFinal.trim(),
-        telefonoClienteFinal: telefonoClienteFinal.trim(),
-        direccionClienteFinal: direccionClienteFinal.trim(),
-      });
+      const response = await axios.post(`${API_URL}/venta`, saleData);
 
       if (response.status === 201) {
         toast.success("Venta completada con éxito");
         setIsDialogOpen(false);
-        // Reiniciar valores después de completar la venta
-        setSelectedCustomer(null);
-        setPaymentMethod("CONTADO");
-        setCart([]);
-        getProducts();
+        setCart([]); // Reiniciar el carrito
+        getProducts(); // Obtener productos actualizados
+        setTimeout(() => {
+          // window.location.href = "/historial/ventas";
+          // navigate
+          navigate("/historial/ventas");
+        }, 1000);
       } else {
         toast.error("Error al completar la venta");
       }
@@ -171,10 +212,6 @@ export default function PuntoVenta() {
   };
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  // const handleOpenDialogCompletar = () => {
-  //   setIsDialogOpen(true);
-  // };
 
   const [productos, setProductos] = useState<ProductosResponse[]>([]);
 
@@ -218,6 +255,62 @@ export default function PuntoVenta() {
     telefonoClienteFinal,
     direccionClienteFinal,
   });
+
+  const updatePrice = (productId: number, newPrice: number) => {
+    setCart((prevCart) =>
+      prevCart.map((item) =>
+        item.id === productId
+          ? {
+              ...item,
+              selectedPrice: newPrice, // Actualizamos el precio seleccionado
+              selectedPriceId:
+                item.precios.find((price) => price.precio === newPrice)?.id ||
+                item.selectedPriceId, // Actualiza el ID del precio seleccionado
+            }
+          : item
+      )
+    );
+  };
+
+  console.log("El cart a enviar es: ", cart);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(
+    null
+  );
+  const [precioReques, setPrecioRequest] = useState<number | null>(null);
+  const [openReques, setOpenRequest] = useState(false);
+
+  //==================================>
+  async function handleMakeRequest() {
+    if (precioReques && precioReques <= 0) {
+      toast.info("La cantidad a solicitar no debe ser negativa");
+      return;
+    }
+
+    if (!selectedProductId) {
+      toast.info("Debe seleccionar un producto primero");
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${API_URL}/price-request`, {
+        productoId: Number(selectedProductId),
+        precioSolicitado: precioReques,
+        solicitadoPorId: userId,
+      });
+      if (response.status === 201) {
+        toast.success(
+          "Solicitud enviada, esperando respuesta del administrado"
+        );
+        setPrecioRequest(null);
+        setSelectedProductId("");
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Algo salió mal");
+    }
+  }
+
+  console.log("El cart a enviar es: ", cart);
 
   return (
     <div className="container  ">
@@ -265,10 +358,14 @@ export default function PuntoVenta() {
                       {/* Precio del producto */}
                       <TableCell>
                         <p style={{ fontSize: "13px" }}>
-                          {new Intl.NumberFormat("es-GT", {
-                            style: "currency",
-                            currency: "GTQ",
-                          }).format(product.precioVenta)}
+                          {product.precios
+                            .map((precio) =>
+                              new Intl.NumberFormat("es-GT", {
+                                style: "currency",
+                                currency: "GTQ",
+                              }).format(Number(precio.precio))
+                            )
+                            .join(", ")}
                         </p>
                       </TableCell>
 
@@ -291,38 +388,24 @@ export default function PuntoVenta() {
                             )}
                           </TableCell>
 
-                          {/* Fecha de vencimiento (mostrar solo la primera fecha o más lógica si se necesita) */}
-                          {/* <TableCell>
-                            {product.stock[0]?.fechaVencimiento
-                              ? new Date(
-                                  product.stock[0].fechaVencimiento
-                                ).toLocaleDateString("es-GT")
-                              : "N/A"}
-                          </TableCell> */}
-
                           {/* Botón para añadir al carrito (solo un botón) */}
                           <TableCell>
                             <Button
-                              onClick={() =>
-                                addToCart({
-                                  category: "categoria",
-                                  codigo: product.codigoProducto,
-                                  expiry: product.stock[0]?.fechaVencimiento,
-                                  name: product.nombre,
-                                  price: product.precioVenta,
-                                  stock: product.stock.reduce(
-                                    (total, stocks) => total + stocks.cantidad,
-                                    0
-                                  ), // Cantidad total
-                                  id: product.id,
-                                })
+                              onClick={
+                                () =>
+                                  addToCart({
+                                    ...product, // Incluye todas las propiedades del producto
+                                    selectedPrice:
+                                      product.precios[0]?.precio || 0, // Asigna el primer precio de la lista como el precio seleccionado inicialmente
+                                    quantity: 1, // Añade el producto con cantidad inicial de 1
+                                  } as CartItem) // Castea explícitamente como CartItem
                               }
                               disabled={
                                 product.stock.reduce(
                                   (total, stocks) => total + stocks.cantidad,
                                   0
                                 ) === 0
-                              } // Deshabilitar si no hay stock
+                              } // Deshabilita si no hay stock disponible
                             >
                               <CirclePlus />
                             </Button>
@@ -361,7 +444,7 @@ export default function PuntoVenta() {
                 <TableBody>
                   {cart.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell>{item.name}</TableCell>
+                      <TableCell>{item.nombre}</TableCell>
                       <TableCell>
                         <Input
                           type="number"
@@ -370,20 +453,57 @@ export default function PuntoVenta() {
                             updateQuantity(item.id, parseInt(e.target.value))
                           }
                           min="1"
-                          max={item.stock}
+                          max={item.stock.reduce(
+                            (total, stock) => total + stock.cantidad,
+                            0
+                          )}
                         />
                       </TableCell>
                       <TableCell>
-                        {new Intl.NumberFormat("es-GT", {
-                          style: "currency",
-                          currency: "GTQ",
-                        }).format(item.price)}
+                        <Select
+                          value={item.selectedPriceId.toString()} // Mostrar el ID del precio seleccionado
+                          onValueChange={(newPriceId) => {
+                            const selectedPrice = item.precios.find(
+                              (price) => price.id === parseInt(newPriceId)
+                            );
+                            if (selectedPrice) {
+                              updatePrice(item.id, selectedPrice.precio); // Llama a la función para actualizar con el nuevo precio
+                            }
+                          }} // Actualizar cuando se selecciona un nuevo precio
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={`GTQ ${item.selectedPrice}`}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectLabel>Precios disponibles</SelectLabel>
+                              {item.precios
+                                .filter((prec) => prec.precio > 0)
+                                .map((precio) => (
+                                  <SelectItem
+                                    key={precio.id}
+                                    value={precio.id.toString()} // Ahora el ID como valor
+                                  >
+                                    {new Intl.NumberFormat("es-GT", {
+                                      style: "currency",
+                                      currency: "GTQ",
+                                    }).format(precio.precio)}
+                                  </SelectItem>
+                                ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
                       </TableCell>
+
                       <TableCell>
-                        {new Intl.NumberFormat("es-GT", {
-                          style: "currency",
-                          currency: "GTQ",
-                        }).format(item.price * item.quantity)}
+                        <p className="font-semibold">
+                          {new Intl.NumberFormat("es-GT", {
+                            style: "currency",
+                            currency: "GTQ",
+                          }).format(item.selectedPrice * item.quantity)}
+                        </p>
                       </TableCell>
                       <TableCell>
                         <Button
@@ -585,6 +705,99 @@ export default function PuntoVenta() {
             </CardContent>
           </Card>
         </div>
+      </div>
+      <div className="mt-8">
+        <Card className="shadow-xl">
+          <CardHeader>
+            <CardTitle>Petición de precio especial</CardTitle>
+            <CardDescription>
+              Al solicitar un precio especial, esa instancia solo se podrá usar
+              en una venta
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <Label>Producto</Label>
+
+                <SelectM
+                  placeholder="Seleccionar producto"
+                  options={productos.map((product) => ({
+                    value: product.id.toString(),
+                    label: `${product.nombre} (${product.codigoProducto})`,
+                  }))}
+                  className="basic-select text-black"
+                  classNamePrefix="select"
+                  onChange={(selectedOption) => {
+                    if (selectedOption) {
+                      setSelectedProductId(selectedOption.value); // Almacena solo el ID
+                    }
+                  }}
+                  value={
+                    selectedProductId
+                      ? {
+                          value: selectedProductId,
+                          label: `${
+                            productos.find(
+                              (product) =>
+                                product.id.toString() === selectedProductId
+                            )?.nombre
+                          } (${
+                            productos.find(
+                              (product) =>
+                                product.id.toString() === selectedProductId
+                            )?.codigoProducto
+                          })`,
+                        }
+                      : null // Select vacío si no hay selección
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Precio Requerido</Label>
+                <Input
+                  onChange={(e) => setPrecioRequest(Number(e.target.value))}
+                  placeholder="100"
+                  type="number"
+                ></Input>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => setOpenRequest(true)}
+              className="my-10 w-full"
+              variant={"default"}
+            >
+              Solicitar precio especial
+            </Button>
+
+            <Dialog open={openReques} onOpenChange={setOpenRequest}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="text-center">
+                    Solicitar precio especial
+                  </DialogTitle>
+                  <DialogDescription className="text-center">
+                    Esta instancia solo se podrá aplicar a una venta
+                  </DialogDescription>
+                  <DialogDescription className="text-center">
+                    ¿Continuar?
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    disabled={!precioReques && !selectedProductId}
+                    variant={"default"}
+                    className="w-full"
+                    onClick={() => handleMakeRequest()}
+                  >
+                    Solicitar
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

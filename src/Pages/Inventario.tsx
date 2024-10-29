@@ -57,6 +57,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { useStore } from "@/components/Context/ContextSucursal";
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 interface ProductCreate {
@@ -64,7 +66,8 @@ interface ProductCreate {
   descripcion: string;
   categorias: number[];
   codigoProducto: string;
-  precioVenta: number;
+  precioVenta: number[];
+  creadoPorId: number | null;
 }
 
 interface Categorias {
@@ -79,6 +82,7 @@ export default function Inventario() {
   const [stockFilter, setStockFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const usaruiId = useStore((state) => state.userId);
 
   const handleSort = (column: string) => {
     if (sortBy === column) {
@@ -115,7 +119,8 @@ export default function Inventario() {
           categorias: [],
           descripcion: "",
           nombre: "",
-          precioVenta: 0,
+          precioVenta: [],
+          creadoPorId: usaruiId,
         });
         getProductosInventario();
       }
@@ -141,7 +146,8 @@ export default function Inventario() {
     categorias: [],
     descripcion: "",
     nombre: "",
-    precioVenta: 0,
+    precioVenta: [],
+    creadoPorId: usaruiId,
   });
 
   useEffect(() => {
@@ -204,6 +210,7 @@ export default function Inventario() {
   console.log("El producto a crear es: ", productCreate);
   console.log("las categorias son: ", categorias);
   console.log("Los proveedores son: ", proveedores);
+  console.log("Los precios de venta son: ", productCreate.precioVenta);
 
   // PAGINACIÓN
 
@@ -327,6 +334,18 @@ export default function Inventario() {
       product.stock.length > 0 ? product.stock[0].cantidad : 0;
     return sum + stockQuantity;
   }, 0);
+
+  // Function to handle changes in each input dynamically
+  const handlePriceChange = (index: number, value: string) => {
+    const updatedPrecios = [...productCreate.precioVenta]; // Create a copy of the existing array
+    updatedPrecios[index] = Number(value); // Update the price at the specific index
+    setProductCreate({
+      ...productCreate,
+      precioVenta: updatedPrecios, // Update the state with the modified array
+    });
+  };
+
+  console.log("El producto creando es: ", productCreate);
 
   return (
     <div className="container mx-auto p-4">
@@ -454,20 +473,50 @@ export default function Inventario() {
                       />
                     </div>
 
+                    {/* Input for Price 1 */}
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="price" className="text-right">
-                        Precio Venta
+                      <Label htmlFor="price1" className="text-right">
+                        Precio Venta 1
                       </Label>
                       <Input
-                        value={productCreate.precioVenta}
-                        onChange={(e) =>
-                          setProductCreate({
-                            ...productCreate,
-                            precioVenta: Number(e.target.value),
-                          })
-                        }
-                        id="price"
-                        name="price"
+                        value={productCreate.precioVenta[0] || ""} // If no value exists, show empty string
+                        onChange={(e) => handlePriceChange(0, e.target.value)} // Update the first price
+                        id="price1"
+                        name="price1"
+                        type="number"
+                        step="0.5"
+                        placeholder="Precio del producto"
+                        className="col-span-3"
+                      />
+                    </div>
+
+                    {/* Input for Price 2 */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="price2" className="text-right">
+                        Precio Venta 2
+                      </Label>
+                      <Input
+                        value={productCreate.precioVenta[1] || ""} // If no value exists, show empty string
+                        onChange={(e) => handlePriceChange(1, e.target.value)} // Update the second price
+                        id="price2"
+                        name="price2"
+                        type="number"
+                        step="0.5"
+                        placeholder="Precio del producto"
+                        className="col-span-3"
+                      />
+                    </div>
+
+                    {/* Input for Price 3 */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="price3" className="text-right">
+                        Precio Venta 3
+                      </Label>
+                      <Input
+                        value={productCreate.precioVenta[2] || ""} // If no value exists, show empty string
+                        onChange={(e) => handlePriceChange(2, e.target.value)} // Update the third price
+                        id="price3"
+                        name="price3"
                         type="number"
                         step="0.5"
                         placeholder="Precio del producto"
@@ -613,11 +662,16 @@ export default function Inventario() {
                 </TableCell>
 
                 <TableCell>
-                  {new Intl.NumberFormat("es-GT", {
-                    style: "currency",
-                    currency: "GTQ",
-                  }).format(product.precioVenta)}
+                  {product.precios
+                    .map((precio) =>
+                      new Intl.NumberFormat("es-GT", {
+                        style: "currency",
+                        currency: "GTQ",
+                      }).format(Number(precio.precio))
+                    )
+                    .join(", ")}
                 </TableCell>
+
                 <TableCell>
                   {product.stock.length === 0 ? (
                     <Badge className="ml-2 bg-orange-500 text-white">

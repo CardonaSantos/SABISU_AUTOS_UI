@@ -22,6 +22,7 @@ export interface ProductoVenta {
   cantidad: number;
   creadoEn: string; // Formato ISO string
   producto: ProductoInfo;
+  precioVenta: number;
 }
 
 export interface Cliente {

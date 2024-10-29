@@ -5,6 +5,11 @@ type Stock = {
   fechaVencimiento: string; // En formato ISO
 };
 
+export type Precios = {
+  id: number;
+  precio: number;
+};
+
 type Producto = {
   id: number;
   nombre: string;
@@ -14,6 +19,7 @@ type Producto = {
   creadoEn: string; // En formato ISO
   actualizadoEn: string; // En formato ISO
   stock: Stock[];
+  precios: Precios[];
 };
 
 export type ProductosResponse = Producto;

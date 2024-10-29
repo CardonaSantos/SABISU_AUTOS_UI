@@ -67,7 +67,8 @@ interface TransferenciaData {
   cantidad: number;
   sucursalOrigenId: number;
   sucursalDestinoId: number;
-  usuarioEncargadoId: number | null;
+  // usuarioEncargadoId: number | null;
+  usuarioSolicitanteId: number | null;
 }
 
 export default function TransferenciaProductos() {
@@ -110,12 +111,16 @@ export default function TransferenciaProductos() {
         cantidad,
         sucursalOrigenId: sucursalOrigen.sucursalId,
         sucursalDestinoId: selectedSucursalDestino.id,
-        usuarioEncargadoId: encargadoId, // ID de usuario fijo para este ejemplo
+        usuarioSolicitanteId: encargadoId, // ID de usuario fijo para este ejemplo
       };
-
       // Realiza la solicitud de transferencia
+      // const response = await axios.post(
+      //   `${API_URL}/transferencia-producto/`,
+      //   transferenciaData
+      // );
+
       const response = await axios.post(
-        `${API_URL}/transferencia-producto/`,
+        `${API_URL}/solicitud-transferencia-producto`,
         transferenciaData
       );
 
@@ -202,7 +207,7 @@ export default function TransferenciaProductos() {
   console.log("EL id seleccionado es: ", selectedProduct);
 
   return (
-    <div className="container mx-auto p-4 max-w-md">
+    <div className="container mx-auto p-4 max-w-2xl">
       <h1 className="text-2xl font-bold mb-4 text-center">
         Transferencia de Productos
       </h1>

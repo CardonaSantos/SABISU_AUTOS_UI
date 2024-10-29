@@ -11,7 +11,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +56,11 @@ type StockEntry = {
   precioCosto: number;
   proveedorId: number;
 };
+
+interface GroupedStock {
+  nombre: string; // Name of the branch
+  cantidad: number; // Total quantity of stock
+}
 
 export default function Stock() {
   const [cantidad, setCantidad] = useState<string>("");
@@ -137,9 +148,20 @@ export default function Stock() {
         return;
       }
 
+      if (newEntry.cantidad <= 0 || newEntry.precioCosto <= 0) {
+        toast.warning("No se permiten valores negativo o menores a cero");
+        return;
+      }
+
+      if (isNaN(newEntry.cantidad) || isNaN(newEntry.precioCosto)) {
+        // Manejar el caso donde los valores no son números válidos
+        console.error("Valores no numéricos ingresados.");
+        return;
+      }
       setStockEntries([...stockEntries, newEntry]);
       resetForm();
       toast.success("Producto añadido");
+      setProductToShow(null);
     }
   };
 
@@ -226,6 +248,25 @@ export default function Stock() {
     ProductsInventary[]
   >([]);
 
+  interface SucursalProductSelect {
+    id: number;
+    nombre: string;
+  }
+
+  interface StockProductoSelect {
+    cantidad: number;
+    id: number;
+    sucursal: SucursalProductSelect;
+  }
+  interface ProductoSelect {
+    id: number;
+    nombreProducto: string;
+    stock: StockProductoSelect[];
+  }
+  const [productToShow, setProductToShow] = useState<ProductoSelect | null>(
+    null
+  );
+
   const getProducts = async () => {
     try {
       const response = await axios.get(
@@ -233,6 +274,7 @@ export default function Stock() {
       );
       if (response.status === 200) {
         setProductsInventary(response.data);
+        console.log("la data es: ", response.data);
       }
     } catch (error) {
       console.log(error);
@@ -260,6 +302,9 @@ export default function Stock() {
     (total, producto) => total + producto.cantidad * producto.precioCosto,
     0
   );
+  console.log("Productos son: ", productsInventary);
+
+  console.log("El producto seleccionado es: ", productToShow);
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-xl">
@@ -309,13 +354,34 @@ export default function Stock() {
                     value: product.id.toString(),
                     label: `${product.nombre} (${product.codigoProducto})`,
                   }))}
-                  className="basic-select text-black "
+                  className="basic-select text-black"
                   classNamePrefix="select"
                   onChange={(selectedOption) => {
                     if (selectedOption) {
                       setSelectedProductId(selectedOption.value.toString());
+                      const selectedProduct = productsInventary.find(
+                        (product) =>
+                          product.id.toString() ===
+                          selectedOption.value.toString()
+                      );
+
+                      if (selectedProduct) {
+                        setProductToShow({
+                          id: selectedProduct.id,
+                          nombreProducto: selectedProduct.nombre,
+                          stock: selectedProduct.stock.map((s) => ({
+                            cantidad: s.cantidad,
+                            id: s.id,
+                            sucursal: {
+                              id: s.sucursal.id,
+                              nombre: s.sucursal.nombre,
+                            },
+                          })),
+                        });
+                      }
                     } else {
-                      setSelectedProductId(""); // Resetea el valor si no hay selección
+                      setSelectedProductId("");
+                      setProductToShow(null); // Resetea el valor si no hay selección
                     }
                   }}
                   value={
@@ -332,7 +398,6 @@ export default function Stock() {
                       : null // Si no hay valor seleccionado, el select queda vacío
                   }
                 />
-
                 {errors.product && (
                   <p className="text-sm text-red-500">{errors.product}</p>
                 )}
@@ -431,6 +496,46 @@ export default function Stock() {
                 <p className="text-sm text-red-500">
                   {errors.fechaVencimiento}
                 </p>
+              )}
+            </div>
+            <div className="space-y-2 block">
+              {productToShow && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-md">
+                      Stocks disponibles
+                    </CardTitle>
+                    <CardDescription>Existencias disponibles</CardDescription>
+                    <CardContent>
+                      <div className="mt-4">
+                        {Object.entries(
+                          productToShow.stock.reduce<
+                            Record<string, GroupedStock>
+                          >((acc, stock) => {
+                            // Group by sucursal name and sum quantities
+                            const sucursalName = stock.sucursal.nombre;
+                            if (!acc[sucursalName]) {
+                              acc[sucursalName] = {
+                                nombre: sucursalName,
+                                cantidad: 0,
+                              };
+                            }
+                            acc[sucursalName].cantidad += stock.cantidad;
+                            return acc;
+                          }, {})
+                        ).map(([sucursalName, { cantidad }]) => (
+                          <div
+                            key={sucursalName}
+                            className="flex justify-between"
+                          >
+                            <span className="text-sm">{sucursalName}</span>
+                            <span className="text-sm">{cantidad} uds</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </CardHeader>
+                </Card>
               )}
             </div>
           </div>

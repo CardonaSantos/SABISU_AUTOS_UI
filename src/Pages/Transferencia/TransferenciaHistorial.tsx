@@ -1,17 +1,38 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ArrowRightIcon,
-  PackageIcon,
   UserIcon,
-  BuildingIcon,
+  Eye,
+  Building,
+  BoxIcon,
+  ClockIcon,
+  BringToFront,
 } from "lucide-react";
 import axios from "axios";
 import { useStore } from "@/components/Context/ContextSucursal";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import localizedFormat from "dayjs/plugin/localizedFormat";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import dayjs from "dayjs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 const API_URL = import.meta.env.VITE_API_URL;
 
 interface Producto {
@@ -53,6 +74,7 @@ interface Transferencia {
   producto: Producto;
   usuarioEncargado: Usuario;
   sucursalDestino: Sucursal;
+  sucursalOrigen: Sucursal;
 }
 
 export default function TransferenciaProductosHistorial() {
@@ -60,6 +82,15 @@ export default function TransferenciaProductosHistorial() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const sucursalId = useStore((state) => state.sucursalId);
+  console.log("Las transferencias de sucursales son:", transferencias);
+
+  dayjs.extend(localizedFormat);
+  dayjs.extend(customParseFormat);
+  dayjs.locale("es");
+  const formatearFecha = (fecha: string) => {
+    let nueva_fecha = dayjs(fecha).format("DD MMMM YYYY, hh:mm:ss A");
+    return nueva_fecha;
+  };
 
   useEffect(() => {
     const fetchTransferencias = async () => {
@@ -107,63 +138,152 @@ export default function TransferenciaProductosHistorial() {
     );
   }
 
+  const InfoItem = ({
+    icon,
+    label,
+    value,
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    value?: string;
+  }) => (
+    <div className="flex items-start space-x-3 p-2">
+      <div className="flex-shrink-0 text-primary">{icon}</div>
+      <div>
+        <p className="font-medium text-sm text-muted-foreground">{label}</p>
+        <p className="text-sm">{value || "No especificado"}</p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Transferencias de Productos</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {transferencias.map((transferencia) => (
-          <Card key={transferencia.id} className="overflow-hidden">
-            <CardHeader className="bg-primary text-primary-foreground">
-              <CardTitle className="flex items-center justify-between">
-                <span>Transferencia #{transferencia.id}</span>
-                <Badge variant="secondary">
-                  {new Date(
-                    transferencia.fechaTransferencia
-                  ).toLocaleDateString()}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <PackageIcon className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-semibold">
-                      {transferencia.producto.nombre}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Cantidad: {transferencia.cantidad}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <UserIcon className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-semibold">
-                      {transferencia.usuarioEncargado.nombre}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {transferencia.usuarioEncargado.correo}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <BuildingIcon className="h-5 w-5 text-muted-foreground" />
-                  <ArrowRightIcon className="h-4 w-4 text-muted-foreground" />
-                  <BuildingIcon className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-semibold">
-                      {transferencia.sucursalDestino.nombre}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {transferencia.sucursalDestino.direccion}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="">
+        {/* {transferencias.map((transferencia) => ( */}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Producto</TableHead>
+              <TableHead>Sucursal Origen</TableHead>
+              <TableHead>Sucursal Destino</TableHead>
+              <TableHead>Fecha</TableHead>
+              <TableHead>Detalle</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {transferencias &&
+              transferencias.map((transferencia) => (
+                <TableRow>
+                  <TableCell>{transferencia.producto.nombre}</TableCell>
+                  <TableCell>{transferencia.sucursalOrigen.nombre}</TableCell>
+                  <TableCell>{transferencia.sucursalDestino.nombre}</TableCell>
+                  <TableCell>
+                    {formatearFecha(transferencia.fechaTransferencia)}
+                  </TableCell>
+                  <TableCell>
+                    <Dialog>
+                      <DialogTrigger>
+                        <Button>
+                          <Eye />
+                        </Button>
+                      </DialogTrigger>
+
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle className="text-center">
+                            Tranferencia de producto
+                          </DialogTitle>
+                        </DialogHeader>
+                        <ScrollArea className="max-h-[60vh] pr-4">
+                          <Card className="mt-4 border-none shadow-none">
+                            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <InfoItem
+                                icon={<BoxIcon className="h-5 w-5" />}
+                                label="Producto"
+                                value={
+                                  transferencia.producto.nombre ?? undefined
+                                }
+                              />
+                              <InfoItem
+                                icon={<BringToFront className="h-5 w-5" />}
+                                label="Cantidad trasladada"
+                                value={
+                                  String(transferencia.cantidad) ?? undefined
+                                }
+                              />
+                              <InfoItem
+                                icon={<Building className="h-5 w-5" />}
+                                label="Sucursal de origen"
+                                value={
+                                  transferencia.sucursalOrigen.nombre ??
+                                  undefined
+                                }
+                              />
+                              <InfoItem
+                                icon={<Building className="h-5 w-5" />}
+                                label="Sucursal de destino"
+                                value={
+                                  transferencia.sucursalDestino.nombre ??
+                                  undefined
+                                }
+                              />
+                              <InfoItem
+                                icon={<UserIcon className="h-5 w-5" />}
+                                label="Encargado"
+                                value={
+                                  transferencia.usuarioEncargado.nombre ??
+                                  undefined
+                                }
+                              />
+
+                              <InfoItem
+                                icon={<ClockIcon className="h-5 w-5" />}
+                                label="Producto"
+                                value={
+                                  formatearFecha(
+                                    transferencia.fechaTransferencia
+                                  ) ?? undefined
+                                }
+                              />
+                            </CardContent>
+                          </Card>
+
+                          {/* <Card className="mt-6 border-none shadow-none">
+                            <CardHeader>
+                              <CardTitle className="text-xl font-semibold text-primary">
+                                Información de Contacto
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <InfoItem
+                                icon={<User className="h-5 w-5" />}
+                                label="Nombre del Contacto"
+                                value={providerView.nombreContacto ?? undefined}
+                              />
+                              <InfoItem
+                                icon={<Phone className="h-5 w-5" />}
+                                label="Teléfono de Contacto"
+                                value={
+                                  providerView.telefonoContacto ?? undefined
+                                }
+                              />
+                              <InfoItem
+                                icon={<Mail className="h-5 w-5" />}
+                                label="Email de Contacto"
+                                value={providerView.emailContacto ?? undefined}
+                              />
+                            </CardContent>
+                          </Card> */}
+                        </ScrollArea>
+                      </DialogContent>
+                    </Dialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
+        </Table>
+        {/* ))} */}
       </div>
     </div>
   );

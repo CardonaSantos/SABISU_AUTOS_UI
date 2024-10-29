@@ -33,6 +33,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Link } from "react-router-dom";
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function HistorialVentas() {
@@ -42,10 +43,6 @@ export default function HistorialVentas() {
   const [ventas, setVentas] = useState<VentasHistorial>([]);
   const formatearFecha = (fecha: string) => {
     return format(new Date(fecha), "dd/MM/yyyy", { locale: es });
-  };
-  const abrirPDF = (ventaId: number) => {
-    // Aquí iría la lógica para abrir el PDF en una nueva ventana
-    window.open(`/venta/generar-factura/${ventaId}`, "_blank");
   };
 
   const getVentas = async () => {
@@ -63,6 +60,8 @@ export default function HistorialVentas() {
   useEffect(() => {
     getVentas();
   }, []);
+
+  console.log("Las ventas en el historial ventas son: ", ventas);
 
   const DetallesVenta = ({ venta }: { venta: Venta }) => (
     <Card className="w-full shadow-xl">
@@ -126,15 +125,13 @@ export default function HistorialVentas() {
                       {new Intl.NumberFormat("es-GT", {
                         style: "currency",
                         currency: "GTQ",
-                      }).format(producto.producto.precioVenta)}
+                      }).format(producto.precioVenta)}
                     </TableCell>
                     <TableCell>
                       {new Intl.NumberFormat("es-GT", {
                         style: "currency",
                         currency: "GTQ",
-                      }).format(
-                        producto.cantidad * producto.producto.precioVenta
-                      )}
+                      }).format(producto.cantidad * producto.precioVenta)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -238,13 +235,11 @@ export default function HistorialVentas() {
                             <DetallesVenta venta={venta} />
                           </DialogContent>
                         </Dialog>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => abrirPDF(venta.id)}
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
+                        <Link to={`/venta/generar-factura/${venta.id}`}>
+                          <Button variant="outline" size="icon">
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </Link>
                       </div>
                     </TableCell>
                   </TableRow>

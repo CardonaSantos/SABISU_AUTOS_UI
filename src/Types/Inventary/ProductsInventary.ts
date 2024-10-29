@@ -25,6 +25,11 @@ type Categoria = {
   nombre: string;
 };
 
+type Precios = {
+  id: number;
+  precio: number;
+};
+
 type Producto = {
   id: number;
   nombre: string;
@@ -35,6 +40,7 @@ type Producto = {
   actualizadoEn: string; // En formato ISO
   categorias: Categoria[];
   stock: Stock[];
+  precios: Precios[];
 };
 
 export type ProductsInventary = Producto;

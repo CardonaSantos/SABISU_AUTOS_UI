@@ -32,6 +32,7 @@ function CreateCategory() {
       if (response.status === 201) {
         toast.success("Categoria creada");
         setNombre("");
+        getCategorias();
       }
     } catch (error) {
       console.log(error);

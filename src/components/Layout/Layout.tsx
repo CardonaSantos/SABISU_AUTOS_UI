@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Link, Outlet } from "react-router-dom";
 import { ModeToggle } from "../mode-toggle";
-import nv2 from "@/assets/nv2.png";
+import nv2 from "@/assets/LOGOPNG.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,9 +44,27 @@ import { jwtDecode } from "jwt-decode";
 import { useStore } from "../Context/ContextSucursal";
 import axios from "axios";
 import { Sucursal } from "@/Types/Sucursal/Sucursal_Info";
+import { toast } from "sonner";
+import { Card } from "../ui/card";
+import { useSocket } from "../Context/SocketContext";
 const API_URL = import.meta.env.VITE_API_URL;
 interface LayoutProps {
   children?: React.ReactNode;
+}
+enum TipoNotificacion {
+  SOLICITUD_PRECIO = "SOLICITUD_PRECIO",
+  TRANSFERENCIA = "TRANSFERENCIA",
+  VENCIMIENTO = "VENCIMIENTO",
+  OTRO = "OTRO",
+}
+
+interface Notificacion {
+  id: number;
+  mensaje: string;
+  remitenteId: number;
+  tipoNotificacion: TipoNotificacion;
+  referenciaId: number | null;
+  fechaCreacion: string;
 }
 
 export default function Layout({ children }: LayoutProps) {
@@ -61,6 +79,9 @@ export default function Layout({ children }: LayoutProps) {
   const setRol = useStore((state) => state.setRol);
   const setSucursalId = useStore((state) => state.setSucursalId);
   const sucursalId = useStore((state) => state.sucursalId);
+  const socket = useSocket();
+
+  const userID = useStore((state) => state.userId);
 
   const menuItems = [
     { icon: Home, label: "Home", href: "/" },
@@ -155,6 +176,65 @@ export default function Layout({ children }: LayoutProps) {
 
   console.log("La info de la sucursal actual es: ", sucursalInfo);
 
+  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
+
+  const getNotificaciones = async () => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/notification/get-my-notifications/${userID}`
+      );
+      if (response.status === 200) {
+        setNotificaciones(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al conseguir notificaciones");
+    }
+  };
+
+  useEffect(() => {
+    if (userID) {
+      getNotificaciones();
+    }
+  }, [userID]);
+  // authTokenPos
+
+  console.log("Mis notificaciones diponibles son: ", notificaciones);
+
+  const deleteNoti = async (id: number) => {
+    try {
+      const response = await axios.delete(
+        `${API_URL}/notification/delete-my-notification/${id}/${userID}`
+      );
+      if (response.status === 200) {
+        toast.success("Notificación eliminada");
+        getNotificaciones(); // Actualiza las notificaciones después de eliminar
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al eliminar notificación");
+    }
+  };
+
+  // Escuchar el evento de nueva notificación entrante
+  useEffect(() => {
+    if (socket) {
+      console.log("Escuchando evento para notificaciones");
+
+      socket.on("recibirNotificacion", (nuevaNotificacion: Notificacion) => {
+        setNotificaciones((prevNotificaciones) => [
+          nuevaNotificacion,
+          ...prevNotificaciones,
+        ]);
+      });
+
+      // Limpieza del evento al desmontar el componente o desconectarse el socket
+      return () => {
+        socket.off("recibirNotificacion");
+      };
+    }
+  }, [socket]);
+
   return (
     <div className="flex h-screen flex-col bg-background">
       {/* Top Navigation Bar */}
@@ -173,7 +253,7 @@ export default function Layout({ children }: LayoutProps) {
             </button>
             <div className="flex items-center space-x-2">
               <Link to={"/"}>
-                <img className="h-12 w-12" src={nv2} />
+                <img className="h-16 w-28" src={nv2} />
               </Link>
               <Link to={"/"}>
                 <h2 className="text-lg font-semibold">
@@ -189,18 +269,73 @@ export default function Layout({ children }: LayoutProps) {
             </div>
             <Dialog>
               <DialogTrigger asChild>
-                <button className="mr-4 rounded-full bg-secondary p-2 text-secondary-foreground hover:bg-secondary-hover focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                  <Bell className="h-6 w-6" />
-                </button>
+                <div className="relative">
+                  <button className="mr-4 rounded-full bg-secondary p-2 text-secondary-foreground hover:bg-secondary-hover focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                    <Bell className="h-6 w-6" />
+                  </button>
+                  {notificaciones.length > 0 && (
+                    <span className="absolute top-0 right-0 inline-flex items-center justify-center w-6 h-6 text-xs font-bold leading-none text-white bg-rose-500 rounded-full">
+                      {notificaciones.length}
+                    </span>
+                  )}
+                </div>
               </DialogTrigger>
+
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Notificaciones</DialogTitle>
+                  <DialogTitle className="text-center text-2xl font-bold">
+                    Notificaciones
+                  </DialogTitle>
                 </DialogHeader>
-                <div className="py-4">
-                  <p className="text-foreground">
-                    No tienes nuevas notificaciones.
-                  </p>
+                <div className="py-4 overflow-y-auto max-h-96">
+                  {notificaciones && notificaciones.length > 0 ? (
+                    notificaciones.map((not) => (
+                      <Card className="m-2 p-4 shadow-md" key={not.id}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p
+                              style={{ fontSize: "9px" }}
+                              className={`font-semibold ${
+                                not.tipoNotificacion ===
+                                TipoNotificacion.SOLICITUD_PRECIO
+                                  ? "text-green-600"
+                                  : not.tipoNotificacion ===
+                                    TipoNotificacion.TRANSFERENCIA
+                                  ? "text-blue-600"
+                                  : not.tipoNotificacion ===
+                                    TipoNotificacion.VENCIMIENTO
+                                  ? "text-red-600"
+                                  : "text-gray-600"
+                              }`}
+                            >
+                              {TipoNotificacion[not.tipoNotificacion]}
+                            </p>
+                            <p className="text-sm mt-1 break-words">
+                              {not.mensaje}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {new Date(not.fechaCreacion).toLocaleString()}
+                            </p>
+                          </div>
+                          <Button
+                            style={{ width: "30px", height: "30px" }}
+                            size={"icon"}
+                            type="button"
+                            variant={"destructive"}
+                            title="Eliminar Notificación"
+                            className="rounded-full p-2 ml-2 flex-shrink-0"
+                            onClick={() => deleteNoti(not.id)} // Pasa el id directamente
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))
+                  ) : (
+                    <p className="text-center text-gray-500">
+                      No hay notificaciones.
+                    </p>
+                  )}
                 </div>
               </DialogContent>
             </Dialog>

@@ -6,6 +6,14 @@ interface MetodoPago {
   fechaPago: string; // Formato ISO string
 }
 
+interface Sucursal {
+  nombre: string;
+  direccion: string;
+  id: number;
+  pxb: number;
+  telefono: number;
+}
+
 interface Cliente {
   nombre: string;
   correo: string;
@@ -17,7 +25,7 @@ interface ProductoInfo {
   id: number;
   nombre: string;
   descripcion: string;
-  precioVenta: number;
+  // precioVenta: number;
   codigoProducto: string;
   creadoEn: string; // Formato ISO string
   actualizadoEn: string; // Formato ISO string
@@ -29,7 +37,9 @@ interface ProductoVenta {
   productoId: number;
   cantidad: number;
   creadoEn: string; // Formato ISO string
+  precioVenta: number; // Precio de venta al momento de la transacción
   producto: ProductoInfo;
+  descripcion: string;
 }
 
 interface Venta {
@@ -41,6 +51,7 @@ interface Venta {
   cliente: Cliente | null; // Ajusta según los datos reales del cliente si existe
   metodoPago: MetodoPago;
   productos: ProductoVenta[];
+  sucursal: Sucursal;
   //NUEVOS CAMPOS
   nombreClienteFinal: string;
   telefonoClienteFinal: string;

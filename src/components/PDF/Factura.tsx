@@ -95,6 +95,14 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
     },
 
     tbody2: { flex: 2, borderRightWidth: 1 },
+    //TEXTO DE DESCRIPCION
+    textDesc: {
+      fontSize: "8px",
+      color: "#6c757d",
+      fontStyle: "italic",
+      lineHeight: "1.2",
+      marginTop: "2px", // Separación del nombre del producto
+    },
   });
 
   const InvoiceTitle = () => (
@@ -115,13 +123,17 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
           </Text>
         </View>
         <View>
-          {/* <Text style={styles.addressTitle}>
-            Sucursal: C. Central Juan Pablo II, Jacaltenango
-          </Text> */}
           <Text style={styles.addressTitle}>
-            Teléfono: 5375-2853 / 3750-9695
+            Sucursal:{" "}
+            {venta?.sucursal?.direccion ?? venta?.sucursal.direccion ?? null}
           </Text>
-          <Text style={styles.addressTitle}>PBX: 22968040</Text>
+          <Text style={styles.addressTitle}>
+            Teléfono:{" "}
+            {venta?.sucursal.telefono ?? venta?.sucursal.telefono ?? null}
+          </Text>
+          <Text style={styles.addressTitle}>
+            PBX: {venta?.sucursal?.pxb ?? venta?.sucursal.pxb ?? "22968040"}
+          </Text>
         </View>
       </View>
     </View>
@@ -191,14 +203,19 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
                   ? productoVenta.producto.nombre
                   : "Producto no disponible"}
               </Text>
+              <Text style={styles.textDesc}>
+                {productoVenta?.producto?.descripcion
+                  ? `${productoVenta.producto.descripcion}`
+                  : ""}
+              </Text>
             </View>
             <View style={styles.tbody}>
               <Text>
-                {productoVenta?.producto?.precioVenta
+                {productoVenta?.precioVenta
                   ? new Intl.NumberFormat("es-GT", {
                       style: "currency",
                       currency: "GTQ",
-                    }).format(productoVenta.producto.precioVenta)
+                    }).format(productoVenta.precioVenta)
                   : "No disponible"}
               </Text>
             </View>
@@ -209,13 +226,12 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
             </View>
             <View style={styles.tbody}>
               <Text>
-                {productoVenta?.producto?.precioVenta && productoVenta.cantidad
+                {productoVenta?.precioVenta && productoVenta.cantidad
                   ? new Intl.NumberFormat("es-GT", {
                       style: "currency",
                       currency: "GTQ",
                     }).format(
-                      productoVenta.producto.precioVenta *
-                        productoVenta.cantidad
+                      productoVenta.precioVenta * productoVenta.cantidad
                     )
                   : "N/A"}
               </Text>
@@ -248,9 +264,7 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
                 venta.productos.reduce(
                   (sum, item) =>
                     sum +
-                    (item?.producto?.precioVenta
-                      ? item.producto.precioVenta * item.cantidad
-                      : 0),
+                    (item?.precioVenta ? item.precioVenta * item.cantidad : 0),
                   0
                 )
               )

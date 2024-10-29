@@ -91,9 +91,9 @@ function App() {
             <Route
               path="/add-sucursal"
               element={
-                <ProtectedRoute>
-                  <CreateSucursal />
-                </ProtectedRoute>
+                // <ProtectedRoute>
+                <CreateSucursal />
+                // </ProtectedRoute>
               }
             />
 

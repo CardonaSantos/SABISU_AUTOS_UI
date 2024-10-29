@@ -7,11 +7,17 @@ import { toast } from "sonner";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import SelectM from "react-select"; // Importar react-select
+import { useStore } from "@/components/Context/ContextSucursal";
 const API_URL = import.meta.env.VITE_API_URL;
 
 type Category = {
   id: number;
   nombre: string;
+};
+
+type Precios = {
+  id: number;
+  precio: number;
 };
 
 type Product = {
@@ -23,12 +29,13 @@ type Product = {
   creadoEn: string;
   actualizadoEn: string;
   categorias: Category[]; // Categorías como un array de objetos
+  precios: Precios[];
 };
 
 export default function ProductEditForm() {
   const { id } = useParams();
   const [formData, setFormData] = useState<Product | null>(null);
-
+  const usuarioId = useStore((state) => state.userId);
   // Actualizar los campos del formulario
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -37,13 +44,22 @@ export default function ProductEditForm() {
     setFormData((prev) => (prev ? { ...prev, [name]: value } : prev));
   };
 
-  // Manejar el cambio de precio
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    setFormData((prev) =>
-      prev ? { ...prev, precioVenta: isNaN(value) ? 0 : value } : prev
-    );
-  };
+  // Function to handle price changes for specific indexes
+  const handlePriceChange =
+    (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = parseFloat(e.target.value);
+      setFormData((prev) => {
+        if (!prev) return prev; // Prevent updates if prev is null
+        const updatedPrices = [...prev.precios]; // Create a copy of the current prices
+        if (updatedPrices[index]) {
+          updatedPrices[index].precio = isNaN(value) ? 0 : value; // Update the correct price
+        } else {
+          // In case there's no price object at this index, create one
+          updatedPrices[index] = { id: 0, precio: isNaN(value) ? 0 : value }; // Adjust id as needed
+        }
+        return { ...prev, precios: updatedPrices }; // Return updated formData
+      });
+    };
 
   // Enviar el formulario
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,6 +70,7 @@ export default function ProductEditForm() {
         {
           ...formData, // Aquí estás incluyendo todos los campos del formData
           categorias: formData?.categorias.map((cat) => cat.id), // Mapeo de categorías a solo sus IDs
+          usuarioId: usuarioId,
         }
       );
       if (response.status === 200) {
@@ -72,6 +89,8 @@ export default function ProductEditForm() {
         `${API_URL}/products/product/get-one-product/${id}`
       );
       if (response.status === 200) {
+        console.log("data: ", response.data);
+
         setFormData(response.data);
       }
     } catch (error) {
@@ -98,12 +117,17 @@ export default function ProductEditForm() {
     getCategorias();
   }, []);
 
+  console.log("El producto recibido es: ", formData);
+
+  //==============>
+
   return formData ? (
     <form
       onSubmit={handleSubmit}
-      className="space-y-6 max-w-2xl mx-auto p-6 bg-card rounded-lg shadow"
+      className="shadow-xl space-y-6 max-w-2xl mx-auto p-6 bg-card rounded-lg "
     >
       <h2 className="text-center font-bold text-xl">Edición de Producto</h2>
+
       <div>
         <Label htmlFor="nombre">Nombre del Producto</Label>
         <Input
@@ -127,17 +151,26 @@ export default function ProductEditForm() {
       </div>
 
       <div>
-        <Label htmlFor="precioVenta">Precio de Venta</Label>
-        <Input
-          id="precioVenta"
-          name="precioVenta"
-          type="number"
-          value={formData.precioVenta}
-          onChange={handlePriceChange}
-          step="0.01"
-          min="0"
-          required
-        />
+        <Label className="block text-center mb-4">Precios</Label>
+        {[0, 1, 2].map((index) => {
+          const precio = formData.precios[index] || { precio: "" }; // Default to an empty price if none exists
+          return (
+            <div key={index} className="flex items-center space-x-4 mb-2">
+              <Label className="w-1/4 text-right font-semibold">
+                Precio #{index + 1}:
+              </Label>
+              <Input
+                type="number"
+                value={precio.precio || ""}
+                onChange={handlePriceChange(index)} // Use index to handle price changes
+                step="0.01"
+                min="0"
+                // required
+                className="w-3/4"
+              />
+            </div>
+          );
+        })}
       </div>
 
       <div>

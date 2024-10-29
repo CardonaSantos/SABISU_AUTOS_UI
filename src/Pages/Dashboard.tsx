@@ -22,10 +22,112 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useStore } from "@/components/Context/ContextSucursal";
+// import { useSocketStore } from "@/components/Context/ContextConection";
 const API_URL = import.meta.env.VITE_API_URL;
 
+import dayjs from "dayjs";
+import localizedFormat from "dayjs/plugin/localizedFormat";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useSocket } from "@/components/Context/SocketContext";
+
+interface Producto {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  codigoProducto: string;
+}
+
+interface Usuario {
+  id: number;
+  nombre: string;
+  rol: string;
+  sucursal: { nombre: string };
+}
+
+interface Solicitud {
+  id: number;
+  productoId: number;
+  precioSolicitado: number;
+  solicitadoPorId: number;
+  estado: EstadoPrecio;
+  aprobadoPorId: number | null;
+  fechaSolicitud: string;
+  fechaRespuesta: string | null;
+  producto: Producto;
+  solicitadoPor: Usuario;
+}
+
+enum EstadoSolicitudTransferencia {
+  PENDIENTE,
+  APROBADO,
+  RECHAZADO,
+}
+
+interface Producto {
+  nombre: string;
+}
+
+interface SucursalDestino {
+  nombre: string;
+}
+
+interface SucursalOrigen {
+  nombre: string;
+}
+
+enum Rol {
+  ADMIN,
+  MANAGER,
+  VENDEDOR,
+  SUPER_ADMIN,
+}
+
+interface UsuarioSolicitante {
+  rol: Rol;
+  nombre: string;
+}
+
+export interface SolicitudTransferencia {
+  id: number;
+  productoId: number;
+  producto: Producto;
+  sucursalDestino: SucursalDestino;
+  sucursalOrigen: SucursalOrigen;
+  usuarioSolicitante: UsuarioSolicitante;
+  cantidad: number;
+  sucursalOrigenId: number;
+  sucursalDestinoId: number;
+  usuarioSolicitanteId: number | null;
+  estado: EstadoSolicitudTransferencia;
+  fechaSolicitud: string;
+  fechaAprobacion: string | null;
+  administradorId: number | null;
+}
+
+enum EstadoPrecio {
+  APROBADO = "APROBADO",
+  PENDIENTE = "PENDIENTE",
+  RECHAZADO = "RECHAZADO",
+}
+
 export default function Dashboard() {
+  dayjs.extend(localizedFormat);
+  dayjs.extend(customParseFormat);
+  dayjs.locale("es");
+  const formatearFecha = (fecha: string) => {
+    let nueva_fecha = dayjs(fecha).format("DD MMMM YYYY, hh:mm:ss A");
+    return nueva_fecha;
+  };
+
   const sucursalId = useStore((state) => state.sucursalId);
+  const userID = useStore((state) => state.userId);
 
   // Datos de ejemplo para los gráficos y tablas
   const salesData = [
@@ -93,6 +195,182 @@ export default function Dashboard() {
       getInfo();
     }
   }, [sucursalId]);
+
+  //==============================================>
+  // SOLICITUDES DE PRECIO
+  const getSolicitudes = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/price-request`);
+      if (response.status === 200) {
+        setSolicitudes(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al conseguir solicitudes");
+    }
+  };
+
+  //=======================================================>
+
+  // SOLICITUDES DE TRANSFERENCIA PRODUCTO
+  const getSolicitudesTransferencia = async () => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/solicitud-transferencia-producto`
+      );
+      if (response.status === 200) {
+        setSolicitudesTransferencia(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al conseguir solicitudes de transferencia");
+    }
+  };
+
+  useEffect(() => {
+    // const getSolicitudes = async () => {
+    //   try {
+    //     const response = await axios.get(`${API_URL}/price-request`);
+    //     if (response.status === 200) {
+    //       setSolicitudes(response.data);
+    //     }
+    //   } catch (error) {
+    //     console.log(error);
+    //     toast.error("Error al conseguir solicitudes");
+    //   }
+    // };
+    getSolicitudes();
+  }, []);
+
+  useEffect(() => {
+    getSolicitudesTransferencia();
+  }, []);
+
+  const [openAcept, setOpenAcept] = useState(false);
+  const [openReject, setOpenReject] = useState(false);
+
+  const handleAceptRequest = async (idSolicitud: number) => {
+    try {
+      const response = await axios.patch(
+        `${API_URL}/price-request/acept-request-price/${idSolicitud}/${userID}`
+      );
+      if (response.status === 200) {
+        toast.success("Petición acatada");
+        setOpenAcept(false); // Close dialog upon success
+        getSolicitudes();
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error");
+    }
+  };
+
+  const handleRejectRequest = async (idSolicitud: number) => {
+    try {
+      const response = await axios.patch(
+        `${API_URL}/price-request/reject-request-price/${idSolicitud}/${userID}`
+      );
+      if (response.status === 200) {
+        toast.success("Petición acatada");
+        setOpenAcept(false); // Close dialog upon success
+        setOpenReject(false);
+        getSolicitudes();
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error");
+    }
+  };
+
+  const socket = useSocket();
+  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
+
+  useEffect(() => {
+    if (socket) {
+      const handleSolicitud = (solicitudNueva: Solicitud) => {
+        setSolicitudes((prevSolicitudes) => [
+          ...prevSolicitudes,
+          solicitudNueva,
+        ]);
+      };
+
+      // Escucha el evento
+      socket.on("recibirSolicitud", handleSolicitud);
+
+      // Limpia el listener al desmontar
+      return () => {
+        socket.off("recibirSolicitud", handleSolicitud);
+      };
+    }
+  }, [socket]);
+
+  const [solicitudesTransferencia, setSolicitudesTransferencia] = useState<
+    SolicitudTransferencia[]
+  >([]);
+
+  useEffect(() => {
+    if (socket) {
+      const handleSolicitud = (solicitudNueva: SolicitudTransferencia) => {
+        setSolicitudesTransferencia((prevSolicitudes) => [
+          ...prevSolicitudes,
+          solicitudNueva,
+        ]);
+      };
+
+      // Escucha el evento
+      socket.on("recibirSolicitudTransferencia", handleSolicitud);
+
+      // Limpia el listener al desmontar
+      return () => {
+        socket.off("recibirSolicitudTransferencia", handleSolicitud);
+      };
+    }
+  }, [socket]);
+
+  console.log("Las solicitudes son: ", solicitudes);
+  console.log("Las solicitudes de transferencia: ", solicitudesTransferencia);
+
+  const [openAceptarTransferencia, setOpenAceptarTransferencia] =
+    useState(false);
+  const [openRechazarTransferencia, setOpenRechazarTransferencia] =
+    useState(false);
+
+  // Funciones para manejar aceptar y rechazar en el card de transferencia
+  const handleAceptarTransferencia = async (
+    idSolicitudTransferencia: number
+  ) => {
+    console.log(
+      `Aceptada la solicitud de transferencia con ID: ${idSolicitudTransferencia} y User ID: ${userID}`
+    );
+
+    try {
+      // Realiza la llamada al backend usando axios
+      const response = await axios.post(
+        `${API_URL}/solicitud-transferencia-producto/aceptar`,
+        {
+          idSolicitudTransferencia,
+          userID,
+        }
+      );
+
+      console.log("Respuesta del servidor:", response.data);
+      toast.success("Tranferencia completada");
+      getSolicitudesTransferencia();
+      // Puedes mostrar una notificación de éxito aquí
+    } catch (error) {
+      console.error("Error al aceptar la transferencia:", error);
+      toast.error("Error");
+      // Puedes mostrar una notificación de error aquí
+    } finally {
+      setOpenAceptarTransferencia(false);
+    }
+  };
+
+  const handleRechazarTransferencia = (id: number) => {
+    console.log(`Rechazada la solicitud de transferencia con ID: ${id}`);
+    setOpenRechazarTransferencia(false);
+  };
+
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold">Dashboard de Administrador</h1>
@@ -148,6 +426,256 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* MOSTRAR LAS SOLICITUDES DE PRECIO */}
+      <Card className="shadow-xl">
+        <CardHeader>
+          <CardTitle className="text-xl">Solicitudes de Precio</CardTitle>
+        </CardHeader>
+        <CardContent className="h-full">
+          {solicitudes && solicitudes.length > 0 ? (
+            solicitudes.map((soli) => (
+              <Card key={soli.id} className="m-4 shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-lg">Solicitud de Precio</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-cyan-500">
+                    Estado: <strong>{soli.estado}</strong>
+                  </p>
+                  <p className="text-sm mt-1">
+                    Producto: <strong>{soli.producto.nombre}</strong> -{" "}
+                    {soli.producto.descripcion}
+                  </p>
+                  <p className="text-sm">
+                    Solicitado por: <strong>{soli.solicitadoPor.nombre}</strong>
+                    ({soli.solicitadoPor.rol}) de{" "}
+                    <strong>{soli.solicitadoPor.sucursal.nombre}</strong>
+                  </p>
+                  <p className="text-sm">
+                    Precio solicitado:{" "}
+                    <strong>
+                      {new Intl.NumberFormat("es-GT", {
+                        style: "currency",
+                        currency: "GTQ",
+                      }).format(soli.precioSolicitado)}
+                    </strong>
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Fecha de solicitud: {formatearFecha(soli.fechaSolicitud)}
+                  </p>
+
+                  {soli.fechaRespuesta && (
+                    <p className="text-sm text-gray-500">
+                      Fecha de respuesta:{" "}
+                      {new Date(soli.fechaRespuesta).toLocaleString()}
+                    </p>
+                  )}
+                  <div className="">el id de la solicitud es: {soli.id}</div>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      onClick={() => setOpenAcept(true)}
+                      variant={"default"}
+                    >
+                      Aceptar
+                    </Button>
+
+                    <Dialog open={openAcept} onOpenChange={setOpenAcept}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle className="text-center">
+                            Aceptar solicitud de precio
+                          </DialogTitle>
+                          <DialogDescription className="text-center">
+                            Al aceptar la solicitud se creará una instancia de
+                            precio que solo se podrá usar una vez para este
+                            producto.
+                          </DialogDescription>
+                          <DialogDescription className="text-center">
+                            ¿Continuar?
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            className="w-full"
+                            onClick={() => handleAceptRequest(soli.id)}
+                          >
+                            Aceptar
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Button
+                      onClick={() => setOpenReject(true)}
+                      variant={"destructive"}
+                    >
+                      Rechazar
+                    </Button>
+
+                    <Dialog open={openReject} onOpenChange={setOpenReject}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle className="text-center">
+                            Aceptar solicitud de precio
+                          </DialogTitle>
+                          <DialogDescription className="text-center">
+                            Se le negará este precio a la sucursal
+                          </DialogDescription>
+                          <DialogDescription className="text-center">
+                            ¿Continuar?
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant={"destructive"}
+                            className="w-full"
+                            onClick={() => handleRejectRequest(soli.id)}
+                          >
+                            Si, continuar
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <p className="text-center text-gray-500">
+              No hay solicitudes de precio.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* MOSTRAS LAS SOLICITUDES DE TRANSFERENCIA */}
+      {/* MOSTRAR LAS SOLICITUDES DE TRANSFERENCIA */}
+      <Card className="shadow-xl">
+        <CardHeader>
+          <CardTitle className="text-xl">
+            Solicitudes de Transferencia de Producto
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="h-full">
+          {solicitudesTransferencia && solicitudesTransferencia.length > 0 ? (
+            solicitudesTransferencia.map((soli) => (
+              <Card key={soli.id} className="m-4 shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    Solicitud de Transferencia
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-cyan-500">
+                    Estado: <strong>{soli.estado}</strong>
+                  </p>
+                  <p className="text-sm mt-1">
+                    Producto: <strong>{soli.producto.nombre}</strong>
+                  </p>
+                  <p className="text-sm">
+                    Solicitado por:{" "}
+                    <strong>
+                      {soli.usuarioSolicitante.nombre} (
+                      {soli.usuarioSolicitante.rol})
+                    </strong>
+                  </p>
+                  <p className="text-sm">
+                    Cantidad solicitada: <strong>{soli.cantidad}</strong>
+                  </p>
+                  <p className="text-sm">
+                    Sucursal Origen:{" "}
+                    <strong>{soli.sucursalOrigen.nombre}</strong>
+                  </p>
+                  <p className="text-sm">
+                    Sucursal Destino:{" "}
+                    <strong>{soli.sucursalDestino.nombre}</strong>
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Fecha de solicitud: {formatearFecha(soli.fechaSolicitud)}
+                  </p>
+
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      onClick={() => setOpenAceptarTransferencia(true)}
+                      variant={"default"}
+                    >
+                      Aceptar
+                    </Button>
+
+                    <Dialog
+                      open={openAceptarTransferencia}
+                      onOpenChange={setOpenAceptarTransferencia}
+                    >
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle className="text-center">
+                            Aceptar solicitud de Transferencia
+                          </DialogTitle>
+                          <DialogDescription className="text-center">
+                            Se le descontará stock a la sucursal de origen y se
+                            asignará a la sucursal de destino.
+                          </DialogDescription>
+                          <DialogDescription className="text-center">
+                            ¿Continuar?
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            className="w-full"
+                            onClick={() => handleAceptarTransferencia(soli.id)}
+                          >
+                            Sí, transferir producto
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Button
+                      onClick={() => setOpenRechazarTransferencia(true)}
+                      variant={"destructive"}
+                    >
+                      Rechazar
+                    </Button>
+
+                    <Dialog
+                      open={openRechazarTransferencia}
+                      onOpenChange={setOpenRechazarTransferencia}
+                    >
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle className="text-center">
+                            Cancelar transferencia de producto
+                          </DialogTitle>
+                          <DialogDescription className="text-center">
+                            Se negará esta transferencia.
+                          </DialogDescription>
+                          <DialogDescription className="text-center">
+                            ¿Continuar?
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant={"destructive"}
+                            className="w-full"
+                            onClick={() => handleRechazarTransferencia(soli.id)}
+                          >
+                            Sí, negar y continuar
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <p className="text-center text-gray-500">
+              No hay solicitudes de transferencia.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Gráfico de ventas */}
       <Card className="shadow-xl">
