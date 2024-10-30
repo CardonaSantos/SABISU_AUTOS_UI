@@ -68,6 +68,7 @@ interface ProductCreate {
   codigoProducto: string;
   precioVenta: number[];
   creadoPorId: number | null;
+  precioCostoActual: number | null;
 }
 
 interface Categorias {
@@ -82,7 +83,17 @@ export default function Inventario() {
   const [stockFilter, setStockFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const usaruiId = useStore((state) => state.userId);
+  const userId = useStore((state) => state.userId);
+
+  const [productCreate, setProductCreate] = useState<ProductCreate>({
+    precioCostoActual: null,
+    codigoProducto: "",
+    categorias: [],
+    descripcion: "",
+    nombre: "",
+    precioVenta: [],
+    creadoPorId: userId,
+  });
 
   const handleSort = (column: string) => {
     if (sortBy === column) {
@@ -107,6 +118,10 @@ export default function Inventario() {
       return;
     }
 
+    if (!userId) {
+      toast.warning("Falta informacion del usuario");
+    }
+
     try {
       const response = await axios.post(`${API_URL}/products`, {
         ...productCreate,
@@ -119,8 +134,9 @@ export default function Inventario() {
           categorias: [],
           descripcion: "",
           nombre: "",
+          precioCostoActual: null,
           precioVenta: [],
-          creadoPorId: usaruiId,
+          creadoPorId: userId,
         });
         getProductosInventario();
       }
@@ -140,15 +156,6 @@ export default function Inventario() {
 
   const [categorias, setCategorias] = useState<Categorias[]>([]);
   const [proveedores, setProveedores] = useState<SimpleProvider[]>([]);
-
-  const [productCreate, setProductCreate] = useState<ProductCreate>({
-    codigoProducto: "",
-    categorias: [],
-    descripcion: "",
-    nombre: "",
-    precioVenta: [],
-    creadoPorId: usaruiId,
-  });
 
   useEffect(() => {
     const getCategories = async () => {
@@ -473,6 +480,30 @@ export default function Inventario() {
                       />
                     </div>
 
+                    {/* NUEVO CAMPO PARA PRECIO COSTO */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="price1" className="text-right">
+                        Precio Costo
+                      </Label>
+                      <Input
+                        value={productCreate.precioCostoActual ?? 0} // Asigna 0 si es null
+                        onChange={(e) =>
+                          setProductCreate({
+                            ...productCreate,
+                            precioCostoActual: e.target.value
+                              ? Number(e.target.value)
+                              : null,
+                          })
+                        }
+                        id="price1"
+                        name="price1"
+                        type="number"
+                        step="0.5"
+                        placeholder="Precio del producto"
+                        className="col-span-3"
+                      />
+                    </div>
+
                     {/* Input for Price 1 */}
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="price1" className="text-right">
@@ -781,7 +812,7 @@ export default function Inventario() {
                 </TableCell>
 
                 <TableCell>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-3">
                     {/* Enlace para editar el producto */}
                     <Link
                       to={`/editar-producto/${product.id}`} // Cambia a la ruta correcta que maneje la edición del producto

@@ -32,6 +32,7 @@ import ProductEditForm from "./Pages/Edit/EditProduct";
 import Sucursales from "./Pages/Sucursal/Sucursales";
 import TransferenciaProductos from "./Pages/Transferencia/TransferenciaProductos";
 import TransferenciaProductosHistorial from "./Pages/Transferencia/TransferenciaHistorial";
+import HistorialCambiosPrecio from "./Pages/HistorialPrecios/HistorialCambiosPrecio";
 
 function App() {
   return (
@@ -218,7 +219,7 @@ function App() {
               path="/notificaciones"
               element={
                 <ProtectedRoute>
-                  <Notificaciones />/{" "}
+                  <Notificaciones />
                 </ProtectedRoute>
               }
             />
@@ -255,6 +256,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <TransferenciaProductosHistorial />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/historial-cambios-precio"
+              element={
+                <ProtectedRoute>
+                  <HistorialCambiosPrecio />
                 </ProtectedRoute>
               }
             />

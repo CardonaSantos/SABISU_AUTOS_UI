@@ -30,6 +30,7 @@ type Product = {
   actualizadoEn: string;
   categorias: Category[]; // Categorías como un array de objetos
   precios: Precios[];
+  precioCostoActual: number;
 };
 
 export default function ProductEditForm() {
@@ -147,6 +148,17 @@ export default function ProductEditForm() {
           value={formData.descripcion}
           onChange={handleInputChange}
           rows={3}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="descripcion">Precio Costo</Label>
+        <Input
+          type="number"
+          id="precioCostoActual"
+          name="precioCostoActual"
+          value={formData.precioCostoActual}
+          onChange={handleInputChange}
         />
       </div>
 

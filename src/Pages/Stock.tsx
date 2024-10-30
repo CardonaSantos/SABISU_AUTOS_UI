@@ -64,7 +64,8 @@ interface GroupedStock {
 
 export default function Stock() {
   const [cantidad, setCantidad] = useState<string>("");
-  const [precioCosto, setPrecioCosto] = useState<string>("");
+  const [precioCosto, setPrecioCosto] = useState<number>(0);
+  // const [precioCosto, setPrecioCosto] = useState<number | "">(""); // Permite un estado vacío inicial o un número
   const [costoTotal, setCostoTotal] = useState<number>(0);
   const [fechaIngreso, setFechaIngreso] = useState<Date>(new Date());
   const [fechaVencimiento, setFechaVencimiento] = useState<Date | null>();
@@ -102,7 +103,7 @@ export default function Stock() {
 
   useEffect(() => {
     const cantidadNum = parseFloat(cantidad);
-    const precioCostoNum = parseFloat(precioCosto);
+    const precioCostoNum = precioCosto;
     console.log("La cantidad num: ", cantidadNum);
     console.log("La preciocostoNum: ", precioCostoNum);
 
@@ -131,13 +132,10 @@ export default function Stock() {
       const newEntry: StockEntry = {
         productoId: parseInt(selectedProductId),
         cantidad: parseInt(cantidad),
-        costoTotal: calculateTotalCost(
-          parseInt(cantidad),
-          parseFloat(precioCosto)
-        ), // Usa la nueva función
+        costoTotal: calculateTotalCost(parseInt(cantidad), precioCosto), // Usa la nueva función
         fechaIngreso: fechaIngreso.toISOString(),
         fechaVencimiento: fechaVencimiento?.toISOString(),
-        precioCosto: parseFloat(precioCosto),
+        precioCosto: precioCosto,
         proveedorId: parseInt(selectedProviderId),
       };
 
@@ -168,7 +166,7 @@ export default function Stock() {
   const resetForm = () => {
     setSelectedProductId(""); // Reseteamos el valor del select a un valor vacío
     setCantidad(""); // Reseteamos la cantidad
-    setPrecioCosto(""); // Reseteamos el precio de costo
+    setPrecioCosto(0); // Reseteamos el precio de costo
     // setSelectedProviderId(""); // Reseteamos el proveedor
     setFechaIngreso(new Date()); // Reseteamos la fecha de ingreso
     setFechaVencimiento(null); // Reseteamos la fecha de vencimiento
@@ -261,6 +259,7 @@ export default function Stock() {
   interface ProductoSelect {
     id: number;
     nombreProducto: string;
+    precioCostoActual: number;
     stock: StockProductoSelect[];
   }
   const [productToShow, setProductToShow] = useState<ProductoSelect | null>(
@@ -316,35 +315,6 @@ export default function Stock() {
       <CardContent>
         <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* <div className="space-y-2">
-              <Label htmlFor="product">Producto</Label>
-              <Select
-                onValueChange={setSelectedProductId}
-                value={selectedProductId}
-              >
-                <SelectTrigger id="product">
-                  <SelectValue placeholder="Seleccionar producto" />
-                </SelectTrigger>
-                <SelectContent>
-                  {productsInventary &&
-                    productsInventary.map((product) => (
-                      <SelectItem
-                        key={product.id}
-                        value={product.id.toString()}
-                      >
-                        <span className="flex items-center">
-                          <Package className="mr-2 h-4 w-4" />
-                          {product.nombre} ({product.codigoProducto})
-                        </span>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              {errors.product && (
-                <p className="text-sm text-red-500">{errors.product}</p>
-              )}
-            </div> */}
-
             <div className="space-y-2">
               <div className="space-y-2">
                 <Label htmlFor="product">Producto</Label>
@@ -369,6 +339,7 @@ export default function Stock() {
                         setProductToShow({
                           id: selectedProduct.id,
                           nombreProducto: selectedProduct.nombre,
+                          precioCostoActual: selectedProduct.precioCostoActual,
                           stock: selectedProduct.stock.map((s) => ({
                             cantidad: s.cantidad,
                             id: s.id,
@@ -378,6 +349,7 @@ export default function Stock() {
                             },
                           })),
                         });
+                        setPrecioCosto(selectedProduct.precioCostoActual);
                       }
                     } else {
                       setSelectedProductId("");
@@ -446,14 +418,16 @@ export default function Stock() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="precioCosto">Precio de costo</Label>
+              <Label htmlFor="precioCosto">Precio de costo producto</Label>
               <Input
                 id="precioCosto"
                 type="number"
-                value={precioCosto}
-                onChange={(e) => setPrecioCosto(e.target.value)}
+                readOnly
+                value={precioCosto || ""} // Asegura que sea un string si está vacío
+                onChange={(e) => setPrecioCosto(Number(e.target.value))}
                 placeholder="Ingrese el precio de costo"
               />
+
               {errors.precioCosto && (
                 <p className="text-sm text-red-500">{errors.precioCosto}</p>
               )}

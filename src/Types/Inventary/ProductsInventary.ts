@@ -41,6 +41,7 @@ type Producto = {
   categorias: Categoria[];
   stock: Stock[];
   precios: Precios[];
+  precioCostoActual: number;
 };
 
 export type ProductsInventary = Producto;

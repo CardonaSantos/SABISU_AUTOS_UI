@@ -108,6 +108,12 @@ export default function Layout({ children }: LayoutProps) {
       href: "/transferencia-historial",
     },
 
+    {
+      icon: NotepadText,
+      label: "Historial Cambios Precio",
+      href: "/historial-cambios-precio",
+    },
+
     { icon: Users, label: "Clientes", href: "/clientes" },
     { icon: BarChart2, label: "Reportes", href: "/reportes" },
     { icon: NotebookIcon, label: "Entregas Stock", href: "/entregas-stock" },
