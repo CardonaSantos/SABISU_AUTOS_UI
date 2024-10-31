@@ -10,6 +10,8 @@ import {
   BoxIcon,
   ClockIcon,
   BringToFront,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import axios from "axios";
 import { useStore } from "@/components/Context/ContextSucursal";
@@ -33,6 +35,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 const API_URL = import.meta.env.VITE_API_URL;
 
 interface Producto {
@@ -113,6 +123,22 @@ export default function TransferenciaProductosHistorial() {
     }
   }, [sucursalId]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+  const totalPages = Math.ceil(transferencias.length / itemsPerPage);
+
+  // Calcular el índice del último elemento de la página actual
+  const indexOfLastItem = currentPage * itemsPerPage;
+  // Calcular el índice del primer elemento de la página actual
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  // Obtener los elementos de la página actual
+  const currentItems = transferencias.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Cambiar de página
+  const onPageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-4 space-y-4">
@@ -172,8 +198,8 @@ export default function TransferenciaProductosHistorial() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transferencias &&
-              transferencias.map((transferencia) => (
+            {currentItems &&
+              currentItems.map((transferencia) => (
                 <TableRow>
                   <TableCell>{transferencia.producto.nombre}</TableCell>
                   <TableCell>{transferencia.sucursalOrigen.nombre}</TableCell>
@@ -184,8 +210,9 @@ export default function TransferenciaProductosHistorial() {
                   <TableCell>
                     <Dialog>
                       <DialogTrigger>
-                        <Button>
-                          <Eye />
+                        <Button variant="outline" size="sm">
+                          <Eye className="mr-2" size={16} />
+                          Ver Detalles
                         </Button>
                       </DialogTrigger>
 
@@ -284,6 +311,87 @@ export default function TransferenciaProductosHistorial() {
           </TableBody>
         </Table>
         {/* ))} */}
+      </div>
+      <div className="flex items-center justify-center py-4">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <Button onClick={() => onPageChange(1)}>Primero</Button>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </PaginationPrevious>
+            </PaginationItem>
+
+            {/* Sistema de truncado */}
+            {currentPage > 3 && (
+              <>
+                <PaginationItem>
+                  <PaginationLink onClick={() => onPageChange(1)}>
+                    1
+                  </PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="text-muted-foreground">...</span>
+                </PaginationItem>
+              </>
+            )}
+
+            {Array.from({ length: totalPages }, (_, index) => {
+              const page = index + 1;
+              if (
+                page === currentPage ||
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <PaginationItem key={index}>
+                    <PaginationLink
+                      onClick={() => onPageChange(page)}
+                      isActive={page === currentPage}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              }
+              return null;
+            })}
+
+            {currentPage < totalPages - 2 && (
+              <>
+                <PaginationItem>
+                  <span className="text-muted-foreground">...</span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink onClick={() => onPageChange(totalPages)}>
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              </>
+            )}
+
+            <PaginationItem>
+              <PaginationNext
+                onClick={() =>
+                  onPageChange(Math.min(totalPages, currentPage + 1))
+                }
+              >
+                <ChevronRight className="h-4 w-4" />
+              </PaginationNext>
+            </PaginationItem>
+            <PaginationItem>
+              <Button
+                variant={"destructive"}
+                onClick={() => onPageChange(totalPages)}
+              >
+                Último
+              </Button>
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </div>
     </div>
   );

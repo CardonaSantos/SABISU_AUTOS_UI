@@ -19,6 +19,7 @@ interface Cliente {
   correo: string;
   telefono: string;
   direccion: string;
+  dpi: string;
 }
 
 interface ProductoInfo {
@@ -56,6 +57,7 @@ interface Venta {
   nombreClienteFinal: string;
   telefonoClienteFinal: string;
   direccionClienteFinal: string;
+  imei: string;
 }
 
 export type VentaHistorialPDF = Venta;

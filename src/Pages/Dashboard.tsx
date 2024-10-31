@@ -255,7 +255,7 @@ export default function Dashboard() {
         `${API_URL}/price-request/acept-request-price/${idSolicitud}/${userID}`
       );
       if (response.status === 200) {
-        toast.success("Petición acatada");
+        toast.success("Petición aceptada, precio concedido");
         setOpenAcept(false); // Close dialog upon success
         getSolicitudes();
       }
@@ -271,7 +271,7 @@ export default function Dashboard() {
         `${API_URL}/price-request/reject-request-price/${idSolicitud}/${userID}`
       );
       if (response.status === 200) {
-        toast.success("Petición acatada");
+        toast.warning("Petición rechazada");
         setOpenAcept(false); // Close dialog upon success
         setOpenReject(false);
         getSolicitudes();
@@ -366,10 +366,36 @@ export default function Dashboard() {
     }
   };
 
-  const handleRechazarTransferencia = (id: number) => {
-    console.log(`Rechazada la solicitud de transferencia con ID: ${id}`);
-    setOpenRechazarTransferencia(false);
+  const handleRejectTransferencia = async (
+    idSolicitudTransferencia: number
+  ) => {
+    console.log(
+      `Aceptada la solicitud de transferencia con ID: ${idSolicitudTransferencia} y User ID: ${userID}`
+    );
+
+    try {
+      // Realiza la llamada al backend usando axios
+      const response = await axios.delete(
+        `${API_URL}/solicitud-transferencia-producto/rechazar/${idSolicitudTransferencia}/${userID}`
+      );
+
+      if (response.status === 200) {
+        toast.warning("Solicitu de transferencia rechazada");
+        getSolicitudesTransferencia();
+      }
+
+      // Puedes mostrar una notificación de éxito aquí
+    } catch (error) {
+      console.error("Error al aceptar la transferencia:", error);
+      toast.error("Error");
+      // Puedes mostrar una notificación de error aquí
+    }
   };
+
+  // const handleRechazarTransferencia = (id: number) => {
+  //   console.log(`Rechazada la solicitud de transferencia con ID: ${id}`);
+  //   setOpenRechazarTransferencia(false);
+  // };
 
   return (
     <div className="p-4 space-y-4">
@@ -430,7 +456,9 @@ export default function Dashboard() {
       {/* MOSTRAR LAS SOLICITUDES DE PRECIO */}
       <Card className="shadow-xl">
         <CardHeader>
-          <CardTitle className="text-xl">Solicitudes de Precio</CardTitle>
+          <CardTitle className="text-xl">
+            Solicitud de Precio Especial
+          </CardTitle>
         </CardHeader>
         <CardContent className="h-full">
           {solicitudes && solicitudes.length > 0 ? (
@@ -471,7 +499,6 @@ export default function Dashboard() {
                       {new Date(soli.fechaRespuesta).toLocaleString()}
                     </p>
                   )}
-                  <div className="">el id de la solicitud es: {soli.id}</div>
                   <div className="flex gap-2 mt-2">
                     <Button
                       onClick={() => setOpenAcept(true)}
@@ -550,7 +577,6 @@ export default function Dashboard() {
       </Card>
 
       {/* MOSTRAS LAS SOLICITUDES DE TRANSFERENCIA */}
-      {/* MOSTRAR LAS SOLICITUDES DE TRANSFERENCIA */}
       <Card className="shadow-xl">
         <CardHeader>
           <CardTitle className="text-xl">
@@ -645,7 +671,7 @@ export default function Dashboard() {
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle className="text-center">
-                            Cancelar transferencia de producto
+                            Rechazar transferencia de producto
                           </DialogTitle>
                           <DialogDescription className="text-center">
                             Se negará esta transferencia.
@@ -658,7 +684,7 @@ export default function Dashboard() {
                           <Button
                             variant={"destructive"}
                             className="w-full"
-                            onClick={() => handleRechazarTransferencia(soli.id)}
+                            onClick={() => handleRejectTransferencia(soli.id)}
                           >
                             Sí, negar y continuar
                           </Button>

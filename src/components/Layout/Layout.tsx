@@ -21,6 +21,7 @@ import {
   NotebookIcon,
   SendToBackIcon,
   NotepadText,
+  FileStack,
 } from "lucide-react";
 import {
   Dialog,
@@ -112,6 +113,12 @@ export default function Layout({ children }: LayoutProps) {
       icon: NotepadText,
       label: "Historial Cambios Precio",
       href: "/historial-cambios-precio",
+    },
+
+    {
+      icon: FileStack,
+      label: "Stock Eliminaciones",
+      href: "/stock-eliminaciones",
     },
 
     { icon: Users, label: "Clientes", href: "/clientes" },

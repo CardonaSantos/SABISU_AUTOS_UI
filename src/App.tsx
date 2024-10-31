@@ -33,6 +33,9 @@ import Sucursales from "./Pages/Sucursal/Sucursales";
 import TransferenciaProductos from "./Pages/Transferencia/TransferenciaProductos";
 import TransferenciaProductosHistorial from "./Pages/Transferencia/TransferenciaHistorial";
 import HistorialCambiosPrecio from "./Pages/HistorialPrecios/HistorialCambiosPrecio";
+import StockEdicion from "./Pages/StockEdicion/StockEdicion";
+import StockEliminaciones from "./Pages/Eliminaciones/StockEliminaciones";
+import GarantiaPage from "./components/PDF/GarantiaPage";
 
 function App() {
   return (
@@ -265,6 +268,33 @@ function App() {
               element={
                 <ProtectedRoute>
                   <HistorialCambiosPrecio />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/stock-edicion/:id"
+              element={
+                <ProtectedRoute>
+                  <StockEdicion />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/stock-eliminaciones"
+              element={
+                <ProtectedRoute>
+                  <StockEliminaciones />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/garantía/generar-garantía/:id"
+              element={
+                <ProtectedRoute>
+                  <GarantiaPage />
                 </ProtectedRoute>
               }
             />

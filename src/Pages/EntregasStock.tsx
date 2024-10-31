@@ -8,6 +8,8 @@ import {
   Building,
   Coins,
   User2Icon,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   Table,
@@ -29,6 +31,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import axios from "axios";
 import { useStore } from "@/components/Context/ContextSucursal";
 import { toast } from "sonner";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 // Tipos
 type Producto = {
@@ -166,6 +176,22 @@ export default function EntregasStock() {
     </ScrollArea>
   );
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+  const totalPages = Math.ceil(entregas.length / itemsPerPage);
+
+  // Calcular el índice del último elemento de la página actual
+  const indexOfLastItem = currentPage * itemsPerPage;
+  // Calcular el índice del primer elemento de la página actual
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  // Obtener los elementos de la página actual
+  const currentItems = entregas.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Cambiar de página
+  const onPageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
     <div className="container mx-auto py-10">
       <Table>
@@ -182,75 +208,157 @@ export default function EntregasStock() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {entregas.map((entrega) => (
-            <TableRow key={entrega.id}>
-              <TableCell>#{entrega.id}</TableCell>
-              <TableCell>
-                <div className="flex items-center">
-                  <User2Icon className="mr-2" size={16} />
-                  {entrega.proveedor.nombre}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center">
-                  <Calendar className="mr-2" size={16} />
-                  {formatDate(entrega.fechaEntrega)}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center">
-                  <Building className="mr-2" size={16} />
-                  {entrega.sucursal.nombre}
-                </div>
-              </TableCell>
+          {currentItems &&
+            currentItems.map((entrega) => (
+              <TableRow key={entrega.id}>
+                <TableCell>#{entrega.id}</TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <User2Icon className="mr-2" size={16} />
+                    {entrega.proveedor.nombre}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <Calendar className="mr-2" size={16} />
+                    {formatDate(entrega.fechaEntrega)}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <Building className="mr-2" size={16} />
+                    {entrega.sucursal.nombre}
+                  </div>
+                </TableCell>
 
-              <TableCell>
-                <div className="flex items-center">
-                  <Package className="mr-2" size={16} />
-                  {entrega.stockEntregado.reduce(
-                    (total, prod) => total + prod.cantidad,
-                    0
-                  )}
-                </div>
-              </TableCell>
-
-              <TableCell>
-                <div className="flex items-center">
-                  <Coins className="mr-2" size={16} />
-                  {new Intl.NumberFormat("es-GT", {
-                    style: "currency",
-                    currency: "GTQ",
-                  }).format(entrega.montoTotal)}
-                </div>
-              </TableCell>
-              <TableCell>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedEntrega(entrega)}
-                    >
-                      <Eye className="mr-2" size={16} />
-                      Ver Detalles
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-3xl">
-                    <DialogHeader>
-                      <DialogTitle>
-                        Detalles de la Entrega #{entrega.id}
-                      </DialogTitle>
-                    </DialogHeader>
-                    {selectedEntrega && (
-                      <EntregaDetails entrega={selectedEntrega} />
+                <TableCell>
+                  <div className="flex items-center">
+                    <Package className="mr-2" size={16} />
+                    {entrega.stockEntregado.reduce(
+                      (total, prod) => total + prod.cantidad,
+                      0
                     )}
-                  </DialogContent>
-                </Dialog>
-              </TableCell>
-            </TableRow>
-          ))}
+                  </div>
+                </TableCell>
+
+                <TableCell>
+                  <div className="flex items-center">
+                    <Coins className="mr-2" size={16} />
+                    {new Intl.NumberFormat("es-GT", {
+                      style: "currency",
+                      currency: "GTQ",
+                    }).format(entrega.montoTotal)}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedEntrega(entrega)}
+                      >
+                        <Eye className="mr-2" size={16} />
+                        Ver Detalles
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl">
+                      <DialogHeader>
+                        <DialogTitle>
+                          Detalles de la Entrega #{entrega.id}
+                        </DialogTitle>
+                      </DialogHeader>
+                      {selectedEntrega && (
+                        <EntregaDetails entrega={selectedEntrega} />
+                      )}
+                    </DialogContent>
+                  </Dialog>
+                </TableCell>
+              </TableRow>
+            ))}
         </TableBody>
       </Table>
+      <div className="flex items-center justify-center py-4">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <Button onClick={() => onPageChange(1)}>Primero</Button>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </PaginationPrevious>
+            </PaginationItem>
+
+            {/* Sistema de truncado */}
+            {currentPage > 3 && (
+              <>
+                <PaginationItem>
+                  <PaginationLink onClick={() => onPageChange(1)}>
+                    1
+                  </PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="text-muted-foreground">...</span>
+                </PaginationItem>
+              </>
+            )}
+
+            {Array.from({ length: totalPages }, (_, index) => {
+              const page = index + 1;
+              if (
+                page === currentPage ||
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <PaginationItem key={index}>
+                    <PaginationLink
+                      onClick={() => onPageChange(page)}
+                      isActive={page === currentPage}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              }
+              return null;
+            })}
+
+            {currentPage < totalPages - 2 && (
+              <>
+                <PaginationItem>
+                  <span className="text-muted-foreground">...</span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink onClick={() => onPageChange(totalPages)}>
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              </>
+            )}
+
+            <PaginationItem>
+              <PaginationNext
+                onClick={() =>
+                  onPageChange(Math.min(totalPages, currentPage + 1))
+                }
+              >
+                <ChevronRight className="h-4 w-4" />
+              </PaginationNext>
+            </PaginationItem>
+            <PaginationItem>
+              <Button
+                variant={"destructive"}
+                onClick={() => onPageChange(totalPages)}
+              >
+                Último
+              </Button>
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
     </div>
   );
 }

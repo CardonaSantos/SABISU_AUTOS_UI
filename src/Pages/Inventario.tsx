@@ -709,11 +709,13 @@ export default function Inventario() {
                       Sin stock asignado
                     </Badge>
                   ) : (
-                    product.stock
-                      .map((stock) =>
-                        new Date(stock.fechaIngreso).toLocaleDateString()
-                      )
-                      .join(", ")
+                    product.stock.map((stock) => (
+                      <Link key={stock.id} to={`/stock-edicion/${stock.id}`}>
+                        <p>
+                          {new Date(stock.fechaIngreso).toLocaleDateString()}
+                        </p>
+                      </Link>
+                    ))
                   )}
                 </TableCell>
 

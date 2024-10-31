@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Eye, FileText } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  FileSpreadsheet,
+  FileText,
+} from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -156,7 +162,7 @@ export default function HistorialVentas() {
   );
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 15;
   const totalPages = Math.ceil(ventas.length / itemsPerPage);
 
   // Calcular el índice del último elemento de la página actual
@@ -240,8 +246,15 @@ export default function HistorialVentas() {
                             <FileText className="h-4 w-4" />
                           </Button>
                         </Link>
+
+                        <Link to={`/garantía/generar-garantía/${venta.id}`}>
+                          <Button variant="outline" size="icon">
+                            <FileSpreadsheet className="h-4 w-4" />
+                          </Button>
+                        </Link>
                       </div>
                     </TableCell>
+                    <div className="flex space-x-2"></div>
                   </TableRow>
                 ))}
               </TableBody>

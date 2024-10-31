@@ -125,7 +125,9 @@ export default function TransferenciaProductos() {
       );
 
       if (response.status === 201) {
-        toast.success("Producto transferido correctamente");
+        toast.success(
+          "Solicitud de transferencia enviada. Esperando respuesta del administrador."
+        );
         getProductos(); // Actualiza los productos después de la transferencia
 
         console.log("Datos de transferencia:", transferenciaData);
@@ -141,7 +143,7 @@ export default function TransferenciaProductos() {
     } catch (error) {
       console.error("Error al transferir el producto:", error);
       toast.error(
-        "Error al transferir el producto. Por favor, intenta de nuevo."
+        "Error al solicitar transferencia. Por favor, intenta de nuevo."
       );
     } finally {
       // Restablece el estado de truncar independientemente de si hubo éxito o error
@@ -358,16 +360,16 @@ export default function TransferenciaProductos() {
                 !selectedProduct || !selectedSucursalDestino || cantidad < 1
               }
             >
-              Realizar Transferencia
+              Enviar solicitud
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle className="text-center">
-                Confirmar Transferencia
+                Solicitar Transferencia
               </DialogTitle>
               <DialogDescription className="text-center">
-                ¿Estás seguro de que deseas realizar esta transferencia?
+                ¿Estás seguro de querer transferir este producto?
               </DialogDescription>
             </DialogHeader>
 
@@ -418,7 +420,7 @@ export default function TransferenciaProductos() {
                 disabled={truncar}
                 onClick={handleSubmit}
               >
-                Confirmar
+                Si, confirmar
               </Button>
             </DialogFooter>
           </DialogContent>

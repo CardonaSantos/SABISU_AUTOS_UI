@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,24 +41,16 @@ import { toast } from "sonner";
 import { ProductosResponse } from "@/Types/Venta/ProductosResponse";
 import React from "react";
 import { useStore } from "@/components/Context/ContextSucursal";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 
 import SelectM from "react-select"; // Importación correcta de react-select
 import { useNavigate } from "react-router-dom";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const API_URL = import.meta.env.VITE_API_URL;
-
-// Mock data for products and customers
-// Define interfaces for Product, Customer, and CartItem
-
-interface Customer {
-  id: number;
-  name: string;
-}
 
 //========================================>
 type Stock = {
@@ -94,12 +84,6 @@ interface CartItem extends Producto {
 
 // Mock data for products and customers
 
-const customers: Customer[] = [
-  { id: 1, name: "Julio Alberto" },
-  { id: 2, name: "Mari Mileidy" },
-  { id: 3, name: "Marcos Castillo" },
-];
-
 export default function PuntoVenta() {
   const navigate = useNavigate();
 
@@ -108,10 +92,7 @@ export default function PuntoVenta() {
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
-  );
-  console.log(selectedCustomer);
+
   const sucursalId = useStore((state) => state.sucursalId);
 
   const [paymentMethod, setPaymentMethod] = useState<string>("CONTADO");
@@ -170,22 +151,41 @@ export default function PuntoVenta() {
   const handleCompleteSale = async () => {
     const saleData = {
       sucursalId: sucursalId,
-
-      clienteId: null, // Aquí puedes agregar el cliente si corresponde
+      clienteId: selectedCustomerID?.id,
       productos: cart.map((prod) => ({
         productoId: prod.id,
         cantidad: prod.quantity,
-        selectedPriceId: prod.selectedPriceId, // Enviando solo el ID del precio
+        selectedPriceId: prod.selectedPriceId,
       })),
       metodoPago: paymentMethod || "CONTADO",
       monto: cart.reduce(
         (acc, prod) => acc + prod.selectedPrice * prod.quantity,
         0
       ),
-      nombreClienteFinal: nombreClienteFinal.trim(),
-      telefonoClienteFinal: telefonoClienteFinal.trim(),
-      direccionClienteFinal: direccionClienteFinal.trim(),
+      nombre: nombre.trim(),
+      telefono: telefono.trim(),
+      direccion: direccion.trim(),
+      dpi: dpi.trim(),
+      imei: imei.trim(),
     };
+
+    // Validación para ventas mayores a 1000 con cliente obligatorio
+    const isCustomerInfoProvided =
+      saleData.nombre &&
+      saleData.telefono &&
+      saleData.direccion &&
+      saleData.dpi;
+
+    if (
+      saleData.monto > 1000 &&
+      !saleData.clienteId &&
+      !isCustomerInfoProvided
+    ) {
+      toast.warning(
+        "Para ventas mayores a 1000 es necesario ingresar o seleccionar un cliente"
+      );
+      return;
+    }
 
     console.log("El cart es: ", saleData);
 
@@ -198,8 +198,6 @@ export default function PuntoVenta() {
         setCart([]); // Reiniciar el carrito
         getProducts(); // Obtener productos actualizados
         setTimeout(() => {
-          // window.location.href = "/historial/ventas";
-          // navigate
           navigate("/historial/ventas");
         }, 1000);
       } else {
@@ -244,16 +242,17 @@ export default function PuntoVenta() {
   );
 
   const [openCustomerDetails, setOpenCustomerDetails] = useState(false);
-  const [openSelectCustomer, setOpenSelectCustomer] = useState(false);
 
-  const [nombreClienteFinal, setNombreClienteFinal] = useState<string>("");
-  const [telefonoClienteFinal, setTelefonoClienteFinal] = useState<string>("");
-  const [direccionClienteFinal, setDireccionClienteFinal] =
-    useState<string>("");
+  const [nombre, setNombre] = useState<string>("");
+  const [dpi, setDpi] = useState<string>("");
+  const [imei, setImei] = useState<string>("");
+
+  const [telefono, setTelefono] = useState<string>("");
+  const [direccion, setDireccion] = useState<string>("");
   console.log("Los datos de cf final son: ", {
-    nombreClienteFinal,
-    telefonoClienteFinal,
-    direccionClienteFinal,
+    nombre,
+    telefono,
+    direccion,
   });
 
   const updatePrice = (productId: number, newPrice: number) => {
@@ -299,7 +298,7 @@ export default function PuntoVenta() {
       });
       if (response.status === 201) {
         toast.success(
-          "Solicitud enviada, esperando respuesta del administrado"
+          "Solicitud enviada, esperando respuesta del administrador..."
         );
         setPrecioRequest(null);
         setSelectedProductId("");
@@ -311,6 +310,110 @@ export default function PuntoVenta() {
   }
 
   console.log("El cart a enviar es: ", cart);
+
+  interface Customer {
+    id: number;
+    nombre: string;
+    telefono?: string;
+    dpi?: string;
+  }
+
+  interface CustomerOption {
+    value: number;
+    label: string;
+  }
+
+  const customers: Customer[] = [
+    { id: 1, nombre: "Juan Pérez", telefono: "12345678", dpi: "1234567890123" },
+    {
+      id: 2,
+      nombre: "María López",
+      telefono: "87654321",
+      dpi: "9876543210987",
+    },
+    {
+      id: 3,
+      nombre: "Julio Alberto Santana Camposeco",
+      telefono: "23453456",
+      dpi: "9876543211234",
+    },
+    {
+      id: 4,
+      nombre: "Mari Mileidy Camposeco Silvestre",
+      telefono: "345676534",
+      dpi: "98765432765443",
+    },
+    {
+      id: 5,
+      nombre: "Mari Mileidy Camposeco Silvestre 2",
+      telefono: "345676534",
+      dpi: "98765432765443",
+    },
+    {
+      id: 6,
+      nombre: "Mari Mileidy Camposeco Silvestre 2",
+      telefono: "345676534",
+      dpi: "98765432765443",
+    },
+    {
+      id: 7,
+      nombre: "Mari Mileidy Camposeco Silvestre 2",
+      telefono: "345676534",
+      dpi: "98765432765443",
+    },
+    // Agrega más clientes aquí
+  ];
+
+  // Cambiar el tipo a Customer | null
+  const [selectedCustomerID, setSelectedCustomerID] = useState<Customer | null>(
+    null
+  );
+
+  // Actualizar el manejador de cambio
+  const handleChange = (selectedOption: CustomerOption | null) => {
+    // Encuentra el cliente correspondiente
+    const selectedCustomer = selectedOption
+      ? customers.find((customer) => customer.id === selectedOption.value) ||
+        null
+      : null;
+    setSelectedCustomerID(selectedCustomer);
+  };
+
+  console.log("EL id del cliente seleccionado es: ", selectedCustomerID?.id);
+
+  type Client = {
+    id: number;
+    nombre: string;
+    telefono: string;
+    dpi: string;
+    direccion: string;
+    actualizadoEn: Date;
+  };
+
+  const [clients, setClients] = useState<Client[]>([]);
+  // Mapeo de clientes a un formato compatible con react-select
+  const customerOptions = clients.map((customer) => ({
+    value: customer.id, // Este será el ID del cliente
+    label: `${customer.nombre} ${
+      customer.telefono ? `(${customer.telefono})` : ""
+    } ${customer.dpi ? `DPI: ${customer.dpi}` : ""}`, // Formato de presentación
+  }));
+
+  useEffect(() => {
+    const getCustomers = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/client/get-all-customers`);
+
+        if (response.status === 200) {
+          setClients(response.data);
+        }
+      } catch (error) {
+        console.log(error);
+        toast.error("Error al conseguir clientes previos");
+      }
+    };
+    getCustomers();
+  }, []);
 
   return (
     <div className="container  ">
@@ -424,10 +527,46 @@ export default function PuntoVenta() {
             </CardContent>
           </Card>
         </div>
+
         <div className="space-y-2 ">
-          <Card className="flex flex-col h-80 shadow-xl">
+          <Card className="flex flex-col h-2/4 shadow-xl">
             <CardHeader>
               <CardTitle className="text-xl">Cart</CardTitle>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    style={{
+                      backgroundColor: imei ? "#06d12b" : "gray",
+                      color: "white",
+                    }}
+                  >
+                    {imei ? "IMEI AÑADIDO" : "AÑADIR IMEI"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <div className="grid gap-4">
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        Un IMEI para el producto en esta venta
+                      </p>
+                    </div>
+                    <div className="grid gap-2">
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <Label htmlFor="width">IMEI</Label>
+                        <Input
+                          value={imei}
+                          onChange={(e) => setImei(e.target.value)}
+                          id="width"
+                          defaultValue="100%"
+                          className="col-span-2 h-8"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </CardHeader>
 
             <CardContent className="flex-1 overflow-y-auto">
@@ -570,143 +709,109 @@ export default function PuntoVenta() {
                 <h2 className="font-bold text-xl">Método de Pago & Cliente</h2>
               </div>
 
-              <Collapsible
+              <div className="mb-4 w-full">
+                <Label htmlFor="payment-method">Método de Pago</Label>
+                <Select
+                  value={paymentMethod}
+                  onValueChange={(value) => setPaymentMethod(value)}
+                >
+                  <SelectTrigger id="payment-method" className="w-full">
+                    <SelectValue placeholder="Método de Pago" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CONTADO">Contado</SelectItem>
+                    <SelectItem value="TARJETA">Tarjeta</SelectItem>
+                    <SelectItem value="TRANSFERENCIA">
+                      Transferencia Bancaria
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Popover
                 open={openCustomerDetails}
                 onOpenChange={setOpenCustomerDetails}
               >
-                <div className="flex justify-center items-center space-x-4 px-4">
-                  <CollapsibleTrigger className="flex gap-1" asChild>
-                    <Button
-                      className="w-full mb-3"
-                      variant="destructive"
-                      size="sm"
-                    >
-                      Añadir información del cliente final
-                      <User2Icon className="h-4 w-4" />
-                      <span className="sr-only">Toggle</span>
-                    </Button>
-                  </CollapsibleTrigger>
-                </div>
-
-                <CollapsibleContent>
-                  <div className="space-y-1 px-4">
-                    {/* Selección de cliente */}
+                <PopoverTrigger asChild>
+                  <Button
+                    className="w-full my-2"
+                    variant="destructive"
+                    size="sm"
+                    disabled={!!selectedCustomerID}
+                  >
+                    Añadir Cliente
+                    <User2Icon className="h-4 w-4 ml-2" />
+                    <span className="sr-only">Toggle</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-96 p-4 shadow-lg rounded-lg">
+                  <div className="space-y-4">
                     <div>
                       <Label htmlFor="customer">Nombre</Label>
                       <Input
-                        value={nombreClienteFinal}
-                        onChange={(e) => setNombreClienteFinal(e.target.value)}
+                        disabled={!!selectedCustomerID}
+                        value={nombre}
+                        onChange={(e) => setNombre(e.target.value)}
                         placeholder="Referencia"
+                        className="mt-1 w-full"
                       />
                     </div>
-
-                    {/* Selección de método de pago */}
                     <div>
-                      <Label htmlFor="payment-method">Telefono</Label>
+                      <Label htmlFor="payment-method">Teléfono</Label>
                       <Input
-                        value={telefonoClienteFinal}
-                        onChange={(e) =>
-                          setTelefonoClienteFinal(e.target.value)
-                        }
+                        disabled={!!selectedCustomerID}
+                        value={telefono}
+                        onChange={(e) => setTelefono(e.target.value)}
                         placeholder="+502 5060 7080"
+                        className="mt-1 w-full"
                       />
                     </div>
-
                     <div>
-                      <Label htmlFor="payment-method">Dirección</Label>
+                      <Label>DPI</Label>
                       <Input
-                        value={direccionClienteFinal}
-                        onChange={(e) =>
-                          setDireccionClienteFinal(e.target.value)
-                        }
-                        placeholder=" C. Central Juan Pablo II, Jacaltenango Canton Pila"
+                        disabled={!!selectedCustomerID}
+                        value={dpi}
+                        onChange={(e) => setDpi(e.target.value)}
+                        placeholder="Número de DPI"
+                        className="mt-1 w-full"
+                      />
+                    </div>
+                    <div>
+                      <Label>Dirección</Label>
+                      <Input
+                        disabled={!!selectedCustomerID}
+                        value={direccion}
+                        onChange={(e) => setDireccion(e.target.value)}
+                        placeholder="C. Central Juan Pablo II, Jacaltenango Canton Pila"
+                        className="mt-1 w-full"
                       />
                     </div>
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
+                </PopoverContent>
+              </Popover>
 
               {/* SELECCION DE CLIENTE YA CREADO */}
 
-              <div className="flex gap-1 justify-between mt-4">
-                {/* Selección de método de pago */}
-                <div>
-                  <Label htmlFor="payment-method">Método de Pago</Label>
-                  <Select
-                    value={paymentMethod}
-                    onValueChange={(value) => setPaymentMethod(value)}
-                  >
-                    <SelectTrigger id="payment-method" className="w-[180px]">
-                      <SelectValue placeholder="Método de Pago" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CONTADO">Contado</SelectItem>
-                      <SelectItem value="TARJETA">Tarjeta</SelectItem>
-                      <SelectItem value="TRANSFERENCIA">
-                        Transferencia Bancaria
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="flex mt-4">
+                <div className="space-y-4 px-4 w-full">
+                  {/* Selección de cliente */}
+                  <Label>Seleccionar Cliente</Label>
+                  <SelectM
+                    className="bg-transparent text-black w-full"
+                    options={customerOptions}
+                    onChange={handleChange}
+                    placeholder="Seleccionar cliente"
+                    isClearable
+                    isDisabled={!!(nombre || direccion || telefono || dpi)}
+                  />
                 </div>
-                <Collapsible
-                  open={openSelectCustomer}
-                  onOpenChange={setOpenSelectCustomer}
-                >
-                  <div className="flex items-center justify-between space-x-4 px-4">
-                    <CollapsibleTrigger className="flex gap-1" asChild>
-                      <Button variant="default" size="sm">
-                        Seleccionar Cliente
-                        <User2Icon className="h-4 w-4" />
-                        <span className="sr-only">Toggle</span>
-                      </Button>
-                    </CollapsibleTrigger>
-                  </div>
-
-                  <CollapsibleContent>
-                    <div className="space-y-4 px-4">
-                      {/* Selección de cliente */}
-                      <div>
-                        <Label htmlFor="customer">Cliente</Label>
-                        <Select
-                          value={
-                            selectedCustomer
-                              ? selectedCustomer.id.toString()
-                              : "none"
-                          }
-                          onValueChange={(value) => {
-                            const selected = customers.find(
-                              (customer) => customer.id === parseInt(value)
-                            );
-                            setSelectedCustomer(selected || null);
-                          }}
-                        >
-                          <SelectTrigger id="customer" className="w-[180px]">
-                            <SelectValue placeholder="Seleccionar cliente" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem key="none" value="none">
-                              Ninguno
-                            </SelectItem>
-                            {customers.map((customer) => (
-                              <SelectItem
-                                key={customer.id}
-                                value={customer.id.toString()}
-                              >
-                                {customer.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
-      <div className="mt-8">
+      {/* seleccionar precio especial::::::::::::::::::::::*/}
+      <div className="mt-20">
         <Card className="shadow-xl">
           <CardHeader>
             <CardTitle>Petición de precio especial</CardTitle>
@@ -756,10 +861,15 @@ export default function PuntoVenta() {
               <div className="space-y-2">
                 <Label>Precio Requerido</Label>
                 <Input
-                  onChange={(e) => setPrecioRequest(Number(e.target.value))}
+                  value={precioReques ?? ""}
+                  onChange={(e) =>
+                    setPrecioRequest(
+                      e.target.value ? Number(e.target.value) : null
+                    )
+                  }
                   placeholder="100"
                   type="number"
-                ></Input>
+                />
               </div>
             </div>
 

@@ -162,11 +162,12 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
               ? venta.metodoPago.metodoPago
               : "Sin método de pago"}
           </Text>
-          {/* {venta?.cliente?.direccion ?? venta?.direccionClienteFinal ?? null} */}
 
-          {/* <Text style={styles.address}>
-            Encargado: Kandyy
-          </Text> */}
+          {venta?.imei ? (
+            <Text style={styles.address}>
+              IMEI: {venta?.imei ? venta.imei : null}
+            </Text>
+          ) : null}
         </View>
         <Text style={styles.addressTitle}>
           {venta?.fechaVenta

@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Tag, Calendar, User, Eye } from "lucide-react";
+import {
+  Tag,
+  Calendar,
+  User,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -19,6 +26,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 // Tipos
 type Sucursal = {
@@ -146,6 +161,22 @@ export default function HistorialCambiosPrecio() {
     </ScrollArea>
   );
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+  const totalPages = Math.ceil(cambios.length / itemsPerPage);
+
+  // Calcular el índice del último elemento de la página actual
+  const indexOfLastItem = currentPage * itemsPerPage;
+  // Calcular el índice del primer elemento de la página actual
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  // Obtener los elementos de la página actual
+  const currentItems = cambios.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Cambiar de página
+  const onPageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
     <div className="container mx-auto py-10">
       <h2 className="text-2xl font-bold mb-4">
@@ -164,7 +195,7 @@ export default function HistorialCambiosPrecio() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {cambios.map((cambio) => (
+          {currentItems.map((cambio) => (
             <TableRow key={cambio.id}>
               <TableCell>
                 <div className="flex items-center">
@@ -229,6 +260,87 @@ export default function HistorialCambiosPrecio() {
           ))}
         </TableBody>
       </Table>
+      <div className="flex items-center justify-center py-4">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <Button onClick={() => onPageChange(1)}>Primero</Button>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </PaginationPrevious>
+            </PaginationItem>
+
+            {/* Sistema de truncado */}
+            {currentPage > 3 && (
+              <>
+                <PaginationItem>
+                  <PaginationLink onClick={() => onPageChange(1)}>
+                    1
+                  </PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="text-muted-foreground">...</span>
+                </PaginationItem>
+              </>
+            )}
+
+            {Array.from({ length: totalPages }, (_, index) => {
+              const page = index + 1;
+              if (
+                page === currentPage ||
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <PaginationItem key={index}>
+                    <PaginationLink
+                      onClick={() => onPageChange(page)}
+                      isActive={page === currentPage}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              }
+              return null;
+            })}
+
+            {currentPage < totalPages - 2 && (
+              <>
+                <PaginationItem>
+                  <span className="text-muted-foreground">...</span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink onClick={() => onPageChange(totalPages)}>
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              </>
+            )}
+
+            <PaginationItem>
+              <PaginationNext
+                onClick={() =>
+                  onPageChange(Math.min(totalPages, currentPage + 1))
+                }
+              >
+                <ChevronRight className="h-4 w-4" />
+              </PaginationNext>
+            </PaginationItem>
+            <PaginationItem>
+              <Button
+                variant={"destructive"}
+                onClick={() => onPageChange(totalPages)}
+              >
+                Último
+              </Button>
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
     </div>
   );
 }
