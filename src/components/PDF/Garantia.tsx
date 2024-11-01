@@ -118,82 +118,85 @@ const Garantia: React.FC<GarantiaProps> = ({ venta }) => {
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <Image style={styles.logo} src={logo} />
-        </View>
+      {/* USAMOS MAP ANTES DEL PAGE PARA MOSTRAR UN PAGE POR CADA PRODUCTO */}
+      {venta?.productos.map((producto, index) => (
+        <Page key={index} size="A4" style={styles.page}>
+          <View style={styles.header}>
+            <Image style={styles.logo} src={logo} />
+          </View>
 
-        <Text style={styles.title}>GARANTÍA DE DISPOSITIVO</Text>
+          <Text style={styles.title}>GARANTÍA DE DISPOSITIVO</Text>
 
-        <View style={styles.section}>
-          <View style={styles.row}>
-            <Text style={styles.label}>Fecha de venta:</Text>
-            <Text style={styles.text}>
-              {venta?.fechaVenta
-                ? formatearFecha(venta.fechaVenta)
-                : "No disponible"}
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Dispositivo:</Text>
-            <Text style={styles.text}>
-              {venta?.productos[0]?.producto?.nombre || "No disponible"}
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Descripción:</Text>
-            <Text style={styles.text}>
-              {venta?.productos[0]?.producto?.descripcion || "No disponible"}
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Cliente:</Text>
-            <Text style={styles.text}>
-              {venta?.cliente?.nombre ||
-                venta?.nombreClienteFinal ||
-                "No disponible"}
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>IMEI:</Text>
-            <Text style={styles.text}>{venta?.imei || "No disponible"}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>DPI:</Text>
-            <Text style={styles.text}>
-              {venta?.cliente?.dpi || "No disponible"}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.terms}>
-          <Text style={[styles.label, { marginBottom: 10 }]}>
-            Términos de garantía:
-          </Text>
-          {[
-            "Cubre garantía todo defecto de fábrica, pantalla, bocinas, micrófonos, teclados, baterías o software.",
-            "Tiempo de garantía es de 6 meses a partir de la fecha de venta.",
-            "No cubre garantía cuando el dispositivo esté dañado por golpes, humedad, uso inadecuado o manipulación por técnico externo.",
-            'En caso de software, no aplica si el teléfono está "flasheado" o liberado.',
-            "Si se da en garantía, el tiempo de reparación es de 5 a 6 semanas (No se realiza devolución de dinero).",
-          ].map((term, index) => (
-            <View key={index} style={styles.termItem}>
+          <View style={styles.section}>
+            <View style={styles.row}>
+              <Text style={styles.label}>Fecha de venta:</Text>
               <Text style={styles.text}>
-                {index + 1}. {term}
+                {venta?.fechaVenta
+                  ? formatearFecha(venta.fechaVenta)
+                  : "No disponible"}
               </Text>
             </View>
-          ))}
-        </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Dispositivo:</Text>
+              <Text style={styles.text}>
+                {producto?.producto?.nombre || "No disponible"}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Descripción:</Text>
+              <Text style={styles.text}>
+                {producto?.producto?.descripcion || "No disponible"}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Cliente:</Text>
+              <Text style={styles.text}>
+                {venta?.cliente?.nombre ||
+                  venta?.nombreClienteFinal ||
+                  "No disponible"}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>IMEI:</Text>
+              <Text style={styles.text}>{venta?.imei || "No disponible"}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>DPI:</Text>
+              <Text style={styles.text}>
+                {venta?.cliente?.dpi || "No disponible"}
+              </Text>
+            </View>
+          </View>
 
-        <View style={styles.signature}>
-          <Text>
-            Acuso de recibo el dispositivo en correcto funcionamiento y acepto
-            los términos de garantía.
-          </Text>
-          <View style={styles.signatureLine} />
-          <Text style={{ marginTop: 5 }}>Firma del cliente</Text>
-        </View>
-      </Page>
+          <View style={styles.terms}>
+            <Text style={[styles.label, { marginBottom: 10 }]}>
+              Términos de garantía:
+            </Text>
+            {[
+              "Cubre garantía todo defecto de fábrica, pantalla, bocinas, micrófonos, teclados, baterías o software.",
+              "Tiempo de garantía es de 6 meses a partir de la fecha de venta.",
+              "No cubre garantía cuando el dispositivo esté dañado por golpes, humedad, uso inadecuado o manipulación por técnico externo.",
+              'En caso de software, no aplica si el teléfono está "flasheado" o liberado.',
+              "Si se da en garantía, el tiempo de reparación es de 5 a 6 semanas (No se realiza devolución de dinero).",
+            ].map((term, idx) => (
+              <View key={idx} style={styles.termItem}>
+                <Text style={styles.text}>
+                  {idx + 1}. {term}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.signature}>
+            <Text>
+              Acuso de recibo el dispositivo en correcto funcionamiento y acepto
+              los términos de garantía.
+            </Text>
+            <View style={styles.signatureLine} />
+            <Text style={{ marginTop: 5 }}>Firma del cliente</Text>
+          </View>
+        </Page>
+      ))}
     </Document>
   );
 };

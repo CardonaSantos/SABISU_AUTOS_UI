@@ -40,6 +40,12 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Link } from "react-router-dom";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function HistorialVentas() {
@@ -96,14 +102,16 @@ export default function HistorialVentas() {
             {venta.cliente ? (
               <>
                 <p>Nombre: {venta.cliente.nombre || "N/A"}</p>
-                <p>Correo: {venta.cliente.correo || "N/A"}</p>
+                {/* <p>Correo: {venta.cliente.correo || "N/A"}</p> */}
                 <p>Teléfono: {venta.cliente.telefono || "N/A"}</p>
+                <p>DPI: {venta.cliente.dpi || "N/A"}</p>
+                <p>Direccion: {venta.cliente.direccion || "N/A"}</p>
               </>
             ) : (
               <>
                 <p>Nombre: {venta.nombreClienteFinal || "CF"}</p>
-                <p>Teléfono: {venta.telefonoClienteFinal || "N/A"}</p>
-                <p>Dirección: {venta.direccionClienteFinal || "N/A"}</p>
+                {/* <p>Teléfono: {venta.telefonoClienteFinal || "N/A"}</p> */}
+                {/* <p>Dirección: {venta.direccionClienteFinal || "N/A"}</p> */}
               </>
             )}
           </div>
@@ -241,17 +249,38 @@ export default function HistorialVentas() {
                             <DetallesVenta venta={venta} />
                           </DialogContent>
                         </Dialog>
-                        <Link to={`/venta/generar-factura/${venta.id}`}>
-                          <Button variant="outline" size="icon">
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                        </Link>
 
-                        <Link to={`/garantía/generar-garantía/${venta.id}`}>
-                          <Button variant="outline" size="icon">
-                            <FileSpreadsheet className="h-4 w-4" />
-                          </Button>
-                        </Link>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Link to={`/venta/generar-factura/${venta.id}`}>
+                                <Button variant="outline" size="icon">
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Conseguir comprobante</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Link
+                                to={`/garantía/generar-garantía/${venta.id}`}
+                              >
+                                <Button variant="outline" size="icon">
+                                  <FileSpreadsheet className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Conseguir garantías</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </TableCell>
                     <div className="flex space-x-2"></div>

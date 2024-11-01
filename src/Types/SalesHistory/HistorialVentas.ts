@@ -27,6 +27,7 @@ export interface ProductoVenta {
 
 export interface Cliente {
   id: number;
+  dpi: string;
   nombre: string;
   correo: string;
   telefono: string;

@@ -171,10 +171,8 @@ export default function PuntoVenta() {
 
     // Validación para ventas mayores a 1000 con cliente obligatorio
     const isCustomerInfoProvided =
-      saleData.nombre &&
-      saleData.telefono &&
-      saleData.direccion &&
-      saleData.dpi;
+      saleData.nombre && saleData.telefono && saleData.direccion;
+    // saleData.dpi;
 
     if (
       saleData.monto > 1000 &&
@@ -538,18 +536,18 @@ export default function PuntoVenta() {
                     size="sm"
                     variant="secondary"
                     style={{
-                      backgroundColor: imei ? "#06d12b" : "gray",
+                      backgroundColor: imei.length >= 15 ? "#06d12b" : "gray",
                       color: "white",
                     }}
                   >
-                    {imei ? "IMEI AÑADIDO" : "AÑADIR IMEI"}
+                    {imei.length >= 15 ? "IMEI AÑADIDO" : "AÑADIR IMEI"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80">
                   <div className="grid gap-4">
                     <div className="space-y-2">
                       <p className="text-sm text-muted-foreground">
-                        Un IMEI para el producto en esta venta
+                        Puedes ingresar varios IMEIs separados por comas.
                       </p>
                     </div>
                     <div className="grid gap-2">
@@ -559,7 +557,7 @@ export default function PuntoVenta() {
                           value={imei}
                           onChange={(e) => setImei(e.target.value)}
                           id="width"
-                          defaultValue="100%"
+                          placeholder="Ej. 123456789012345"
                           className="col-span-2 h-8"
                         />
                       </div>

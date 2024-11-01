@@ -31,7 +31,7 @@ function GarantiaPage() {
     getSale();
   }, [id]); // Escucha por cambios en idSale
 
-  console.log("La venta recuperada es: ", venta);
+  console.log("La venta para la garantía es: ", venta);
 
   return (
     <div>

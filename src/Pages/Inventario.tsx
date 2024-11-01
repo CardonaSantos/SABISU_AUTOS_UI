@@ -21,7 +21,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -36,7 +35,7 @@ import {
   ChevronRight,
   Download,
   Edit,
-  Trash,
+  Eye,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import axios from "axios";
@@ -58,8 +57,27 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useStore } from "@/components/Context/ContextSucursal";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 const API_URL = import.meta.env.VITE_API_URL;
+
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import utc from "dayjs/plugin/utc";
+import localizedFormat from "dayjs/plugin/localizedFormat";
+
+dayjs.extend(utc);
+dayjs.extend(localizedFormat);
+dayjs.locale("es");
+
+const formatearFecha = (fecha: string) => {
+  // Formateo en UTC sin conversión a local
+  return dayjs.utc(fecha).format("DD/MM/YYYY");
+};
 
 interface ProductCreate {
   nombre: string;
@@ -144,10 +162,6 @@ export default function Inventario() {
       console.log(error);
       toast.error("Error al crear producto");
     }
-  };
-
-  const handleDeleteProduct = (productId: number) => {
-    console.log("Deleting product:", productId);
   };
 
   const handleExport = (format: string) => {
@@ -629,6 +643,7 @@ export default function Inventario() {
           </div>
         </div>
       </div>
+      {/* MAPEO DE PRODUCTOS EN LA TABLA */}
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -711,9 +726,7 @@ export default function Inventario() {
                   ) : (
                     product.stock.map((stock) => (
                       <Link key={stock.id} to={`/stock-edicion/${stock.id}`}>
-                        <p>
-                          {new Date(stock.fechaIngreso).toLocaleDateString()}
-                        </p>
+                        <p>{formatearFecha(stock.fechaIngreso)}</p>
                       </Link>
                     ))
                   )}
@@ -726,9 +739,7 @@ export default function Inventario() {
                         {/* Mostrar la fecha de vencimiento si existe */}
                         {stock.fechaVencimiento ? (
                           <>
-                            {new Date(
-                              stock.fechaVencimiento
-                            ).toLocaleDateString()}
+                            {formatearFecha(stock.fechaVencimiento)}
                             {/* Verificar si está vencido */}
                             {new Date(stock.fechaVencimiento).setHours(
                               23,
@@ -814,8 +825,28 @@ export default function Inventario() {
                 </TableCell>
 
                 <TableCell>
-                  <div className="flex space-x-3">
+                  <div className="flex space-x-2">
                     {/* Enlace para editar el producto */}
+
+                    {/* Botón de HoverCard para mostrar la descripción */}
+                    <HoverCard>
+                      <HoverCardTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Eye size={16} />
+                        </Button>
+                      </HoverCardTrigger>
+                      <HoverCardContent className="w-80 p-4">
+                        <h4 className="text-sm font-semibold">
+                          Descripción del producto
+                        </h4>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {product.descripcion
+                            ? product.descripcion
+                            : "No hay descripción disponible"}
+                        </p>
+                      </HoverCardContent>
+                    </HoverCard>
+
                     <Link
                       to={`/editar-producto/${product.id}`} // Cambia a la ruta correcta que maneje la edición del producto
                       className="flex items-center text-blue-500 hover:underline"
@@ -825,7 +856,7 @@ export default function Inventario() {
                     </Link>
 
                     {/* Botón para eliminar el producto */}
-                    <Dialog>
+                    {/* <Dialog>
                       <DialogTrigger>
                         <Button variant="destructive" size="sm">
                           <Trash className="h-4 w-4" />
@@ -856,7 +887,7 @@ export default function Inventario() {
                           </Button>
                         </div>
                       </DialogContent>
-                    </Dialog>
+                    </Dialog> */}
                   </div>
                 </TableCell>
               </TableRow>
