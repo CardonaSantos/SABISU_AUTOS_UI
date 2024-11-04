@@ -17,21 +17,32 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+
 import {
   Calendar,
-  Clock,
   User,
   Package,
   Trash2,
   AlertCircle,
   Tag,
   FileText,
-  MapPin,
+  Building,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import localizedFormat from "dayjs/plugin/localizedFormat";
+
+dayjs.extend(localizedFormat);
+dayjs.locale("es");
+
+function formatearFechaUTC(fecha: string) {
+  // return dayjs.utc(fecha).format("DD/MM/YYYY HH:mm:ss");
+  return dayjs(fecha).format("DD/MM/YYYY hh:mm A");
+}
 
 // Definición de tipos
 type Producto = {
@@ -66,6 +77,7 @@ type EliminacionStock = {
 
 const API_URL = import.meta.env.VITE_API_URL;
 // Componente para mostrar un campo de información
+// Componente para mostrar un campo de información
 const InfoField = ({
   icon,
   label,
@@ -75,9 +87,9 @@ const InfoField = ({
   label: string;
   value: string;
 }) => (
-  <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-md">
-    {icon}
-    <div>
+  <div className="flex items-start space-x-2 p-2 bg-gray-50 rounded-md">
+    <div className="w-5 h-5 flex-shrink-0">{icon}</div>
+    <div className="flex flex-col">
       <p className="text-sm font-medium text-gray-500">{label}</p>
       <p className="text-sm text-gray-900">{value}</p>
     </div>
@@ -111,12 +123,14 @@ export default function StockEliminaciones() {
     getRegists();
   }, []);
 
+  console.log("Las eliminaciones de stock son: ", stockEliminaciones);
+
   return (
     <div className="container mx-auto py-10">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">ID</TableHead>
+            <TableHead className="w-[100px]">Eliminación</TableHead>
             <TableHead>Producto</TableHead>
             <TableHead>Fecha y Hora</TableHead>
             <TableHead>Usuario</TableHead>
@@ -128,13 +142,9 @@ export default function StockEliminaciones() {
           {stockEliminaciones &&
             stockEliminaciones.map((item) => (
               <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.id}</TableCell>
+                <TableCell className="font-medium">#{item.id}</TableCell>
                 <TableCell>{item.producto.nombre}</TableCell>
-                <TableCell>
-                  {format(new Date(item.fechaHora), "dd/MM/yyyy HH:mm", {
-                    locale: es,
-                  })}
-                </TableCell>
+                <TableCell>{formatearFechaUTC(item.fechaHora)}</TableCell>
                 <TableCell>{item.usuario.nombre}</TableCell>
                 <TableCell>{item.sucursal.nombre}</TableCell>
                 <TableCell className="text-right">
@@ -150,77 +160,62 @@ export default function StockEliminaciones() {
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[550px]">
-                      <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold flex items-center">
-                          <Trash2 className="w-6 h-6 mr-2 text-red-500" />
+                      <DialogHeader className="text-center">
+                        <DialogTitle className="text-2xl font-bold">
                           Detalles de Eliminación de Stock
                         </DialogTitle>
                       </DialogHeader>
+
                       {selectedItem && (
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-2 gap-4">
+                        <ScrollArea className="max-h-[27rem]">
+                          <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <InfoField
+                                icon={<Package className="w-5 h-5 " />}
+                                label="Producto"
+                                value={selectedItem.producto.nombre}
+                              />
+                              <InfoField
+                                icon={<Tag className="w-5 h-5 " />}
+                                label="Código producto"
+                                value={selectedItem.producto.codigoProducto}
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <InfoField
+                                icon={<FileText className="w-5 h-5 " />}
+                                label="Descripción"
+                                value={selectedItem.producto.descripcion}
+                              />
+                              <InfoField
+                                icon={<Calendar className="w-5 h-5 " />}
+                                label="Fecha de eliminación"
+                                value={formatearFechaUTC(
+                                  selectedItem.fechaHora
+                                )}
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <InfoField
+                                icon={<User className="w-5 h-5 " />}
+                                label="Usuario"
+                                value={`${selectedItem.usuario.nombre} (${selectedItem.usuario.rol})`}
+                              />
+                              <InfoField
+                                icon={<Building className="w-5 h-5 " />}
+                                label="Sucursal"
+                                value={selectedItem.sucursal.nombre}
+                              />
+                            </div>
+
                             <InfoField
-                              icon={
-                                <Package className="w-5 h-5 text-blue-500" />
-                              }
-                              label="Producto"
-                              value={selectedItem.producto.nombre}
-                            />
-                            <InfoField
-                              icon={<Tag className="w-5 h-5 text-green-500" />}
-                              label="Código"
-                              value={selectedItem.producto.codigoProducto}
+                              icon={<AlertCircle className="w-5 h-5 " />}
+                              label="Motivo"
+                              value={selectedItem.motivo || "No especificado"}
                             />
                           </div>
-                          <InfoField
-                            icon={
-                              <FileText className="w-5 h-5 text-purple-500" />
-                            }
-                            label="Descripción"
-                            value={selectedItem.producto.descripcion}
-                          />
-                          <div className="grid grid-cols-2 gap-4">
-                            <InfoField
-                              icon={
-                                <Calendar className="w-5 h-5 text-orange-500" />
-                              }
-                              label="Fecha"
-                              value={format(
-                                new Date(selectedItem.fechaHora),
-                                "dd/MM/yyyy",
-                                { locale: es }
-                              )}
-                            />
-                            <InfoField
-                              icon={
-                                <Clock className="w-5 h-5 text-indigo-500" />
-                              }
-                              label="Hora"
-                              value={format(
-                                new Date(selectedItem.fechaHora),
-                                "HH:mm:ss",
-                                { locale: es }
-                              )}
-                            />
-                          </div>
-                          <InfoField
-                            icon={<User className="w-5 h-5 text-cyan-500" />}
-                            label="Usuario"
-                            value={`${selectedItem.usuario.nombre} (${selectedItem.usuario.rol})`}
-                          />
-                          <InfoField
-                            icon={<MapPin className="w-5 h-5 text-red-500" />}
-                            label="Sucursal"
-                            value={selectedItem.sucursal.nombre}
-                          />
-                          <InfoField
-                            icon={
-                              <AlertCircle className="w-5 h-5 text-yellow-500" />
-                            }
-                            label="Motivo"
-                            value={selectedItem.motivo || "No especificado"}
-                          />
-                        </div>
+                        </ScrollArea>
                       )}
                     </DialogContent>
                   </Dialog>

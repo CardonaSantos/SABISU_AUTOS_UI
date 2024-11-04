@@ -43,12 +43,23 @@ import React from "react";
 import { useStore } from "@/components/Context/ContextSucursal";
 
 import SelectM from "react-select"; // Importación correcta de react-select
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import localizedFormat from "dayjs/plugin/localizedFormat";
+
+dayjs.extend(localizedFormat);
+dayjs.locale("es");
+
+function formatearFechaUTC(fecha: string) {
+  return dayjs(fecha).format("DD/MM/YYYY hh:mm A");
+}
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -82,11 +93,29 @@ interface CartItem extends Producto {
   selectedPrice: number; // Precio para mostrar en el resumen
 }
 
-// Mock data for products and customers
+type Client = {
+  id: number;
+  nombre: string;
+  telefono: string;
+  dpi: string;
+  direccion: string;
+  actualizadoEn: Date;
+};
+
+interface Venta {
+  id: number;
+  clienteId: number | null;
+  fechaVenta: string;
+  horaVenta: string;
+  totalVenta: number;
+  direccionClienteFinal: string | null;
+  nombreClienteFinal: string | null;
+  sucursalId: number;
+  telefonoClienteFinal: string | null;
+  imei: string;
+}
 
 export default function PuntoVenta() {
-  const navigate = useNavigate();
-
   const userId = useStore((state) => state.userId);
   console.log("El id del user en el punto venta es: ", userId);
 
@@ -148,6 +177,11 @@ export default function PuntoVenta() {
     setSearchTerm(event.target.value);
   };
 
+  const [openSection, setOpenSection] = useState(false);
+  const [ventaResponse, setventaResponse] = useState<Venta | null>(null);
+  const handleClose = () => {
+    setOpenSection(false);
+  };
   const handleCompleteSale = async () => {
     const saleData = {
       sucursalId: sucursalId,
@@ -191,13 +225,28 @@ export default function PuntoVenta() {
       const response = await axios.post(`${API_URL}/venta`, saleData);
 
       if (response.status === 201) {
+        console.log("LO QUE NOS HAN DEVUELTO ES ESTO: ", response.data);
+
         toast.success("Venta completada con éxito");
         setIsDialogOpen(false);
         setCart([]); // Reiniciar el carrito
         getProducts(); // Obtener productos actualizados
+        setImei("");
+        setventaResponse(response.data);
+        // setSelectedCustomerID(null);
+        setSelectedCustomerID(null); // Limpiar el cliente seleccionado
+
+        setNombre("");
+        setTelefono("");
+        setDireccion("");
+        setDpi("");
+
         setTimeout(() => {
-          navigate("/historial/ventas");
+          setOpenSection(true);
         }, 1000);
+        // setTimeout(() => {
+        //   navigate("/historial/ventas");
+        // }, 1000);
       } else {
         toast.error("Error al completar la venta");
       }
@@ -321,72 +370,20 @@ export default function PuntoVenta() {
     label: string;
   }
 
-  const customers: Customer[] = [
-    { id: 1, nombre: "Juan Pérez", telefono: "12345678", dpi: "1234567890123" },
-    {
-      id: 2,
-      nombre: "María López",
-      telefono: "87654321",
-      dpi: "9876543210987",
-    },
-    {
-      id: 3,
-      nombre: "Julio Alberto Santana Camposeco",
-      telefono: "23453456",
-      dpi: "9876543211234",
-    },
-    {
-      id: 4,
-      nombre: "Mari Mileidy Camposeco Silvestre",
-      telefono: "345676534",
-      dpi: "98765432765443",
-    },
-    {
-      id: 5,
-      nombre: "Mari Mileidy Camposeco Silvestre 2",
-      telefono: "345676534",
-      dpi: "98765432765443",
-    },
-    {
-      id: 6,
-      nombre: "Mari Mileidy Camposeco Silvestre 2",
-      telefono: "345676534",
-      dpi: "98765432765443",
-    },
-    {
-      id: 7,
-      nombre: "Mari Mileidy Camposeco Silvestre 2",
-      telefono: "345676534",
-      dpi: "98765432765443",
-    },
-    // Agrega más clientes aquí
-  ];
-
   // Cambiar el tipo a Customer | null
   const [selectedCustomerID, setSelectedCustomerID] = useState<Customer | null>(
     null
   );
-
   // Actualizar el manejador de cambio
   const handleChange = (selectedOption: CustomerOption | null) => {
     // Encuentra el cliente correspondiente
     const selectedCustomer = selectedOption
-      ? customers.find((customer) => customer.id === selectedOption.value) ||
-        null
+      ? clients.find((customer) => customer.id === selectedOption.value) || null
       : null;
     setSelectedCustomerID(selectedCustomer);
   };
 
   console.log("EL id del cliente seleccionado es: ", selectedCustomerID?.id);
-
-  type Client = {
-    id: number;
-    nombre: string;
-    telefono: string;
-    dpi: string;
-    direccion: string;
-    actualizadoEn: Date;
-  };
 
   const [clients, setClients] = useState<Client[]>([]);
   // Mapeo de clientes a un formato compatible con react-select
@@ -415,6 +412,62 @@ export default function PuntoVenta() {
 
   return (
     <div className="container  ">
+      <Dialog open={openSection} onOpenChange={setOpenSection}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-center">
+              Venta registrada exitosamente
+            </DialogTitle>
+            <DialogDescription className="text-center mt-2">
+              Ahora puedes generar el comprobante de venta para el cliente.
+            </DialogDescription>
+          </DialogHeader>
+
+          {ventaResponse && (
+            <div className="mt-4 text-center items-center justify-center">
+              {/* Detalles de la venta */}
+              <p className="text-sm mb-4">
+                Número de Venta: <strong>#{ventaResponse?.id}</strong>
+              </p>
+
+              <p className=" text-sm mb-4">
+                Fecha y Hora de Venta:{" "}
+                <strong>{formatearFechaUTC(ventaResponse.fechaVenta)}</strong>
+              </p>
+              <p className=" text-sm mb-4">
+                Monto Total:{" "}
+                <strong>
+                  {new Intl.NumberFormat("es-GT", {
+                    style: "currency",
+                    currency: "GTQ",
+                  }).format(ventaResponse?.totalVenta)}
+                </strong>
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-center items-center gap-2 mt-4">
+            {/* Botón para cancelar */}
+            <Button
+              variant={"destructive"}
+              className="px-4 py-2  rounded hover:bg-secondary-hover focus:outline-none"
+              onClick={handleClose}
+            >
+              Mantenerse
+            </Button>
+
+            {/* Botón para recoger comprobante */}
+            <Link to={`/venta/generar-factura/${ventaResponse?.id}`}>
+              <Button
+                className="px-4 py-2  rounded hover:bg-primary-hover focus:outline-none"
+                onClick={handleClose}
+              >
+                Recoger Comprobante
+              </Button>
+            </Link>
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <div className="space-y-2">
           <Card className="shadow-xl">
@@ -800,6 +853,14 @@ export default function PuntoVenta() {
                     onChange={handleChange}
                     placeholder="Seleccionar cliente"
                     isClearable
+                    value={
+                      selectedCustomerID
+                        ? {
+                            value: selectedCustomerID.id,
+                            label: selectedCustomerID.nombre,
+                          }
+                        : null
+                    }
                     isDisabled={!!(nombre || direccion || telefono || dpi)}
                   />
                 </div>

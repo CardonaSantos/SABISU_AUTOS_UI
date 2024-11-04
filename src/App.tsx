@@ -4,12 +4,12 @@ import {
   BrowserRouter as Router,
   Routes,
 } from "react-router-dom";
-import Layout from "./components/Layout/Layout";
+// import Layout from "./components/Layout/Layout";
 import { Toaster } from "sonner";
 import Dashboard from "./Pages/Dashboard";
 import PuntoVenta from "./Pages/PuntoVenta";
 import Inventario from "./Pages/Inventario";
-import Clientes from "./Pages/Clientes";
+// import Clientes from "./Pages/Clientes";
 import Reportes from "./Pages/Reportes";
 import Productos from "./Pages/Productos";
 import Proveedores from "./Pages/Proveedores";
@@ -36,6 +36,8 @@ import HistorialCambiosPrecio from "./Pages/HistorialPrecios/HistorialCambiosPre
 import StockEdicion from "./Pages/StockEdicion/StockEdicion";
 import StockEliminaciones from "./Pages/Eliminaciones/StockEliminaciones";
 import GarantiaPage from "./components/PDF/GarantiaPage";
+import CreateCustomer from "./Pages/Customers/CreateCustomer";
+import Layout2 from "./components/Layout/Layout2";
 
 function App() {
   return (
@@ -64,7 +66,7 @@ function App() {
           <Route path="/register" element={<CreateUser />} /> */}
 
           {/* Rutas protegidas con Layout */}
-          <Route element={<Layout />}>
+          <Route element={<Layout2 />}>
             <Route
               path="/dashboard"
               element={
@@ -133,15 +135,6 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Stock />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/clientes"
-              element={
-                <ProtectedRoute>
-                  <Clientes />
                 </ProtectedRoute>
               }
             />
@@ -295,6 +288,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <GarantiaPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/clientes-manage"
+              element={
+                <ProtectedRoute>
+                  <CreateCustomer />
                 </ProtectedRoute>
               }
             />

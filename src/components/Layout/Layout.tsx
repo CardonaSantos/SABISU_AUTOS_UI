@@ -121,7 +121,7 @@ export default function Layout({ children }: LayoutProps) {
       href: "/stock-eliminaciones",
     },
 
-    { icon: Users, label: "Clientes", href: "/clientes" },
+    { icon: Users, label: "Clientes", href: "/clientes-manage" },
     { icon: BarChart2, label: "Reportes", href: "/reportes" },
     { icon: NotebookIcon, label: "Entregas Stock", href: "/entregas-stock" },
     { icon: RotateCw, label: "Devoluciones", href: "/devoluciones" },
@@ -251,7 +251,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="flex h-screen flex-col bg-background">
       {/* Top Navigation Bar */}
-      <header className="bg-background shadow-sm">
+      <header className="bg-background shadow-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-4">
             <button

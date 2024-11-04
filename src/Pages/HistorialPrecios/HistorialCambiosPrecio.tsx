@@ -8,6 +8,11 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
+  Package,
+  DollarSign,
+  Percent,
+  Building,
+  MapPin,
 } from "lucide-react";
 import {
   Table,
@@ -103,63 +108,112 @@ export default function HistorialCambiosPrecio() {
     return porcentaje.toFixed(2);
   };
 
+  console.log("LOS CAMBIOS SON: ", cambios);
+
   // Componente para mostrar los detalles del cambio de precio
-  const CambioDetails = ({ cambio }: { cambio: CambioPrecio }) => (
-    <ScrollArea className="h-[400px] w-full">
-      <div className="space-y-4">
-        <div>
-          <h3 className="font-semibold">Información del Producto</h3>
-          <p>
-            <strong>Nombre:</strong> {cambio.producto.nombre}
-          </p>
-          <p>
-            <strong>Código:</strong> {cambio.producto.codigoProducto}
-          </p>
-          <p>
-            <strong>Descripción:</strong> {cambio.producto.descripcion}
-          </p>
+  function CambioDetails({ cambio }: { cambio: CambioPrecio }) {
+    return (
+      <ScrollArea className="h-[400px] w-full pr-4 [&>div]:!block">
+        <div className="space-y-6">
+          <div className="rounded-lg p-4 border border-border">
+            <h3 className="mb-3 flex items-center text-lg font-semibold text-primary/80 dark:text-primary/70">
+              <Package className="mr-2" size={20} />
+              Información del Producto
+            </h3>
+            <div className="grid gap-2">
+              <p className="flex items-center">
+                <span className="font-medium">Nombre:</span>
+                <span className="ml-2">{cambio.producto.nombre}</span>
+              </p>
+              <p className="flex items-center">
+                <span className="font-medium">Código:</span>
+                <span className="ml-2">{cambio.producto.codigoProducto}</span>
+              </p>
+              <p className="flex items-center">
+                <span className="font-medium">Descripción:</span>
+                <span className="ml-2">{cambio.producto.descripcion}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-lg p-4 border border-border">
+            <h3 className="mb-3 flex items-center text-lg font-semibold text-primary/80 dark:text-primary/70">
+              <Calendar className="mr-2" size={20} />
+              Detalles del Cambio
+            </h3>
+            <div className="grid gap-2">
+              <p className="flex items-center">
+                <span className="font-medium">Fecha del Cambio:</span>
+                <span className="ml-2">{formatDate(cambio.fechaCambio)}</span>
+              </p>
+              <p className="flex items-center">
+                <DollarSign className="mr-1" size={16} />
+                <span className="font-medium">Precio Costo Anterior:</span>
+                <span className="ml-2">
+                  {new Intl.NumberFormat("es-GT", {
+                    style: "currency",
+                    currency: "GTQ",
+                  }).format(cambio.precioCostoAnterior)}
+                </span>
+              </p>
+              <p className="flex items-center">
+                <DollarSign className="mr-1" size={16} />
+                <span className="font-medium">Precio Costo Nuevo:</span>
+                <span className="ml-2">
+                  {new Intl.NumberFormat("es-GT", {
+                    style: "currency",
+                    currency: "GTQ",
+                  }).format(cambio.precioCostoNuevo)}
+                </span>
+              </p>
+              <p className="flex items-center">
+                <Percent className="mr-1" size={16} />
+                <span className="font-medium">Porcentaje de Cambio:</span>
+                <span className="ml-2">
+                  {calcularPorcentajeCambio(
+                    cambio.precioCostoAnterior,
+                    cambio.precioCostoNuevo
+                  )}
+                  %
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-lg p-4 border border-border">
+            <h3 className="mb-3 flex items-center text-lg font-semibold text-primary/80 dark:text-primary/70">
+              <User className="mr-2" size={20} />
+              Modificado Por
+            </h3>
+            <div className="grid gap-2">
+              <p className="flex items-center">
+                <span className="font-medium">Nombre:</span>
+                <span className="ml-2">{cambio.modificadoPor.nombre}</span>
+              </p>
+              <p className="flex items-center">
+                <span className="font-medium">Rol:</span>
+                <span className="ml-2">{cambio.modificadoPor.rol}</span>
+              </p>
+              <p className="flex items-center">
+                <Building className="mr-1" size={16} />
+                <span className="font-medium">Sucursal:</span>
+                <span className="ml-2">
+                  {cambio.modificadoPor.sucursal.nombre}
+                </span>
+              </p>
+              <p className="flex items-center">
+                <MapPin className="mr-1" size={16} />
+                <span className="font-medium">Dirección de Sucursal:</span>
+                <span className="ml-2">
+                  {cambio.modificadoPor.sucursal.direccion}
+                </span>
+              </p>
+            </div>
+          </div>
         </div>
-        <div>
-          <h3 className="font-semibold">Detalles del Cambio</h3>
-          <p>
-            <strong>Fecha del Cambio:</strong> {formatDate(cambio.fechaCambio)}
-          </p>
-          <p>
-            <strong>Precio Costo Anterior:</strong> Q
-            {cambio.precioCostoAnterior.toFixed(2)}
-          </p>
-          <p>
-            <strong>Precio Costo Nuevo:</strong> Q
-            {cambio.precioCostoNuevo.toFixed(2)}
-          </p>
-          <p>
-            <strong>Porcentaje de Cambio:</strong>{" "}
-            {calcularPorcentajeCambio(
-              cambio.precioCostoAnterior,
-              cambio.precioCostoNuevo
-            )}
-            %
-          </p>
-        </div>
-        <div>
-          <h3 className="font-semibold">Modificado Por</h3>
-          <p>
-            <strong>Nombre:</strong> {cambio.modificadoPor.nombre}
-          </p>
-          <p>
-            <strong>Rol:</strong> {cambio.modificadoPor.rol}
-          </p>
-          <p>
-            <strong>Sucursal:</strong> {cambio.modificadoPor.sucursal.nombre}
-          </p>
-          <p>
-            <strong>Dirección de Sucursal:</strong>{" "}
-            {cambio.modificadoPor.sucursal.direccion}
-          </p>
-        </div>
-      </div>
-    </ScrollArea>
-  );
+      </ScrollArea>
+    );
+  }
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
