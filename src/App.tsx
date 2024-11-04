@@ -38,6 +38,8 @@ import StockEliminaciones from "./Pages/Eliminaciones/StockEliminaciones";
 import GarantiaPage from "./components/PDF/GarantiaPage";
 import CreateCustomer from "./Pages/Customers/CreateCustomer";
 import Layout2 from "./components/Layout/Layout2";
+import TicketPage from "./components/PDF/TicketPage";
+import TicketManage from "./Pages/TicketManage/TicketManage";
 
 function App() {
   return (
@@ -297,6 +299,24 @@ function App() {
               element={
                 <ProtectedRoute>
                   <CreateCustomer />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/ticket/generar-ticket/:id"
+              element={
+                <ProtectedRoute>
+                  <TicketPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/ticket/manage"
+              element={
+                <ProtectedRoute>
+                  <TicketManage />
                 </ProtectedRoute>
               }
             />

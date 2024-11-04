@@ -5,6 +5,7 @@ import {
   Eye,
   FileSpreadsheet,
   FileText,
+  Ticket,
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -217,6 +218,7 @@ export default function HistorialVentas() {
                   <TableHead>Fecha</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead>Acciones</TableHead>
+                  <TableHead>Ticket</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -282,6 +284,22 @@ export default function HistorialVentas() {
                           </Tooltip>
                         </TooltipProvider>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Link to={`/ticket/generar-ticket/${venta.id}`}>
+                              <Button variant="outline" size="icon">
+                                <Ticket className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Generar Ticket</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </TableCell>
                     <div className="flex space-x-2"></div>
                   </TableRow>

@@ -1,4 +1,4 @@
-import { Home } from "lucide-react";
+import { Home, Ticket } from "lucide-react";
 
 import {
   Sidebar,
@@ -86,6 +86,8 @@ const menuItems = [
   // Reportes y Notificaciones
   { icon: BarChart2, label: "Reportes", href: "/reportes" },
   { icon: Bell, label: "Notificaciones", href: "/notificaciones" },
+
+  { icon: Ticket, label: "Ticket Manage", href: "/ticket/manage" },
 ];
 
 const menuVendedor = [

@@ -69,7 +69,7 @@ const Garantia: React.FC<GarantiaProps> = ({ venta }) => {
       marginBottom: 10,
     },
     title: {
-      fontSize: 24,
+      fontSize: 22,
       fontWeight: "bold",
       color: "#fcb100",
       textAlign: "center",
@@ -128,6 +128,13 @@ const Garantia: React.FC<GarantiaProps> = ({ venta }) => {
           <Text style={styles.title}>GARANTÍA DE DISPOSITIVO</Text>
 
           <View style={styles.section}>
+            <View style={styles.row}>
+              <Text style={styles.label}>Número de Garantía en venta:</Text>
+              <Text style={styles.text}>
+                {venta?.id ? `#${venta.id}` : "No disponible"}
+              </Text>
+            </View>
+
             <View style={styles.row}>
               <Text style={styles.label}>Fecha de venta:</Text>
               <Text style={styles.text}>
