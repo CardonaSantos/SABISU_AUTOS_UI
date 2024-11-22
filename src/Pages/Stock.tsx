@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
-import { Truck, User, Plus, X, Edit, Send } from "lucide-react";
+import {
+  Truck,
+  User,
+  Plus,
+  X,
+  Edit,
+  SendIcon,
+  PackagePlus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,7 +81,6 @@ export default function Stock() {
   const [selectedProviderId, setSelectedProviderId] = useState<string>("");
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [stockEntries, setStockEntries] = useState<StockEntry[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<StockEntry | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -178,13 +185,23 @@ export default function Stock() {
   console.log("id proveedor: ", selectedProviderId);
 
   const handleSubmit = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || isDisableSubmit) return;
 
+    setIsDisableSubmit(true);
     setIsSubmitting(true);
-    console.log("LOS DATOS A ENVIAR SON: ", {
+
+    console.log("LOS DATOS A ENVIAR SON:", {
       stockEntries,
       proveedorId: Number(selectedProviderId),
     });
+
+    // Validación de cantidad en stockEntries
+    if (stockEntries.some((stock) => stock.cantidad <= 0)) {
+      toast.warning("Las adiciones no deben ser negativas");
+      setIsSubmitting(false);
+      setIsDisableSubmit(false);
+      return;
+    }
 
     console.log("Enviando entradas de stock:", stockEntries);
 
@@ -192,25 +209,23 @@ export default function Stock() {
       const response = await axios.post(`${API_URL}/stock`, {
         stockEntries,
         proveedorId: Number(selectedProviderId),
-        sucursalId: sucursalId,
-        recibidoPorId: recibidoPorId,
+        sucursalId,
+        recibidoPorId,
       });
+
       if (response.status === 201) {
         toast.success("Stocks añadidos exitosamente");
-        // resetForm();
         setTimeout(() => {
-          window.location.reload();
+          window.location.reload(); // Considera si esto es realmente necesario
         }, 1000);
       }
     } catch (error) {
-      console.log(error);
+      console.error("Error al registrar los stocks:", error);
       toast.error("Error al registrar los stocks");
+      setIsDisableSubmit(false); // Reseteo en caso de error
     } finally {
       setIsSubmitting(false);
-      setIsDialogOpen(false);
     }
-    // Aquí iría la lógica para enviar los datos al backend
-    // setStockEntries([]);
   };
 
   const removeEntry = (index: number) => {
@@ -304,6 +319,7 @@ export default function Stock() {
   console.log("Productos son: ", productsInventary);
 
   console.log("El producto seleccionado es: ", productToShow);
+  const [isDisableSubmit, setIsDisableSubmit] = useState(false);
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-xl">
@@ -519,160 +535,222 @@ export default function Stock() {
               Registrado por: {usuarioNombre}
             </span>
           </div>
-          <Button type="button" onClick={handleAddEntry} className="w-full">
-            <Plus className="mr-2 h-4 w-4" />
-            Agregar a la lista
-          </Button>
-          {/* BOTON PARA ACCIONAR EL VER LA LISTA DE PRODUCTOS */}
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <Button type="button" onClick={handleAddEntry} className="w-full">
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar a la lista
+            </Button>
+            {/* BOTON PARA ACCIONAR EL VER LA LISTA DE PRODUCTOS */}
 
-          <Dialog open={isDialogInspect} onOpenChange={setIsDialogInspect}>
-            <DialogTrigger asChild>
-              <Button variant={"destructive"} className="w-full" type="button">
-                Ver Lista
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="w-full max-w-[800px]">
-              <DialogHeader>
-                <h3 className="text-lg font-semibold mb-4 text-center">
-                  Productos a añadirles stock
-                </h3>
-              </DialogHeader>
+            <Dialog open={isDialogInspect} onOpenChange={setIsDialogInspect}>
+              <DialogTrigger asChild>
+                <Button
+                  variant={"destructive"}
+                  className="w-full"
+                  type="button"
+                >
+                  <SendIcon className="mr-2 h-4 w-4" />
+                  Añadir lista
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="w-full max-w-[800px]">
+                <DialogHeader>
+                  <h3 className="text-lg font-semibold mb-4 text-center">
+                    Productos a añadirles stock
+                  </h3>
+                </DialogHeader>
 
-              {stockEntries.length > 0 ? (
-                <>
-                  {/* Contenedor scrolleable solo para los productos */}
-                  <div className="mt-8 max-h-72 overflow-y-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Producto</TableHead>
-                          <TableHead>Cantidad</TableHead>
-                          <TableHead>Precio Costo</TableHead>
-                          <TableHead>Costo Total</TableHead>
-                          <TableHead>Acciones</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {stockEntries.map((entry, index) => (
-                          <TableRow key={index}>
-                            <TableCell>
-                              {
-                                productsInventary.find(
-                                  (p) => p.id === entry.productoId
-                                )?.nombre
-                              }
-                            </TableCell>
-                            <TableCell>{entry.cantidad}</TableCell>
-                            <TableCell>
-                              {new Intl.NumberFormat("es-GT", {
-                                style: "currency",
-                                currency: "GTQ",
-                              }).format(entry.precioCosto)}
-                            </TableCell>
-                            <TableCell>
-                              {new Intl.NumberFormat("es-GT", {
-                                style: "currency",
-                                currency: "GTQ",
-                              }).format(entry.costoTotal)}
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => editEntry(entry)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeEntry(index)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
+                {stockEntries.length > 0 ? (
+                  <>
+                    {/* Contenedor scrolleable solo para los productos */}
+                    <div className="mt-8 max-h-72 overflow-y-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Producto</TableHead>
+                            <TableHead>Cantidad</TableHead>
+                            <TableHead>Precio Costo</TableHead>
+                            <TableHead>Costo Total</TableHead>
+                            <TableHead>Acciones</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                        </TableHeader>
+                        <TableBody>
+                          {stockEntries.map((entry, index) => (
+                            <TableRow key={index}>
+                              <TableCell>
+                                {
+                                  productsInventary.find(
+                                    (p) => p.id === entry.productoId
+                                  )?.nombre
+                                }
+                              </TableCell>
+                              <TableCell>{entry.cantidad}</TableCell>
+                              <TableCell>
+                                {new Intl.NumberFormat("es-GT", {
+                                  style: "currency",
+                                  currency: "GTQ",
+                                }).format(entry.precioCosto)}
+                              </TableCell>
+                              <TableCell>
+                                {new Intl.NumberFormat("es-GT", {
+                                  style: "currency",
+                                  currency: "GTQ",
+                                }).format(entry.costoTotal)}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => editEntry(entry)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeEntry(index)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
 
-                  {/* Botones y totales fuera del contenedor scrolleable */}
-                  <div className="mt-4">
-                    <Button
-                      variant={"secondary"}
-                      type="button"
-                      className="w-full"
-                    >
-                      {totalStock ? (
-                        <>
-                          Total:{" "}
+                    {/* Botones y totales fuera del contenedor scrolleable */}
+                    <div className="mt-4">
+                      <Button
+                        variant={"secondary"}
+                        type="button"
+                        className="w-full"
+                      >
+                        {totalStock ? (
+                          <>
+                            Total:{" "}
+                            {new Intl.NumberFormat("es-GT", {
+                              style: "currency",
+                              currency: "GTQ",
+                            }).format(totalStock)}
+                          </>
+                        ) : (
+                          "Seleccione productos"
+                        )}
+                      </Button>
+                      <Button
+                        disabled={isDisableSubmit}
+                        className="w-full mt-4"
+                        onClick={() => {
+                          handleSubmit();
+                        }}
+                      >
+                        <PackagePlus className="mr-2 h-4 w-4" />
+                        Confirmar registro
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-center justify-center">
+                    Seleccione productos a añadir stock
+                  </p>
+                )}
+
+                <DialogFooter className="flex text-center items-center justify-center">
+                  <DialogDescription className="text-center"></DialogDescription>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </form>
+
+        <div className="w-full  border p-4 rounded-md mt-2">
+          <div>
+            <h3 className="text-md font-semibold mb-4 text-center">Lista</h3>
+          </div>
+
+          {stockEntries.length > 0 ? (
+            <>
+              {/* Contenedor scrolleable solo para los productos */}
+              <div className="mt-8 max-h-72 overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Producto</TableHead>
+                      <TableHead>Cantidad</TableHead>
+                      <TableHead>Precio Costo</TableHead>
+                      <TableHead>Costo Total</TableHead>
+                      <TableHead>Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {stockEntries.map((entry, index) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          {
+                            productsInventary.find(
+                              (p) => p.id === entry.productoId
+                            )?.nombre
+                          }
+                        </TableCell>
+                        <TableCell>{entry.cantidad}</TableCell>
+                        <TableCell>
                           {new Intl.NumberFormat("es-GT", {
                             style: "currency",
                             currency: "GTQ",
-                          }).format(totalStock)}
-                        </>
-                      ) : (
-                        "Seleccione productos"
-                      )}
-                    </Button>
-                    <Button
-                      className="w-full mt-4"
-                      onClick={() => setIsDialogOpen(true)}
-                    >
-                      <Send className="mr-2 h-4 w-4" />
-                      Confirmar Registro de Stock
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <p className="text-center justify-center">
-                  Seleccione productos a añadir stock
-                </p>
-              )}
+                          }).format(entry.precioCosto)}
+                        </TableCell>
+                        <TableCell>
+                          {new Intl.NumberFormat("es-GT", {
+                            style: "currency",
+                            currency: "GTQ",
+                          }).format(entry.costoTotal)}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editEntry(entry)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeEntry(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogHeader></DialogHeader>
-                <DialogContent>
-                  <div className="">
-                    <h2 className="text-center text-lg font-semibold">
-                      Confirmación
-                    </h2>
-                    <h3 className="text-center">
-                      ¿Estás seguro de registrar la entrega de stock para estos
-                      productos con esta información?
-                    </h3>
-                  </div>
-                  <div className="flex gap-2 justify-center items-center ">
-                    <Button
-                      disabled={isSubmitting} // Deshabilitar cuando se está enviando
-                      type="button"
-                      onClick={handleSubmit}
-                    >
-                      Confirmar
-                    </Button>
-                    <Button
-                      variant={"destructive"}
-                      type="button"
-                      onClick={() => setIsDialogOpen(false)}
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <DialogFooter>
-                <DialogDescription className="text-center">
-                  El usuario responsable de este registro es: usuario
-                </DialogDescription>
-                <DialogDescription className="text-center">
-                  Esta información no se puede editar
-                </DialogDescription>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </form>
+              {/* Botones y totales fuera del contenedor scrolleable */}
+              <div className="mt-4">
+                <Button variant={"secondary"} type="button" className="w-full">
+                  {totalStock ? (
+                    <>
+                      Total:{" "}
+                      {new Intl.NumberFormat("es-GT", {
+                        style: "currency",
+                        currency: "GTQ",
+                      }).format(totalStock)}
+                    </>
+                  ) : (
+                    "Seleccione productos"
+                  )}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <p className="text-center justify-center">
+              Seleccione productos a añadir stock
+            </p>
+          )}
+        </div>
 
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
@@ -695,23 +773,6 @@ export default function Stock() {
                       setEditingEntry({
                         ...editingEntry,
                         cantidad: parseInt(e.target.value),
-                      })
-                    }
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-precioCosto" className="text-right">
-                    Precio de Costo
-                  </Label>
-                  <Input
-                    id="edit-precioCosto"
-                    type="number"
-                    value={editingEntry.precioCosto}
-                    onChange={(e) =>
-                      setEditingEntry({
-                        ...editingEntry,
-                        precioCosto: parseFloat(e.target.value),
                       })
                     }
                     className="col-span-3"

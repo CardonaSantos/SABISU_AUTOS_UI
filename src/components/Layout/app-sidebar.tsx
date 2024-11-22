@@ -1,4 +1,12 @@
-import { Home, Ticket } from "lucide-react";
+import {
+  Home,
+  ShieldCheck,
+  Ticket,
+  Wallet,
+  ClipboardList,
+  NotebookText,
+  CoinsIcon,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -57,7 +65,7 @@ const menuItems = [
     href: "/stock-eliminaciones",
   },
   { icon: NotebookIcon, label: "Entregas Stock", href: "/entregas-stock" },
-  { icon: RotateCw, label: "Devoluciones", href: "/devoluciones" },
+  // { icon: RotateCw, label: "Devoluciones", href: "/devoluciones" },
   { icon: AlertCircle, label: "Vencimientos", href: "/vencimientos" },
 
   // Sección de Transferencias
@@ -85,9 +93,29 @@ const menuItems = [
 
   // Reportes y Notificaciones
   { icon: BarChart2, label: "Reportes", href: "/reportes" },
-  { icon: Bell, label: "Notificaciones", href: "/notificaciones" },
+  // { icon: Bell, label: "Notificaciones", href: "/notificaciones" },
 
   { icon: Ticket, label: "Ticket Manage", href: "/ticket/manage" },
+  { icon: ShieldCheck, label: "Garantía Manage", href: "/garantia/manage" },
+
+  { icon: Wallet, label: "Depósitos y Egresos", href: "/depositos-egresos/" },
+  {
+    icon: ClipboardList,
+    label: "Registrar Caja",
+    href: "/registro-caja/",
+  },
+
+  {
+    icon: NotebookText,
+    label: "Registros de Caja",
+    href: "/registros-caja/",
+  },
+
+  {
+    icon: CoinsIcon,
+    label: "Saldo y Egresos",
+    href: "/historial/depositos-egresos",
+  },
 ];
 
 const menuVendedor = [

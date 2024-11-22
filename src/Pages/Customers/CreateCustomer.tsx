@@ -40,6 +40,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -49,6 +56,7 @@ interface ClienteResponse {
   telefono: string;
   dpi: string;
   direccion: string;
+  iPInternet: string;
   actualizadoEn: string;
   _count: {
     compras: number;
@@ -69,6 +77,7 @@ interface FormDataEdit {
   telefono?: string;
   direccion?: string;
   dpi?: string;
+  iPInternet?: string;
 }
 
 // Define form errors structure
@@ -92,6 +101,7 @@ export default function CreateCustomer() {
     direccion: "",
     dpi: "",
     id: 0,
+    iPInternet: "",
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -161,16 +171,42 @@ export default function CreateCustomer() {
 
   console.log("LOS CLIENTES SON: ", clientes);
 
+  const [searchTermn, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<"more" | "less">("more");
+
+  // Filtrado y ordenación combinados
+  const filteredClientes = [...clientes]
+    .filter(
+      (cliente) =>
+        cliente.nombre
+          .toLocaleLowerCase()
+          .includes(searchTermn.toLocaleLowerCase()) ||
+        cliente.dpi.includes(searchTermn) ||
+        cliente.direccion
+          .toLocaleLowerCase()
+          .trim()
+          .includes(searchTermn.toLocaleLowerCase()) ||
+        cliente.telefono.includes(searchTermn)
+    )
+    .sort((a, b) => {
+      return filterType === "more"
+        ? b._count.compras - a._count.compras // Descendente para más compras
+        : a._count.compras - b._count.compras; // Ascendente para menos compras
+    });
+
   //PARA ELA PAGINACION
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
-  const totalPages = Math.ceil(clientes.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredClientes.length / itemsPerPage);
   // Calcular el índice del último elemento de la página actual
   const indexOfLastItem = currentPage * itemsPerPage;
   // Calcular el índice del primer elemento de la página actual
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   // Obtener los elementos de la página actual
-  const currentItems = clientes.slice(indexOfFirstItem, indexOfLastItem);
+  const currentItems = filteredClientes.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
   // Cambiar de página
   const onPageChange = (page: number) => {
     setCurrentPage(page);
@@ -188,6 +224,7 @@ export default function CreateCustomer() {
       direccion: client.direccion || "",
       dpi: client.dpi || "",
       id: client.id,
+      iPInternet: client.iPInternet || "",
     });
     setOpenSection(true);
   };
@@ -233,14 +270,14 @@ export default function CreateCustomer() {
   };
 
   return (
-    <Tabs defaultValue="crear-cliente" className="w-full">
+    <Tabs defaultValue="crear-cliente" className="w-full ">
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="crear-cliente">Crear Cliente</TabsTrigger>
         <TabsTrigger value="clientes">Clientes</TabsTrigger>
       </TabsList>
       {/* Formulario para crear cliente */}
       <TabsContent value="crear-cliente">
-        <Card>
+        <Card className="shadow-xl">
           <CardHeader>
             <CardTitle>Crear Cliente</CardTitle>
             <CardDescription>
@@ -325,7 +362,26 @@ export default function CreateCustomer() {
 
       {/* Tabla de clientes */}
       <TabsContent value="clientes">
-        <Card>
+        <div className="my-3 ">
+          <Input
+            className="my-2"
+            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchTermn}
+            placeholder="Buscar por Nombre, DPI, Teléfono, Dirección..."
+          />
+          <Select
+            onValueChange={(value) => setFilterType(value as "more" | "less")}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Selecciona un filtro" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="more">Más Compras</SelectItem>
+              <SelectItem value="less">Menos Compras</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Card className="shadow-xl">
           <CardHeader>
             <CardTitle>Clientes disponibles</CardTitle>
             <CardDescription>
@@ -341,6 +397,7 @@ export default function CreateCustomer() {
                   <TableHead>Nombre</TableHead>
                   <TableHead>Telefono</TableHead>
                   <TableHead className="text-right">DPI</TableHead>
+                  <TableHead className="text-right">IP</TableHead>
                   <TableHead className="text-right">Dirección</TableHead>
                   <TableHead className="text-right">Compras hechas</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -362,6 +419,11 @@ export default function CreateCustomer() {
                       <TableCell className="text-right">
                         {client.dpi || "DPI no disponible"}
                       </TableCell>
+
+                      <TableCell className="text-right">
+                        {client.iPInternet || "N/A"}
+                      </TableCell>
+
                       <TableCell className="text-right">
                         {client.direccion || "Dirección no disponible"}
                       </TableCell>
@@ -433,6 +495,22 @@ export default function CreateCustomer() {
                         className="border p-2 rounded w-full bg-transparent"
                       />
                     </label>
+
+                    <label>
+                      IP Internet:
+                      <input
+                        type="text"
+                        value={formDataEdit.iPInternet}
+                        onChange={(e) =>
+                          setFormDataEdit({
+                            ...formDataEdit,
+                            iPInternet: e.target.value,
+                          })
+                        }
+                        className="border p-2 rounded w-full bg-transparent"
+                      />
+                    </label>
+
                     <label>
                       DPI:
                       <input
@@ -518,89 +596,92 @@ export default function CreateCustomer() {
               <TableFooter></TableFooter>
             </Table>
           </CardContent>
-          <CardFooter></CardFooter>
+          <CardFooter className="flex justify-center items-center">
+            <div className="flex items-center justify-center py-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <Button onClick={() => onPageChange(1)}>Primero</Button>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </PaginationPrevious>
+                  </PaginationItem>
+
+                  {/* Sistema de truncado */}
+                  {currentPage > 3 && (
+                    <>
+                      <PaginationItem>
+                        <PaginationLink onClick={() => onPageChange(1)}>
+                          1
+                        </PaginationLink>
+                      </PaginationItem>
+                      <PaginationItem>
+                        <span className="text-muted-foreground">...</span>
+                      </PaginationItem>
+                    </>
+                  )}
+
+                  {Array.from({ length: totalPages }, (_, index) => {
+                    const page = index + 1;
+                    if (
+                      page === currentPage ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={index}>
+                          <PaginationLink
+                            onClick={() => onPageChange(page)}
+                            isActive={page === currentPage}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    return null;
+                  })}
+
+                  {currentPage < totalPages - 2 && (
+                    <>
+                      <PaginationItem>
+                        <span className="text-muted-foreground">...</span>
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationLink
+                          onClick={() => onPageChange(totalPages)}
+                        >
+                          {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
+                    </>
+                  )}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        onPageChange(Math.min(totalPages, currentPage + 1))
+                      }
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </PaginationNext>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <Button
+                      variant={"destructive"}
+                      onClick={() => onPageChange(totalPages)}
+                    >
+                      Último
+                    </Button>
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </CardFooter>
         </Card>
-        <div className="flex items-center justify-center py-4">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <Button onClick={() => onPageChange(1)}>Primero</Button>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </PaginationPrevious>
-              </PaginationItem>
-
-              {/* Sistema de truncado */}
-              {currentPage > 3 && (
-                <>
-                  <PaginationItem>
-                    <PaginationLink onClick={() => onPageChange(1)}>
-                      1
-                    </PaginationLink>
-                  </PaginationItem>
-                  <PaginationItem>
-                    <span className="text-muted-foreground">...</span>
-                  </PaginationItem>
-                </>
-              )}
-
-              {Array.from({ length: totalPages }, (_, index) => {
-                const page = index + 1;
-                if (
-                  page === currentPage ||
-                  (page >= currentPage - 1 && page <= currentPage + 1)
-                ) {
-                  return (
-                    <PaginationItem key={index}>
-                      <PaginationLink
-                        onClick={() => onPageChange(page)}
-                        isActive={page === currentPage}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  );
-                }
-                return null;
-              })}
-
-              {currentPage < totalPages - 2 && (
-                <>
-                  <PaginationItem>
-                    <span className="text-muted-foreground">...</span>
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationLink onClick={() => onPageChange(totalPages)}>
-                      {totalPages}
-                    </PaginationLink>
-                  </PaginationItem>
-                </>
-              )}
-
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() =>
-                    onPageChange(Math.min(totalPages, currentPage + 1))
-                  }
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </PaginationNext>
-              </PaginationItem>
-              <PaginationItem>
-                <Button
-                  variant={"destructive"}
-                  onClick={() => onPageChange(totalPages)}
-                >
-                  Último
-                </Button>
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
       </TabsContent>
     </Tabs>
   );

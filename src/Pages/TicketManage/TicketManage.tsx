@@ -111,7 +111,7 @@ export default function TicketManage() {
 
   return (
     <div className="container mx-auto p-4">
-      <Card>
+      <Card className="shadow-xl">
         <CardHeader>
           <CardTitle>
             {ticketExist ? "Editar Ticket Sorteo" : "Crear Ticket Sorteo"}

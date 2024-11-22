@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   UserIcon,
@@ -184,99 +191,109 @@ export default function TransferenciaProductosHistorial() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Transferencias de Productos</h1>
-      <div className="">
-        {/* {transferencias.map((transferencia) => ( */}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Producto</TableHead>
-              <TableHead>Sucursal Origen</TableHead>
-              <TableHead>Sucursal Destino</TableHead>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Detalle</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {currentItems &&
-              currentItems.map((transferencia) => (
+      <Card className="shadow-xl">
+        <CardHeader>
+          <CardTitle>Transferencias de productos</CardTitle>
+          <CardDescription>Historial de transferencias</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="">
+            {/* {transferencias.map((transferencia) => ( */}
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell>{transferencia.producto.nombre}</TableCell>
-                  <TableCell>{transferencia.sucursalOrigen.nombre}</TableCell>
-                  <TableCell>{transferencia.sucursalDestino.nombre}</TableCell>
-                  <TableCell>
-                    {formatearFecha(transferencia.fechaTransferencia)}
-                  </TableCell>
-                  <TableCell>
-                    <Dialog>
-                      <DialogTrigger>
-                        <Button variant="outline" size="sm">
-                          <Eye className="mr-2" size={16} />
-                          Ver Detalles
-                        </Button>
-                      </DialogTrigger>
+                  <TableHead>Producto</TableHead>
+                  <TableHead>Sucursal Origen</TableHead>
+                  <TableHead>Sucursal Destino</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Detalle</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentItems &&
+                  currentItems.map((transferencia) => (
+                    <TableRow>
+                      <TableCell>{transferencia.producto.nombre}</TableCell>
+                      <TableCell>
+                        {transferencia.sucursalOrigen.nombre}
+                      </TableCell>
+                      <TableCell>
+                        {transferencia.sucursalDestino.nombre}
+                      </TableCell>
+                      <TableCell>
+                        {formatearFecha(transferencia.fechaTransferencia)}
+                      </TableCell>
+                      <TableCell>
+                        <Dialog>
+                          <DialogTrigger>
+                            <Button variant="outline" size="sm">
+                              <Eye className="mr-2" size={16} />
+                              Ver Detalles
+                            </Button>
+                          </DialogTrigger>
 
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle className="text-center">
-                            Tranferencia de producto
-                          </DialogTitle>
-                        </DialogHeader>
-                        <ScrollArea className="max-h-[60vh] pr-4">
-                          <Card className="mt-4 border-none shadow-none">
-                            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <InfoItem
-                                icon={<BoxIcon className="h-5 w-5" />}
-                                label="Producto"
-                                value={
-                                  transferencia.producto.nombre ?? undefined
-                                }
-                              />
-                              <InfoItem
-                                icon={<BringToFront className="h-5 w-5" />}
-                                label="Cantidad trasladada"
-                                value={
-                                  String(transferencia.cantidad) ?? undefined
-                                }
-                              />
-                              <InfoItem
-                                icon={<Building className="h-5 w-5" />}
-                                label="Sucursal de origen"
-                                value={
-                                  transferencia.sucursalOrigen.nombre ??
-                                  undefined
-                                }
-                              />
-                              <InfoItem
-                                icon={<Building className="h-5 w-5" />}
-                                label="Sucursal de destino"
-                                value={
-                                  transferencia.sucursalDestino.nombre ??
-                                  undefined
-                                }
-                              />
-                              <InfoItem
-                                icon={<UserIcon className="h-5 w-5" />}
-                                label="Encargado"
-                                value={
-                                  transferencia.usuarioEncargado.nombre ??
-                                  undefined
-                                }
-                              />
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle className="text-center">
+                                Tranferencia de producto
+                              </DialogTitle>
+                            </DialogHeader>
+                            <ScrollArea className="max-h-[60vh] pr-4">
+                              <Card className="mt-4 border-none shadow-none">
+                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <InfoItem
+                                    icon={<BoxIcon className="h-5 w-5" />}
+                                    label="Producto"
+                                    value={
+                                      transferencia.producto.nombre ?? undefined
+                                    }
+                                  />
+                                  <InfoItem
+                                    icon={<BringToFront className="h-5 w-5" />}
+                                    label="Cantidad trasladada"
+                                    value={
+                                      String(transferencia.cantidad) ??
+                                      undefined
+                                    }
+                                  />
+                                  <InfoItem
+                                    icon={<Building className="h-5 w-5" />}
+                                    label="Sucursal de origen"
+                                    value={
+                                      transferencia.sucursalOrigen.nombre ??
+                                      undefined
+                                    }
+                                  />
+                                  <InfoItem
+                                    icon={<Building className="h-5 w-5" />}
+                                    label="Sucursal de destino"
+                                    value={
+                                      transferencia.sucursalDestino.nombre ??
+                                      undefined
+                                    }
+                                  />
+                                  <InfoItem
+                                    icon={<UserIcon className="h-5 w-5" />}
+                                    label="Encargado"
+                                    value={
+                                      transferencia.usuarioEncargado.nombre ??
+                                      undefined
+                                    }
+                                  />
 
-                              <InfoItem
-                                icon={<ClockIcon className="h-5 w-5" />}
-                                label="Producto"
-                                value={
-                                  formatearFecha(
-                                    transferencia.fechaTransferencia
-                                  ) ?? undefined
-                                }
-                              />
-                            </CardContent>
-                          </Card>
+                                  <InfoItem
+                                    icon={<ClockIcon className="h-5 w-5" />}
+                                    label="Producto"
+                                    value={
+                                      formatearFecha(
+                                        transferencia.fechaTransferencia
+                                      ) ?? undefined
+                                    }
+                                  />
+                                </CardContent>
+                              </Card>
 
-                          {/* <Card className="mt-6 border-none shadow-none">
+                              {/* <Card className="mt-6 border-none shadow-none">
                             <CardHeader>
                               <CardTitle className="text-xl font-semibold text-primary">
                                 Información de Contacto
@@ -302,97 +319,103 @@ export default function TransferenciaProductosHistorial() {
                               />
                             </CardContent>
                           </Card> */}
-                        </ScrollArea>
-                      </DialogContent>
-                    </Dialog>
-                  </TableCell>
-                </TableRow>
-              ))}
-          </TableBody>
-        </Table>
-        {/* ))} */}
-      </div>
-      <div className="flex items-center justify-center py-4">
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <Button onClick={() => onPageChange(1)}>Primero</Button>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </PaginationPrevious>
-            </PaginationItem>
-
-            {/* Sistema de truncado */}
-            {currentPage > 3 && (
-              <>
-                <PaginationItem>
-                  <PaginationLink onClick={() => onPageChange(1)}>
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <span className="text-muted-foreground">...</span>
-                </PaginationItem>
-              </>
-            )}
-
-            {Array.from({ length: totalPages }, (_, index) => {
-              const page = index + 1;
-              if (
-                page === currentPage ||
-                (page >= currentPage - 1 && page <= currentPage + 1)
-              ) {
-                return (
-                  <PaginationItem key={index}>
-                    <PaginationLink
-                      onClick={() => onPageChange(page)}
-                      isActive={page === currentPage}
-                    >
-                      {page}
-                    </PaginationLink>
+                            </ScrollArea>
+                          </DialogContent>
+                        </Dialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+            {/* ))} */}
+          </div>
+          <CardFooter className="flex justify-center items-center">
+            <div className="flex items-center justify-center py-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <Button onClick={() => onPageChange(1)}>Primero</Button>
                   </PaginationItem>
-                );
-              }
-              return null;
-            })}
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </PaginationPrevious>
+                  </PaginationItem>
 
-            {currentPage < totalPages - 2 && (
-              <>
-                <PaginationItem>
-                  <span className="text-muted-foreground">...</span>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink onClick={() => onPageChange(totalPages)}>
-                    {totalPages}
-                  </PaginationLink>
-                </PaginationItem>
-              </>
-            )}
+                  {/* Sistema de truncado */}
+                  {currentPage > 3 && (
+                    <>
+                      <PaginationItem>
+                        <PaginationLink onClick={() => onPageChange(1)}>
+                          1
+                        </PaginationLink>
+                      </PaginationItem>
+                      <PaginationItem>
+                        <span className="text-muted-foreground">...</span>
+                      </PaginationItem>
+                    </>
+                  )}
 
-            <PaginationItem>
-              <PaginationNext
-                onClick={() =>
-                  onPageChange(Math.min(totalPages, currentPage + 1))
-                }
-              >
-                <ChevronRight className="h-4 w-4" />
-              </PaginationNext>
-            </PaginationItem>
-            <PaginationItem>
-              <Button
-                variant={"destructive"}
-                onClick={() => onPageChange(totalPages)}
-              >
-                Último
-              </Button>
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
+                  {Array.from({ length: totalPages }, (_, index) => {
+                    const page = index + 1;
+                    if (
+                      page === currentPage ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={index}>
+                          <PaginationLink
+                            onClick={() => onPageChange(page)}
+                            isActive={page === currentPage}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    return null;
+                  })}
+
+                  {currentPage < totalPages - 2 && (
+                    <>
+                      <PaginationItem>
+                        <span className="text-muted-foreground">...</span>
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationLink
+                          onClick={() => onPageChange(totalPages)}
+                        >
+                          {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
+                    </>
+                  )}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        onPageChange(Math.min(totalPages, currentPage + 1))
+                      }
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </PaginationNext>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <Button
+                      variant={"destructive"}
+                      onClick={() => onPageChange(totalPages)}
+                    >
+                      Último
+                    </Button>
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </CardFooter>
+        </CardContent>
+      </Card>
     </div>
   );
 }

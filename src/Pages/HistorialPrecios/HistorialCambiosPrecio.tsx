@@ -39,6 +39,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 // Tipos
 type Sucursal = {
@@ -233,39 +241,47 @@ export default function HistorialCambiosPrecio() {
 
   return (
     <div className="container mx-auto py-10">
-      <h2 className="text-2xl font-bold mb-4">
-        Historial de Cambios de Precio
-      </h2>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Producto</TableHead>
-            <TableHead>Fecha de Cambio</TableHead>
-            <TableHead>Precio Anterior</TableHead>
-            <TableHead>Precio Nuevo</TableHead>
-            {/* <TableHead>% Cambio</TableHead> */}
-            <TableHead>Modificado Por</TableHead>
-            <TableHead>Acciones</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {currentItems.map((cambio) => (
-            <TableRow key={cambio.id}>
-              <TableCell>
-                <div className="flex items-center">
-                  <Tag className="mr-2" size={16} />
-                  {cambio.producto.nombre}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center">
-                  <Calendar className="mr-2" size={16} />
-                  {formatDate(cambio.fechaCambio)}
-                </div>
-              </TableCell>
-              <TableCell>Q{cambio.precioCostoAnterior.toFixed(2)}</TableCell>
-              <TableCell>Q{cambio.precioCostoNuevo.toFixed(2)}</TableCell>
-              {/* <TableCell>
+      <Card className="shadow-xl">
+        <CardHeader>
+          <CardTitle>Historial de Cambios de Precio</CardTitle>
+          <CardDescription>
+            Estos son registros de cambios de precio que han tenido los
+            productos{" "}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Producto</TableHead>
+                <TableHead>Fecha de Cambio</TableHead>
+                <TableHead>Precio Anterior</TableHead>
+                <TableHead>Precio Nuevo</TableHead>
+                {/* <TableHead>% Cambio</TableHead> */}
+                <TableHead>Modificado Por</TableHead>
+                <TableHead>Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentItems.map((cambio) => (
+                <TableRow key={cambio.id}>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <Tag className="mr-2" size={16} />
+                      {cambio.producto.nombre}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <Calendar className="mr-2" size={16} />
+                      {formatDate(cambio.fechaCambio)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    Q{cambio.precioCostoAnterior.toFixed(2)}
+                  </TableCell>
+                  <TableCell>Q{cambio.precioCostoNuevo.toFixed(2)}</TableCell>
+                  {/* <TableCell>
               
                 <Badge
                   className={`flex items-center px-2 py-1 rounded-full text-sm font-medium ${
@@ -282,119 +298,127 @@ export default function HistorialCambiosPrecio() {
                   %
                 </Badge>
               </TableCell> */}
-              <TableCell>
-                <div className="flex items-center">
-                  <User className="mr-2" size={16} />
-                  {cambio.modificadoPor.nombre} ({cambio.modificadoPor.rol})
-                </div>
-              </TableCell>
-              <TableCell>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedCambio(cambio)}
-                    >
-                      <Eye className="mr-2" size={16} />
-                      Ver Detalles
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-3xl">
-                    <DialogHeader>
-                      <DialogTitle>Detalles del Cambio de Precio</DialogTitle>
-                    </DialogHeader>
-                    {selectedCambio && (
-                      <CambioDetails cambio={selectedCambio} />
-                    )}
-                  </DialogContent>
-                </Dialog>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <div className="flex items-center justify-center py-4">
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <Button onClick={() => onPageChange(1)}>Primero</Button>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </PaginationPrevious>
-            </PaginationItem>
-
-            {/* Sistema de truncado */}
-            {currentPage > 3 && (
-              <>
-                <PaginationItem>
-                  <PaginationLink onClick={() => onPageChange(1)}>
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <span className="text-muted-foreground">...</span>
-                </PaginationItem>
-              </>
-            )}
-
-            {Array.from({ length: totalPages }, (_, index) => {
-              const page = index + 1;
-              if (
-                page === currentPage ||
-                (page >= currentPage - 1 && page <= currentPage + 1)
-              ) {
-                return (
-                  <PaginationItem key={index}>
-                    <PaginationLink
-                      onClick={() => onPageChange(page)}
-                      isActive={page === currentPage}
-                    >
-                      {page}
-                    </PaginationLink>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <User className="mr-2" size={16} />
+                      {cambio.modificadoPor.nombre} ({cambio.modificadoPor.rol})
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedCambio(cambio)}
+                        >
+                          <Eye className="mr-2" size={16} />
+                          Ver Detalles
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-3xl">
+                        <DialogHeader>
+                          <DialogTitle>
+                            Detalles del Cambio de Precio
+                          </DialogTitle>
+                        </DialogHeader>
+                        {selectedCambio && (
+                          <CambioDetails cambio={selectedCambio} />
+                        )}
+                      </DialogContent>
+                    </Dialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <CardFooter className="flex justify-center items-center">
+            <div className="flex items-center justify-center py-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <Button onClick={() => onPageChange(1)}>Primero</Button>
                   </PaginationItem>
-                );
-              }
-              return null;
-            })}
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </PaginationPrevious>
+                  </PaginationItem>
 
-            {currentPage < totalPages - 2 && (
-              <>
-                <PaginationItem>
-                  <span className="text-muted-foreground">...</span>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink onClick={() => onPageChange(totalPages)}>
-                    {totalPages}
-                  </PaginationLink>
-                </PaginationItem>
-              </>
-            )}
+                  {/* Sistema de truncado */}
+                  {currentPage > 3 && (
+                    <>
+                      <PaginationItem>
+                        <PaginationLink onClick={() => onPageChange(1)}>
+                          1
+                        </PaginationLink>
+                      </PaginationItem>
+                      <PaginationItem>
+                        <span className="text-muted-foreground">...</span>
+                      </PaginationItem>
+                    </>
+                  )}
 
-            <PaginationItem>
-              <PaginationNext
-                onClick={() =>
-                  onPageChange(Math.min(totalPages, currentPage + 1))
-                }
-              >
-                <ChevronRight className="h-4 w-4" />
-              </PaginationNext>
-            </PaginationItem>
-            <PaginationItem>
-              <Button
-                variant={"destructive"}
-                onClick={() => onPageChange(totalPages)}
-              >
-                Último
-              </Button>
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
+                  {Array.from({ length: totalPages }, (_, index) => {
+                    const page = index + 1;
+                    if (
+                      page === currentPage ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={index}>
+                          <PaginationLink
+                            onClick={() => onPageChange(page)}
+                            isActive={page === currentPage}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    return null;
+                  })}
+
+                  {currentPage < totalPages - 2 && (
+                    <>
+                      <PaginationItem>
+                        <span className="text-muted-foreground">...</span>
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationLink
+                          onClick={() => onPageChange(totalPages)}
+                        >
+                          {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
+                    </>
+                  )}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        onPageChange(Math.min(totalPages, currentPage + 1))
+                      }
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </PaginationNext>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <Button
+                      variant={"destructive"}
+                      onClick={() => onPageChange(totalPages)}
+                    >
+                      Último
+                    </Button>
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </CardFooter>
+        </CardContent>
+      </Card>
     </div>
   );
 }

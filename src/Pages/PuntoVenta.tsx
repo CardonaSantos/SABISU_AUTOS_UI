@@ -98,6 +98,7 @@ type Client = {
   nombre: string;
   telefono: string;
   dpi: string;
+  iPInternet: string;
   direccion: string;
   actualizadoEn: Date;
 };
@@ -200,6 +201,7 @@ export default function PuntoVenta() {
       telefono: telefono.trim(),
       direccion: direccion.trim(),
       dpi: dpi.trim(),
+      iPInternet: iPInternet.trim(),
       imei: imei.trim(),
     };
 
@@ -244,9 +246,6 @@ export default function PuntoVenta() {
         setTimeout(() => {
           setOpenSection(true);
         }, 1000);
-        // setTimeout(() => {
-        //   navigate("/historial/ventas");
-        // }, 1000);
       } else {
         toast.error("Error al completar la venta");
       }
@@ -294,12 +293,15 @@ export default function PuntoVenta() {
   const [dpi, setDpi] = useState<string>("");
   const [imei, setImei] = useState<string>("");
 
+  const [iPInternet, setIpInternet] = useState<string>("");
+
   const [telefono, setTelefono] = useState<string>("");
   const [direccion, setDireccion] = useState<string>("");
   console.log("Los datos de cf final son: ", {
     nombre,
     telefono,
     direccion,
+    iPInternet,
   });
 
   const updatePrice = (productId: number, newPrice: number) => {
@@ -391,7 +393,9 @@ export default function PuntoVenta() {
     value: customer.id, // Este será el ID del cliente
     label: `${customer.nombre} ${
       customer.telefono ? `(${customer.telefono})` : ""
-    } ${customer.dpi ? `DPI: ${customer.dpi}` : ""}`, // Formato de presentación
+    } ${customer.dpi ? `DPI: ${customer.dpi}` : ""}
+    ${customer.iPInternet ? `IP: ${customer.iPInternet}` : ""}
+    `, // Formato de presentación
   }));
 
   useEffect(() => {
@@ -462,7 +466,7 @@ export default function PuntoVenta() {
                 className="px-4 py-2  rounded hover:bg-primary-hover focus:outline-none"
                 onClick={handleClose}
               >
-                Recoger Comprobante
+                Imprimir Comprobante
               </Button>
             </Link>
           </div>
@@ -837,6 +841,17 @@ export default function PuntoVenta() {
                         className="mt-1 w-full"
                       />
                     </div>
+
+                    <div>
+                      <Label>Dirección IP</Label>
+                      <Input
+                        disabled={!!selectedCustomerID}
+                        value={iPInternet}
+                        onChange={(e) => setIpInternet(e.target.value)}
+                        placeholder="192.168.1.1 (opcional)"
+                        className="mt-1 w-full"
+                      />
+                    </div>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -848,7 +863,7 @@ export default function PuntoVenta() {
                   {/* Selección de cliente */}
                   <Label>Seleccionar Cliente</Label>
                   <SelectM
-                    className="bg-transparent text-black w-full"
+                    className="bg-transparent text-black w-full texsm"
                     options={customerOptions}
                     onChange={handleChange}
                     placeholder="Seleccionar cliente"

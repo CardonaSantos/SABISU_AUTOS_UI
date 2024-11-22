@@ -1,5 +1,9 @@
 function Reportes() {
-  return <div></div>;
+  return (
+    <div>
+      <h2>Conseguir reportes xlsx</h2>
+    </div>
+  );
 }
 
 export default Reportes;

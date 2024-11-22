@@ -47,25 +47,23 @@ const formatearFecha = (fecha: string) => {
 interface GarantiaProps {
   venta: VentaHistorialPDF | undefined;
 }
-
 const Garantia: React.FC<GarantiaProps> = ({ venta }) => {
   const styles = StyleSheet.create({
     page: {
       fontFamily: "Roboto",
       fontSize: 11,
       padding: 40,
-      lineHeight: 1.5,
-      flexDirection: "column",
       backgroundColor: "#FFFFFF",
+      lineHeight: 1.5,
     },
     header: {
-      flexDirection: "row",
+      flexDirection: "column",
       alignItems: "center",
-      justifyContent: "space-between",
       marginBottom: 20,
     },
     logo: {
-      width: 120,
+      width: 100,
+      height: 60,
       marginBottom: 10,
     },
     title: {
@@ -76,10 +74,15 @@ const Garantia: React.FC<GarantiaProps> = ({ venta }) => {
       marginBottom: 20,
     },
     section: {
-      marginBottom: 10,
+      marginBottom: 15,
       padding: 10,
       backgroundColor: "#f7f7f7",
       borderRadius: 5,
+    },
+    sectionTitle: {
+      fontSize: 12,
+      fontWeight: "bold",
+      marginBottom: 5,
     },
     row: {
       flexDirection: "row",
@@ -88,11 +91,11 @@ const Garantia: React.FC<GarantiaProps> = ({ venta }) => {
     label: {
       fontWeight: "medium",
       fontSize: 11,
-      width: "30%",
+      width: "35%",
     },
-    text: {
+    value: {
       fontSize: 11,
-      width: "70%",
+      width: "65%",
     },
     terms: {
       marginTop: 20,
@@ -102,9 +105,8 @@ const Garantia: React.FC<GarantiaProps> = ({ venta }) => {
     termItem: {
       marginBottom: 5,
     },
-    signature: {
+    signatureSection: {
       marginTop: 30,
-      fontSize: 11,
       textAlign: "center",
     },
     signatureLine: {
@@ -114,71 +116,80 @@ const Garantia: React.FC<GarantiaProps> = ({ venta }) => {
       width: "60%",
       alignSelf: "center",
     },
+    footer: {
+      marginTop: 30,
+      fontSize: 10,
+      textAlign: "center",
+    },
   });
 
   return (
     <Document>
-      {/* USAMOS MAP ANTES DEL PAGE PARA MOSTRAR UN PAGE POR CADA PRODUCTO */}
       {venta?.productos.map((producto, index) => (
         <Page key={index} size="A4" style={styles.page}>
           <View style={styles.header}>
-            <Image style={styles.logo} src={logo} />
+            <Image src={logo} style={styles.logo} />
+            <Text style={styles.title}>GARANTÍA DE DISPOSITIVO</Text>
           </View>
 
-          <Text style={styles.title}>GARANTÍA DE DISPOSITIVO</Text>
-
           <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Detalles de la Venta</Text>
             <View style={styles.row}>
               <Text style={styles.label}>Número de Garantía en venta:</Text>
-              <Text style={styles.text}>
+              <Text style={styles.value}>
                 {venta?.id ? `#${venta.id}` : "No disponible"}
               </Text>
             </View>
-
             <View style={styles.row}>
               <Text style={styles.label}>Fecha de venta:</Text>
-              <Text style={styles.text}>
+              <Text style={styles.value}>
                 {venta?.fechaVenta
                   ? formatearFecha(venta.fechaVenta)
                   : "No disponible"}
               </Text>
             </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Información del Producto</Text>
             <View style={styles.row}>
               <Text style={styles.label}>Dispositivo:</Text>
-              <Text style={styles.text}>
+              <Text style={styles.value}>
                 {producto?.producto?.nombre || "No disponible"}
               </Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Descripción:</Text>
-              <Text style={styles.text}>
+              <Text style={styles.value}>
                 {producto?.producto?.descripcion || "No disponible"}
               </Text>
             </View>
             <View style={styles.row}>
+              <Text style={styles.label}>IMEI:</Text>
+              <Text style={styles.value}>{venta?.imei || "No disponible"}</Text>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Información del Cliente</Text>
+            <View style={styles.row}>
               <Text style={styles.label}>Cliente:</Text>
-              <Text style={styles.text}>
+              <Text style={styles.value}>
                 {venta?.cliente?.nombre ||
                   venta?.nombreClienteFinal ||
                   "No disponible"}
               </Text>
             </View>
             <View style={styles.row}>
-              <Text style={styles.label}>IMEI:</Text>
-              <Text style={styles.text}>{venta?.imei || "No disponible"}</Text>
-            </View>
-            <View style={styles.row}>
               <Text style={styles.label}>DPI:</Text>
-              <Text style={styles.text}>
+              <Text style={styles.value}>
                 {venta?.cliente?.dpi || "No disponible"}
               </Text>
             </View>
           </View>
 
-          <View style={styles.terms}>
-            <Text style={[styles.label, { marginBottom: 10 }]}>
-              Términos de garantía:
-            </Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Términos de la Garantía</Text>
             {[
               "Cubre garantía todo defecto de fábrica, pantalla, bocinas, micrófonos, teclados, baterías o software.",
               "Tiempo de garantía es de 6 meses a partir de la fecha de venta.",
@@ -187,21 +198,24 @@ const Garantia: React.FC<GarantiaProps> = ({ venta }) => {
               "Si se da en garantía, el tiempo de reparación es de 5 a 6 semanas (No se realiza devolución de dinero).",
             ].map((term, idx) => (
               <View key={idx} style={styles.termItem}>
-                <Text style={styles.text}>
-                  {idx + 1}. {term}
-                </Text>
+                <Text style={styles.value}>{`${idx + 1}. ${term}`}</Text>
               </View>
             ))}
           </View>
 
-          <View style={styles.signature}>
+          <View style={styles.signatureSection}>
             <Text>
               Acuso de recibo el dispositivo en correcto funcionamiento y acepto
               los términos de garantía.
             </Text>
             <View style={styles.signatureLine} />
-            <Text style={{ marginTop: 5 }}>Firma del cliente</Text>
+            <Text>Firma del cliente</Text>
           </View>
+
+          <Text style={styles.footer}>
+            Este documento es un comprobante oficial de garantía. Por favor,
+            consérvelo para futuras referencias.
+          </Text>
         </Page>
       ))}
     </Document>

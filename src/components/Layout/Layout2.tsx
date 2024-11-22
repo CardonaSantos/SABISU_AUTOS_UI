@@ -29,6 +29,18 @@ import { toast } from "sonner";
 import { Card } from "../ui/card";
 import { useSocket } from "../Context/SocketContext";
 
+import dayjs from "dayjs";
+import localizedFormat from "dayjs/plugin/localizedFormat";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+
+dayjs.extend(localizedFormat);
+dayjs.extend(customParseFormat);
+dayjs.locale("es");
+const formatearFecha = (fecha: string) => {
+  let nueva_fecha = dayjs(fecha).format("DD MMMM YYYY, hh:mm A");
+  return nueva_fecha;
+};
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 interface LayoutProps {
@@ -64,51 +76,6 @@ export default function Layout2({ children }: LayoutProps) {
   const socket = useSocket();
 
   const userID = useStore((state) => state.userId);
-
-  // const menuItems = [
-  //   { icon: Home, label: "Home", href: "/" },
-  //   { icon: ShoppingCart, label: "Punto venta", href: "/punto-venta" },
-  //   { icon: Package, label: "Inventario", href: "/inventario" },
-
-  //   { icon: Box, label: "Añadir Stock", href: "/adicion-stock" },
-  //   { icon: Clock, label: "Historial de Ventas", href: "/historial/ventas" },
-  //   { icon: Layers, label: "Categorias", href: "/categorias" },
-
-  //   { icon: CircleUser, label: "Proveedores", href: "/agregar-proveedor" },
-  //   { icon: Building, label: "Sucursales", href: "/sucursal" },
-  //   { icon: Building, label: "Añadir Sucursal", href: "/add-sucursal" },
-
-  //   {
-  //     icon: SendToBackIcon,
-  //     label: "Transferir Productos",
-  //     href: "/transferencia",
-  //   },
-
-  //   {
-  //     icon: NotepadText,
-  //     label: "Transferencia Historial",
-  //     href: "/transferencia-historial",
-  //   },
-
-  //   {
-  //     icon: NotepadText,
-  //     label: "Historial Cambios Precio",
-  //     href: "/historial-cambios-precio",
-  //   },
-
-  //   {
-  //     icon: FileStack,
-  //     label: "Stock Eliminaciones",
-  //     href: "/stock-eliminaciones",
-  //   },
-
-  //   { icon: Users, label: "Clientes", href: "/clientes-manage" },
-  //   { icon: BarChart2, label: "Reportes", href: "/reportes" },
-  //   { icon: NotebookIcon, label: "Entregas Stock", href: "/entregas-stock" },
-  //   { icon: RotateCw, label: "Devoluciones", href: "/devoluciones" },
-  //   { icon: AlertCircle, label: "Vencimientos", href: "/vencimientos" },
-  //   { icon: Bell, label: "Notificaciones", href: "/notificaciones" },
-  // ];
 
   useEffect(() => {
     const storedToken = localStorage.getItem("authTokenPos");
@@ -290,7 +257,7 @@ export default function Layout2({ children }: LayoutProps) {
                                   {not.mensaje}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  {new Date(not.fechaCreacion).toLocaleString()}
+                                  {formatearFecha(not.fechaCreacion)}
                                 </p>
                               </div>
                               <Button

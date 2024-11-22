@@ -49,10 +49,15 @@ import {
 } from "@/components/ui/tooltip";
 const API_URL = import.meta.env.VITE_API_URL;
 
+import DatePicker, { registerLocale } from "react-datepicker";
+
+import "react-datepicker/dist/react-datepicker.css";
+registerLocale("es", es);
+
 export default function HistorialVentas() {
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+
   const [filtroVenta, setFiltroVenta] = useState("");
-  const [filtroCliente, setFiltroCliente] = useState("");
-  const [filtroFecha, setFiltroFecha] = useState("");
   const [ventas, setVentas] = useState<VentasHistorial>([]);
   const formatearFecha = (fecha: string) => {
     return format(new Date(fecha), "dd/MM/yyyy", { locale: es });
@@ -170,42 +175,96 @@ export default function HistorialVentas() {
     </Card>
   );
 
+  const filter = ventas
+    .filter((venta) => {
+      // Convertir la fecha de la venta a formato sin hora
+      const ventaFecha = new Date(venta.fechaVenta);
+      // Eliminar la hora de la fecha seleccionada
+      const fechaSeleccionada =
+        startDate && new Date(startDate).setHours(0, 0, 0, 0); // Solo la fecha sin la hora
+      const ventaFechaSinHora = ventaFecha.setHours(0, 0, 0, 0); // Solo la fecha sin la hora
+
+      // Compara solo las fechas sin tener en cuenta la hora
+      const fechaCoincide = fechaSeleccionada
+        ? fechaSeleccionada === ventaFechaSinHora
+        : true; // Si no hay fecha seleccionada, no se aplica filtro
+
+      // Filtra por nombre, teléfono, dpi, dirección o id, y también por fecha si se selecciona
+      return (
+        (venta.cliente?.nombre
+          .trim()
+          .toLowerCase()
+          .includes(filtroVenta.trim().toLowerCase()) ||
+          venta.cliente?.telefono
+            .trim()
+            .toLowerCase()
+            .includes(filtroVenta.trim().toLowerCase()) ||
+          venta.cliente?.dpi
+            .trim()
+            .toLowerCase()
+            .includes(filtroVenta.trim().toLowerCase()) ||
+          venta.cliente?.direccion
+            .trim()
+            .toLowerCase()
+            .includes(filtroVenta.trim().toLowerCase()) ||
+          venta.cliente?.id
+            .toString()
+            .trim()
+            .toLowerCase()
+            .includes(filtroVenta.trim().toLowerCase()) ||
+          venta.id
+            .toString()
+            .trim()
+            .toLowerCase()
+            .includes(filtroVenta.trim().toLowerCase())) &&
+        fechaCoincide
+      );
+    })
+    .sort((a, b) => {
+      const fechaA = new Date(a.fechaVenta).getTime();
+      const fechaB = new Date(b.fechaVenta).getTime();
+      return fechaB - fechaA;
+    });
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
-  const totalPages = Math.ceil(ventas.length / itemsPerPage);
+  const totalPages = Math.ceil(filter.length / itemsPerPage);
 
   // Calcular el índice del último elemento de la página actual
   const indexOfLastItem = currentPage * itemsPerPage;
   // Calcular el índice del primer elemento de la página actual
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   // Obtener los elementos de la página actual
-  const currentItems = ventas.slice(indexOfFirstItem, indexOfLastItem);
+  const currentItems = filter.slice(indexOfFirstItem, indexOfLastItem);
 
   // Cambiar de página
   const onPageChange = (page: number) => {
     setCurrentPage(page);
   };
 
+  console.log("LA FECHA SELECCIONADA ES: ", startDate);
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Historial de Ventas</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <Input
-          placeholder="Filtrar por número de venta"
+          placeholder="Filtrar por número de venta, nombre, teléfono, dpi, dirección"
           value={filtroVenta}
           onChange={(e) => setFiltroVenta(e.target.value)}
         />
-        <Input
-          placeholder="Filtrar por cliente"
-          value={filtroCliente}
-          onChange={(e) => setFiltroCliente(e.target.value)}
-        />
-        <Input
-          type="date"
-          placeholder="Filtrar por fecha"
-          value={filtroFecha}
-          onChange={(e) => setFiltroFecha(e.target.value)}
-        />
+        <div className="w-full md:w-1/2">
+          <DatePicker
+            locale="es"
+            selected={startDate}
+            onChange={(date) => {
+              setStartDate(date || undefined);
+            }}
+            className="w-full px-4 py-2 border rounded-md bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder-gray-500"
+            isClearable
+            placeholderText="Seleccionar una fecha"
+          />
+        </div>
       </div>
       <Card className="shadow-xl">
         <CardContent>
@@ -308,88 +367,88 @@ export default function HistorialVentas() {
             </Table>
           </ScrollArea>
         </CardContent>
-      </Card>
-      <div className="flex items-center justify-center py-4">
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <Button onClick={() => onPageChange(1)}>Primero</Button>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </PaginationPrevious>
-            </PaginationItem>
+        <div className="flex items-center justify-center py-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <Button onClick={() => onPageChange(1)}>Primero</Button>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </PaginationPrevious>
+              </PaginationItem>
 
-            {/* Sistema de truncado */}
-            {currentPage > 3 && (
-              <>
-                <PaginationItem>
-                  <PaginationLink onClick={() => onPageChange(1)}>
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <span className="text-muted-foreground">...</span>
-                </PaginationItem>
-              </>
-            )}
-
-            {Array.from({ length: totalPages }, (_, index) => {
-              const page = index + 1;
-              if (
-                page === currentPage ||
-                (page >= currentPage - 1 && page <= currentPage + 1)
-              ) {
-                return (
-                  <PaginationItem key={index}>
-                    <PaginationLink
-                      onClick={() => onPageChange(page)}
-                      isActive={page === currentPage}
-                    >
-                      {page}
+              {/* Sistema de truncado */}
+              {currentPage > 3 && (
+                <>
+                  <PaginationItem>
+                    <PaginationLink onClick={() => onPageChange(1)}>
+                      1
                     </PaginationLink>
                   </PaginationItem>
-                );
-              }
-              return null;
-            })}
+                  <PaginationItem>
+                    <span className="text-muted-foreground">...</span>
+                  </PaginationItem>
+                </>
+              )}
 
-            {currentPage < totalPages - 2 && (
-              <>
-                <PaginationItem>
-                  <span className="text-muted-foreground">...</span>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink onClick={() => onPageChange(totalPages)}>
-                    {totalPages}
-                  </PaginationLink>
-                </PaginationItem>
-              </>
-            )}
-
-            <PaginationItem>
-              <PaginationNext
-                onClick={() =>
-                  onPageChange(Math.min(totalPages, currentPage + 1))
+              {Array.from({ length: totalPages }, (_, index) => {
+                const page = index + 1;
+                if (
+                  page === currentPage ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <PaginationItem key={index}>
+                      <PaginationLink
+                        onClick={() => onPageChange(page)}
+                        isActive={page === currentPage}
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
                 }
-              >
-                <ChevronRight className="h-4 w-4" />
-              </PaginationNext>
-            </PaginationItem>
-            <PaginationItem>
-              <Button
-                variant={"destructive"}
-                onClick={() => onPageChange(totalPages)}
-              >
-                Último
-              </Button>
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
+                return null;
+              })}
+
+              {currentPage < totalPages - 2 && (
+                <>
+                  <PaginationItem>
+                    <span className="text-muted-foreground">...</span>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationLink onClick={() => onPageChange(totalPages)}>
+                      {totalPages}
+                    </PaginationLink>
+                  </PaginationItem>
+                </>
+              )}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    onPageChange(Math.min(totalPages, currentPage + 1))
+                  }
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </PaginationNext>
+              </PaginationItem>
+              <PaginationItem>
+                <Button
+                  variant={"destructive"}
+                  onClick={() => onPageChange(totalPages)}
+                >
+                  Último
+                </Button>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      </Card>
     </div>
   );
 }

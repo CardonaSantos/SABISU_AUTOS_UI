@@ -27,6 +27,8 @@ import {
   Tag,
   FileText,
   Building,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -35,6 +37,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import localizedFormat from "dayjs/plugin/localizedFormat";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 dayjs.extend(localizedFormat);
 dayjs.locale("es");
@@ -87,11 +104,11 @@ const InfoField = ({
   label: string;
   value: string;
 }) => (
-  <div className="flex items-start space-x-2 p-2 bg-gray-50 rounded-md">
+  <div className="flex items-start space-x-2 p-2  rounded-md">
     <div className="w-5 h-5 flex-shrink-0">{icon}</div>
     <div className="flex flex-col">
-      <p className="text-sm font-medium text-gray-500">{label}</p>
-      <p className="text-sm text-gray-900">{value}</p>
+      <p className="text-sm font-medium ">{label}</p>
+      <p className="text-sm ">{value}</p>
     </div>
   </div>
 );
@@ -125,105 +142,216 @@ export default function StockEliminaciones() {
 
   console.log("Las eliminaciones de stock son: ", stockEliminaciones);
 
+  //PAGINACIÓN:
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+  const totalPages = Math.ceil(stockEliminaciones.length / itemsPerPage);
+
+  // Calcular el índice del último elemento de la página actual
+  const indexOfLastItem = currentPage * itemsPerPage;
+  // Calcular el índice del primer elemento de la página actual
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  // Obtener los elementos de la página actual
+  const currentItems = stockEliminaciones.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+
+  // Cambiar de página
+  const onPageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
     <div className="container mx-auto py-10">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[100px]">Eliminación</TableHead>
-            <TableHead>Producto</TableHead>
-            <TableHead>Fecha y Hora</TableHead>
-            <TableHead>Usuario</TableHead>
-            <TableHead>Sucursal</TableHead>
-            <TableHead className="text-right">Acciones</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {stockEliminaciones &&
-            stockEliminaciones.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">#{item.id}</TableCell>
-                <TableCell>{item.producto.nombre}</TableCell>
-                <TableCell>{formatearFechaUTC(item.fechaHora)}</TableCell>
-                <TableCell>{item.usuario.nombre}</TableCell>
-                <TableCell>{item.sucursal.nombre}</TableCell>
-                <TableCell className="text-right">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedItem(item)}
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Detalles
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[550px]">
-                      <DialogHeader className="text-center">
-                        <DialogTitle className="text-2xl font-bold">
-                          Detalles de Eliminación de Stock
-                        </DialogTitle>
-                      </DialogHeader>
-
-                      {selectedItem && (
-                        <ScrollArea className="max-h-[27rem]">
-                          <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <InfoField
-                                icon={<Package className="w-5 h-5 " />}
-                                label="Producto"
-                                value={selectedItem.producto.nombre}
-                              />
-                              <InfoField
-                                icon={<Tag className="w-5 h-5 " />}
-                                label="Código producto"
-                                value={selectedItem.producto.codigoProducto}
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <InfoField
-                                icon={<FileText className="w-5 h-5 " />}
-                                label="Descripción"
-                                value={selectedItem.producto.descripcion}
-                              />
-                              <InfoField
-                                icon={<Calendar className="w-5 h-5 " />}
-                                label="Fecha de eliminación"
-                                value={formatearFechaUTC(
-                                  selectedItem.fechaHora
-                                )}
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <InfoField
-                                icon={<User className="w-5 h-5 " />}
-                                label="Usuario"
-                                value={`${selectedItem.usuario.nombre} (${selectedItem.usuario.rol})`}
-                              />
-                              <InfoField
-                                icon={<Building className="w-5 h-5 " />}
-                                label="Sucursal"
-                                value={selectedItem.sucursal.nombre}
-                              />
-                            </div>
-
-                            <InfoField
-                              icon={<AlertCircle className="w-5 h-5 " />}
-                              label="Motivo"
-                              value={selectedItem.motivo || "No especificado"}
-                            />
-                          </div>
-                        </ScrollArea>
-                      )}
-                    </DialogContent>
-                  </Dialog>
-                </TableCell>
+      <Card className="shadow-xl">
+        <CardHeader>
+          <CardTitle>Registros de eliminaciones de Stock</CardTitle>
+          <CardDescription>Todas las acciones quedan guardadas</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[100px]">Eliminación</TableHead>
+                <TableHead>Producto</TableHead>
+                <TableHead>Fecha y Hora</TableHead>
+                <TableHead>Usuario</TableHead>
+                <TableHead>Sucursal</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
-            ))}
-        </TableBody>
-      </Table>
+            </TableHeader>
+            <TableBody>
+              {currentItems &&
+                currentItems.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">#{item.id}</TableCell>
+                    <TableCell>{item.producto.nombre}</TableCell>
+                    <TableCell>{formatearFechaUTC(item.fechaHora)}</TableCell>
+                    <TableCell>{item.usuario.nombre}</TableCell>
+                    <TableCell>{item.sucursal.nombre}</TableCell>
+                    <TableCell className="text-right">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedItem(item)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Detalles
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[550px]">
+                          <DialogHeader className="text-center">
+                            <DialogTitle className="text-2xl font-bold">
+                              Detalles de Eliminación de Stock
+                            </DialogTitle>
+                          </DialogHeader>
+
+                          {selectedItem && (
+                            <ScrollArea className="max-h-[27rem]">
+                              <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <InfoField
+                                    icon={<Package className="w-5 h-5 " />}
+                                    label="Producto"
+                                    value={selectedItem.producto.nombre}
+                                  />
+                                  <InfoField
+                                    icon={<Tag className="w-5 h-5 " />}
+                                    label="Código producto"
+                                    value={selectedItem.producto.codigoProducto}
+                                  />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <InfoField
+                                    icon={<FileText className="w-5 h-5 " />}
+                                    label="Descripción"
+                                    value={selectedItem.producto.descripcion}
+                                  />
+                                  <InfoField
+                                    icon={<Calendar className="w-5 h-5 " />}
+                                    label="Fecha de eliminación"
+                                    value={formatearFechaUTC(
+                                      selectedItem.fechaHora
+                                    )}
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <InfoField
+                                    icon={<User className="w-5 h-5 " />}
+                                    label="Usuario"
+                                    value={`${selectedItem.usuario.nombre} (${selectedItem.usuario.rol})`}
+                                  />
+                                  <InfoField
+                                    icon={<Building className="w-5 h-5 " />}
+                                    label="Sucursal"
+                                    value={selectedItem.sucursal.nombre}
+                                  />
+                                </div>
+
+                                <InfoField
+                                  icon={<AlertCircle className="w-5 h-5 " />}
+                                  label="Motivo"
+                                  value={
+                                    selectedItem.motivo || "No especificado"
+                                  }
+                                />
+                              </div>
+                            </ScrollArea>
+                          )}
+                        </DialogContent>
+                      </Dialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+          <div className="flex items-center justify-center py-4">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <Button onClick={() => onPageChange(1)}>Primero</Button>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </PaginationPrevious>
+                </PaginationItem>
+
+                {/* Sistema de truncado */}
+                {currentPage > 3 && (
+                  <>
+                    <PaginationItem>
+                      <PaginationLink onClick={() => onPageChange(1)}>
+                        1
+                      </PaginationLink>
+                    </PaginationItem>
+                    <PaginationItem>
+                      <span className="text-muted-foreground">...</span>
+                    </PaginationItem>
+                  </>
+                )}
+
+                {Array.from({ length: totalPages }, (_, index) => {
+                  const page = index + 1;
+                  if (
+                    page === currentPage ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <PaginationItem key={index}>
+                        <PaginationLink
+                          onClick={() => onPageChange(page)}
+                          isActive={page === currentPage}
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+                  return null;
+                })}
+
+                {currentPage < totalPages - 2 && (
+                  <>
+                    <PaginationItem>
+                      <span className="text-muted-foreground">...</span>
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationLink onClick={() => onPageChange(totalPages)}>
+                        {totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
+                  </>
+                )}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() =>
+                      onPageChange(Math.min(totalPages, currentPage + 1))
+                    }
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </PaginationNext>
+                </PaginationItem>
+                <PaginationItem>
+                  <Button
+                    variant={"destructive"}
+                    onClick={() => onPageChange(totalPages)}
+                  >
+                    Último
+                  </Button>
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

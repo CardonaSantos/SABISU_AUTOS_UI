@@ -14,7 +14,7 @@ import Reportes from "./Pages/Reportes";
 import Productos from "./Pages/Productos";
 import Proveedores from "./Pages/Proveedores";
 import EntregasStock from "./Pages/EntregasStock";
-import Devoluciones from "./Pages/Devoluciones";
+// import Devoluciones from "./Pages/Devoluciones";
 import Vencimientos from "./Pages/Vencimientos";
 import CategoriasDeProductos from "./Pages/CategoriasDeProductos";
 import HistorialVentas from "./Pages/HistorialVentas";
@@ -40,6 +40,13 @@ import CreateCustomer from "./Pages/Customers/CreateCustomer";
 import Layout2 from "./components/Layout/Layout2";
 import TicketPage from "./components/PDF/TicketPage";
 import TicketManage from "./Pages/TicketManage/TicketManage";
+import ReceiveWarrantyPage from "./Pages/Warranty/ReceiveWarrantyPage";
+import WarrantyPage from "./components/PDF/PDF-Warranty/WarrantyPage";
+import WarrantyFinalPage from "./components/PDF/WarrantyFinal/WarrantyFinalPDFPage";
+import RegistroDeposito from "./Pages/CashRegister/RegistroDeposito";
+import RegistroCaja from "./Pages/CashRegister/RegistroCaja";
+import CashRegisters from "./Pages/CashRegister/CashRegisters";
+import BalanceSucursal from "./Pages/CashRegister/BalanceSucursal";
 
 function App() {
   return (
@@ -177,14 +184,14 @@ function App() {
               }
             />
 
-            <Route
+            {/* <Route
               path="/devoluciones"
               element={
                 <ProtectedRoute>
                   <Devoluciones />
                 </ProtectedRoute>
               }
-            />
+            /> */}
 
             <Route
               path="/vencimientos"
@@ -317,6 +324,78 @@ function App() {
               element={
                 <ProtectedRoute>
                   <TicketManage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/ticket/manage"
+              element={
+                <ProtectedRoute>
+                  <TicketManage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/garantia/manage"
+              element={
+                <ProtectedRoute>
+                  <ReceiveWarrantyPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/ticket-garantia/:id"
+              element={
+                <ProtectedRoute>
+                  <WarrantyPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/garantia/comprobante-uso/:id"
+              element={
+                <ProtectedRoute>
+                  <WarrantyFinalPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/depositos-egresos/"
+              element={
+                <ProtectedRoute>
+                  <RegistroDeposito />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/registro-caja"
+              element={
+                <ProtectedRoute>
+                  <RegistroCaja />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/registros-caja"
+              element={
+                <ProtectedRoute>
+                  <CashRegisters />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/historial/depositos-egresos"
+              element={
+                <ProtectedRoute>
+                  <BalanceSucursal />
                 </ProtectedRoute>
               }
             />

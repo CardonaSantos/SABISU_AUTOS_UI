@@ -27,7 +27,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { Badge } from "@/components/ui/badge";
 import {
   ArrowDownUp,
   Barcode,
@@ -96,9 +95,8 @@ interface Categorias {
 
 export default function Inventario() {
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("");
-  const [supplierFilter, setSupplierFilter] = useState<string>("");
-  const [stockFilter, setStockFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [supplierFilter, setSupplierFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const userId = useStore((state) => state.userId);
@@ -236,7 +234,7 @@ export default function Inventario() {
   // PAGINACIÓN
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 25;
 
   // Filtrar productos antes de la paginación
   const filteredProducts = productsInventary
@@ -251,13 +249,13 @@ export default function Inventario() {
 
       // Filtrado por categoría
       const matchesCategory =
-        categoryFilter === "" ||
+        categoryFilter === "all" ||
         (product.categorias.length > 0 &&
           product.categorias.some((cat) => cat.nombre === categoryFilter));
 
       // Filtrado por proveedor
       const matchesSupplier =
-        supplierFilter === "" ||
+        supplierFilter === "all" ||
         (firstStock &&
           firstStock.some(
             (stock) =>
@@ -267,22 +265,9 @@ export default function Inventario() {
 
       // Filtrado por cantidad en stock
       // Filtrado por cantidad en stock
-      const matchesStockFilter =
-        stockFilter === "all" || // Mostrar todos si se selecciona "all"
-        (product.stock.length === 0 && stockFilter === "out") || // Considerar productos sin stock como "fuera de stock"
-        (product.stock.length > 0 &&
-          ((stockFilter === "low" &&
-            product.stock.some((stock) => stock.cantidad <= 5)) ||
-            (stockFilter === "out" &&
-              product.stock.some((stock) => stock.cantidad === 0))));
 
       // Se filtra por el término de búsqueda y luego por los demás filtros
-      return (
-        matchesSearchTerm &&
-        matchesCategory &&
-        matchesSupplier &&
-        matchesStockFilter
-      );
+      return matchesSearchTerm && matchesCategory && matchesSupplier;
     })
     .sort((a, b) => {
       const stockA = a.stock.length > 0 ? a.stock[0] : null;
@@ -322,15 +307,6 @@ export default function Inventario() {
       return 0;
     });
 
-  const handleLimpiarFiltro = () => {
-    setSearchTerm("");
-    setSupplierFilter("");
-    setCategoryFilter("");
-    setStockFilter("all");
-    setSortBy("");
-    setSortOrder("asc");
-  };
-
   // PAGINACIÓN
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
@@ -369,7 +345,7 @@ export default function Inventario() {
   console.log("El producto creando es: ", productCreate);
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 shadow-xl">
       <h1 className="text-2xl font-bold mb-4">Administrador de inventario</h1>
       <div className="bg-muted p-4 rounded-lg mb-4 ">
         <div className="flex flex-col md:flex-row justify-between items-center mb-4">
@@ -582,11 +558,12 @@ export default function Inventario() {
             </Button>
           </div>
         </div>
-        <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
-          <div className="flex items-center space-x-2">
+        <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-4">
+          {/* Input de búsqueda */}
+          <div className="flex items-center w-full md:w-1/3 space-x-2">
             <Input
               type="text"
-              placeholder="Buscar producto..."
+              placeholder="Buscar producto por nombre, código"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full"
@@ -594,52 +571,40 @@ export default function Inventario() {
             <Barcode className="h-6 w-6 text-gray-500" />
           </div>
 
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              {categorias &&
-                categorias.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.nombre}>
-                    {cat.nombre}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-          <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Proveedores" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {proveedores &&
-                proveedores.map((prov) => (
-                  <SelectItem key={prov.id} value={prov.nombre}>
-                    {prov.nombre}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-          <Select value={stockFilter} onValueChange={setStockFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Stock" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todo Stock</SelectItem>
-              <SelectItem value="low">Bajo Stock</SelectItem>
-              <SelectItem value="out">Fuera de Stock</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Filtro de categoría */}
+          <div className="w-full md:w-1/3">
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {categorias &&
+                  categorias.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.nombre}>
+                      {cat.nombre}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <div className="">
-            <Button
-              onClick={handleLimpiarFiltro}
-              variant={"destructive"}
-              className="w-full md:w-[180px]"
-            >
-              Limpiar filtro
-            </Button>
+          {/* Filtro de proveedores */}
+          <div className="w-full md:w-1/3">
+            <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Proveedores" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {proveedores &&
+                  proveedores.map((prov) => (
+                    <SelectItem key={prov.id} value={prov.nombre}>
+                      {prov.nombre}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -695,9 +660,7 @@ export default function Inventario() {
 
                 <TableCell>
                   {product.stock.length === 0 ? (
-                    <Badge className="bg-red-600 text-white">
-                      No disponible
-                    </Badge>
+                    <p className="text-gray-500 font-bold">No disponible</p>
                   ) : (
                     product.stock.map((stock) => (
                       <span className="ml-2 font-extrabold" key={stock.id}>
@@ -720,9 +683,9 @@ export default function Inventario() {
 
                 <TableCell>
                   {product.stock.length === 0 ? (
-                    <Badge className="ml-2 bg-orange-500 text-white">
+                    <p className="text-orange-500 font-bold">
                       Sin stock asignado
-                    </Badge>
+                    </p>
                   ) : (
                     product.stock.map((stock) => (
                       <Link key={stock.id} to={`/stock-edicion/${stock.id}`}>
@@ -732,40 +695,46 @@ export default function Inventario() {
                   )}
                 </TableCell>
 
-                <TableCell>
+                <TableCell className="">
                   {product.stock.length > 0 ? (
-                    product.stock.map((stock, index) => (
-                      <div key={index}>
-                        {/* Mostrar la fecha de vencimiento si existe */}
-                        {stock.fechaVencimiento ? (
-                          <>
-                            {formatearFecha(stock.fechaVencimiento)}
-                            {/* Verificar si está vencido */}
-                            {new Date(stock.fechaVencimiento).setHours(
-                              23,
-                              59,
-                              59,
-                              999
-                            ) <= new Date().getTime() && (
-                              <Badge
-                                variant="destructive"
-                                className="ml-2 text-white"
-                              >
-                                Expirado
-                              </Badge>
-                            )}
-                          </>
-                        ) : (
-                          <Badge className="ml-2 bg-violet-600 text-white">
-                            N/A
-                          </Badge>
-                        )}
-                      </div>
-                    ))
+                    product.stock.map((stock, index) => {
+                      const fechaVencimiento = new Date(stock.fechaVencimiento);
+                      const hoy = new Date();
+                      const estaVencido =
+                        stock.fechaVencimiento &&
+                        fechaVencimiento.setHours(23, 59, 59, 999) <=
+                          hoy.getTime();
+
+                      return (
+                        <div
+                          key={index}
+                          className="flex justify-center items-center "
+                        >
+                          {/* Si hay fecha de vencimiento */}
+                          {stock.fechaVencimiento ? (
+                            estaVencido ? (
+                              <p className="text-rose-500 font-bold">
+                                Expirado-
+                                {formatearFecha(stock.fechaVencimiento)}
+                              </p>
+                            ) : (
+                              <p className="font-semibold">
+                                {formatearFecha(stock.fechaVencimiento)}
+                              </p>
+                            )
+                          ) : (
+                            /* Si no hay fecha de vencimiento */
+                            <p className="text-purple-500 font-bold">N/A</p>
+                          )}
+                        </div>
+                      );
+                    })
                   ) : (
-                    <Badge className="ml-2 bg-rose-600 text-white">
-                      Sin stock asignado
-                    </Badge>
+                    <div className="flex justify-center items-center mt-2 mb-2">
+                      <p className="text-gray-500 font-bold">
+                        Sin stock asignado
+                      </p>
+                    </div>
                   )}
                 </TableCell>
 

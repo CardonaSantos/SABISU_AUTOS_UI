@@ -10,6 +10,11 @@ import {
   User2Icon,
   ChevronLeft,
   ChevronRight,
+  CalendarIcon,
+  UserIcon,
+  PhoneIcon,
+  MapPinIcon,
+  PackageIcon,
 } from "lucide-react";
 import {
   Table,
@@ -39,6 +44,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 // Tipos
 type Producto = {
@@ -131,47 +144,136 @@ export default function EntregasStock() {
 
   // Componente para mostrar los detalles de la entrega
   const EntregaDetails = ({ entrega }: { entrega: EntregaStock }) => (
-    <ScrollArea className="h-[400px] w-full">
-      <div className="space-y-4">
-        <div>
-          <h3 className="font-semibold">Información General</h3>
-          <p>ID: {entrega.id}</p>
-          <p>Monto Total: Q{entrega.montoTotal.toFixed(2)}</p>
-          <p>Fecha de Entrega: {formatDate(entrega.fechaEntrega)}</p>
-        </div>
-        <div>
-          <h3 className="font-semibold">Proveedor</h3>
-          <p>{entrega.proveedor.nombre}</p>
-          <p>{entrega.proveedor.correo}</p>
-          <p>{entrega.proveedor.telefono}</p>
-        </div>
-        <div>
-          <h3 className="font-semibold">Recibido Por</h3>
-          <p>
-            {entrega.usuarioRecibido.nombre} ({entrega.usuarioRecibido.rol})
-          </p>
-        </div>
-        <div>
-          <h3 className="font-semibold">Sucursal</h3>
-          <p>{entrega.sucursal.nombre}</p>
-          <p>{entrega.sucursal.direccion}</p>
-        </div>
-        <div>
-          <h3 className="font-semibold">Stock Entregado</h3>
-          {entrega.stockEntregado.map((stock) => (
-            <div key={stock.id} className="border-t pt-2 mt-2">
-              <p>
-                <strong>{stock.producto.nombre}</strong>
-              </p>
-              <p>Código: {stock.producto.codigoProducto}</p>
-              <p>Cantidad: {stock.cantidad}</p>
-              <p>Costo Total: Q{stock.costoTotal.toFixed(2)}</p>
-              <p>Precio Costo: Q{stock.precioCosto.toFixed(2)}</p>
-              <p>Fecha de Ingreso: {formatDate(stock.fechaIngreso)}</p>
-              <p>Fecha de Vencimiento: {formatDate(stock.fechaVencimiento)}</p>
+    <ScrollArea className="h-[calc(100vh-180px)] w-full">
+      <div className="p-6 space-y-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center text-lg font-semibold">
+              Información General
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-sm font-medium">ID de Entrega</p>
+                <p className="text-2xl font-bold">#{entrega.id}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium">Monto Total</p>
+                <p className="text-2xl font-bold">
+                  {Intl.NumberFormat("es-GT", {
+                    style: "currency",
+                    currency: "GTQ",
+                  }).format(entrega.montoTotal)}
+                </p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-sm font-medium">Fecha de Entrega</p>
+                <p className="text-lg flex items-center">
+                  <CalendarIcon className="mr-2" size={16} />
+                  {formatDate(entrega.fechaEntrega)}
+                </p>
+              </div>
             </div>
-          ))}
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg font-semibold">
+                <UserIcon className="mr-2" size={20} />
+                Proveedor
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="font-medium">{entrega.proveedor.nombre}</p>
+              <p className="text-sm text-muted-foreground">
+                Correo: {entrega.proveedor.correo}
+              </p>
+              <p className="text-sm text-muted-foreground flex items-center mt-1">
+                <PhoneIcon className="mr-2" size={14} />
+                {entrega.proveedor.telefono}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg font-semibold">
+                <MapPinIcon className="mr-2" size={20} />
+                Sucursal
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="font-medium">{entrega.sucursal.nombre}</p>
+              <p className="text-sm text-muted-foreground">
+                {entrega.sucursal.direccion}
+              </p>
+            </CardContent>
+          </Card>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center text-lg font-semibold">
+              <UserIcon className="mr-2" size={20} />
+              Recibido Por
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="font-medium">{entrega.usuarioRecibido.nombre}</p>
+            <Badge variant="secondary" className="mt-1">
+              {entrega.usuarioRecibido.rol}
+            </Badge>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center text-lg font-semibold">
+              <PackageIcon className="mr-2" size={20} />
+              Stock Entregado
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {entrega.stockEntregado.map((stock) => (
+                <div key={stock.id} className="bg-muted p-4 rounded-lg">
+                  <h4 className="font-semibold mb-2">
+                    {stock.producto.nombre}
+                  </h4>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <p>
+                      <span className="font-medium">Código:</span>{" "}
+                      {stock.producto.codigoProducto}
+                    </p>
+                    <p>
+                      <span className="font-medium">Cantidad:</span>{" "}
+                      {stock.cantidad}
+                    </p>
+                    <p>
+                      <span className="font-medium">Costo Total:</span> Q
+                      {stock.costoTotal.toFixed(2)}
+                    </p>
+                    <p>
+                      <span className="font-medium">Precio Costo:</span> Q
+                      {stock.precioCosto.toFixed(2)}
+                    </p>
+                    <p className="col-span-2">
+                      <span className="font-medium">Fecha de Ingreso:</span>{" "}
+                      {formatDate(stock.fechaIngreso)}
+                    </p>
+                    <p className="col-span-2">
+                      <span className="font-medium">Fecha de Vencimiento:</span>{" "}
+                      {formatDate(stock.fechaVencimiento)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </ScrollArea>
   );
@@ -194,171 +296,179 @@ export default function EntregasStock() {
 
   return (
     <div className="container mx-auto py-10">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Entrega</TableHead>
-            <TableHead>Proveedor</TableHead>
-            <TableHead>Fecha de Entrega</TableHead>
-            <TableHead>Sucursal</TableHead>
-            <TableHead>Productos</TableHead>
+      <Card className="shadow-xl">
+        <CardHeader>
+          <CardTitle>Registros de entrada de Stocks</CardTitle>
+          <CardDescription>Historial de entrada </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Entrega</TableHead>
+                <TableHead>Proveedor</TableHead>
+                <TableHead>Fecha de Entrega</TableHead>
+                <TableHead>Sucursal</TableHead>
+                <TableHead>Productos</TableHead>
 
-            <TableHead>Monto Total</TableHead>
-            <TableHead>Acciones</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {currentItems &&
-            currentItems.map((entrega) => (
-              <TableRow key={entrega.id}>
-                <TableCell>#{entrega.id}</TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <User2Icon className="mr-2" size={16} />
-                    {entrega.proveedor.nombre}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <Calendar className="mr-2" size={16} />
-                    {formatDate(entrega.fechaEntrega)}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <Building className="mr-2" size={16} />
-                    {entrega.sucursal.nombre}
-                  </div>
-                </TableCell>
-
-                <TableCell>
-                  <div className="flex items-center">
-                    <Package className="mr-2" size={16} />
-                    {entrega.stockEntregado.reduce(
-                      (total, prod) => total + prod.cantidad,
-                      0
-                    )}
-                  </div>
-                </TableCell>
-
-                <TableCell>
-                  <div className="flex items-center">
-                    <Coins className="mr-2" size={16} />
-                    {new Intl.NumberFormat("es-GT", {
-                      style: "currency",
-                      currency: "GTQ",
-                    }).format(entrega.montoTotal)}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedEntrega(entrega)}
-                      >
-                        <Eye className="mr-2" size={16} />
-                        Ver Detalles
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-3xl">
-                      <DialogHeader>
-                        <DialogTitle>
-                          Detalles de la Entrega #{entrega.id}
-                        </DialogTitle>
-                      </DialogHeader>
-                      {selectedEntrega && (
-                        <EntregaDetails entrega={selectedEntrega} />
-                      )}
-                    </DialogContent>
-                  </Dialog>
-                </TableCell>
+                <TableHead>Monto Total</TableHead>
+                <TableHead>Acciones</TableHead>
               </TableRow>
-            ))}
-        </TableBody>
-      </Table>
-      <div className="flex items-center justify-center py-4">
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <Button onClick={() => onPageChange(1)}>Primero</Button>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </PaginationPrevious>
-            </PaginationItem>
+            </TableHeader>
+            <TableBody>
+              {currentItems &&
+                currentItems.map((entrega) => (
+                  <TableRow key={entrega.id}>
+                    <TableCell>#{entrega.id}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <User2Icon className="mr-2" size={16} />
+                        {entrega.proveedor.nombre}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Calendar className="mr-2" size={16} />
+                        {formatDate(entrega.fechaEntrega)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Building className="mr-2" size={16} />
+                        {entrega.sucursal.nombre}
+                      </div>
+                    </TableCell>
 
-            {/* Sistema de truncado */}
-            {currentPage > 3 && (
-              <>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Package className="mr-2" size={16} />
+                        {entrega.stockEntregado.reduce(
+                          (total, prod) => total + prod.cantidad,
+                          0
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Coins className="mr-2" size={16} />
+                        {new Intl.NumberFormat("es-GT", {
+                          style: "currency",
+                          currency: "GTQ",
+                        }).format(entrega.montoTotal)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedEntrega(entrega)}
+                          >
+                            <Eye className="mr-2" size={16} />
+                            Ver Detalles
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl p-0">
+                          <DialogHeader className="p-6 pb-0">
+                            <DialogTitle>
+                              Detalles de la Entrega #{entrega.id}
+                            </DialogTitle>
+                          </DialogHeader>
+                          {selectedEntrega && (
+                            <EntregaDetails entrega={selectedEntrega} />
+                          )}
+                        </DialogContent>
+                      </Dialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+          <div className="flex items-center justify-center py-4">
+            <Pagination>
+              <PaginationContent>
                 <PaginationItem>
-                  <PaginationLink onClick={() => onPageChange(1)}>
-                    1
-                  </PaginationLink>
+                  <Button onClick={() => onPageChange(1)}>Primero</Button>
                 </PaginationItem>
                 <PaginationItem>
-                  <span className="text-muted-foreground">...</span>
+                  <PaginationPrevious
+                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </PaginationPrevious>
                 </PaginationItem>
-              </>
-            )}
 
-            {Array.from({ length: totalPages }, (_, index) => {
-              const page = index + 1;
-              if (
-                page === currentPage ||
-                (page >= currentPage - 1 && page <= currentPage + 1)
-              ) {
-                return (
-                  <PaginationItem key={index}>
-                    <PaginationLink
-                      onClick={() => onPageChange(page)}
-                      isActive={page === currentPage}
-                    >
-                      {page}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-              }
-              return null;
-            })}
+                {/* Sistema de truncado */}
+                {currentPage > 3 && (
+                  <>
+                    <PaginationItem>
+                      <PaginationLink onClick={() => onPageChange(1)}>
+                        1
+                      </PaginationLink>
+                    </PaginationItem>
+                    <PaginationItem>
+                      <span className="text-muted-foreground">...</span>
+                    </PaginationItem>
+                  </>
+                )}
 
-            {currentPage < totalPages - 2 && (
-              <>
+                {Array.from({ length: totalPages }, (_, index) => {
+                  const page = index + 1;
+                  if (
+                    page === currentPage ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <PaginationItem key={index}>
+                        <PaginationLink
+                          onClick={() => onPageChange(page)}
+                          isActive={page === currentPage}
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+                  return null;
+                })}
+
+                {currentPage < totalPages - 2 && (
+                  <>
+                    <PaginationItem>
+                      <span className="text-muted-foreground">...</span>
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationLink onClick={() => onPageChange(totalPages)}>
+                        {totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
+                  </>
+                )}
+
                 <PaginationItem>
-                  <span className="text-muted-foreground">...</span>
+                  <PaginationNext
+                    onClick={() =>
+                      onPageChange(Math.min(totalPages, currentPage + 1))
+                    }
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </PaginationNext>
                 </PaginationItem>
                 <PaginationItem>
-                  <PaginationLink onClick={() => onPageChange(totalPages)}>
-                    {totalPages}
-                  </PaginationLink>
+                  <Button
+                    variant={"destructive"}
+                    onClick={() => onPageChange(totalPages)}
+                  >
+                    Último
+                  </Button>
                 </PaginationItem>
-              </>
-            )}
-
-            <PaginationItem>
-              <PaginationNext
-                onClick={() =>
-                  onPageChange(Math.min(totalPages, currentPage + 1))
-                }
-              >
-                <ChevronRight className="h-4 w-4" />
-              </PaginationNext>
-            </PaginationItem>
-            <PaginationItem>
-              <Button
-                variant={"destructive"}
-                onClick={() => onPageChange(totalPages)}
-              >
-                Último
-              </Button>
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

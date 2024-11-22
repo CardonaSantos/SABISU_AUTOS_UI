@@ -22,7 +22,7 @@ function NotFoundPage() {
             Oops, parece que no hay nada aquí
           </h2>
           <p className="text-gray-950 mb-8 pb-2 font-semibold">
-            Te has perdido en el espacio. La página que buscas no existe.
+            La página que buscas no existe.
           </p>
           <img
             src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExaGl5Z2R1NGZ0dWFqZ3RrYWdtOG5qMmprZGYzcndnbW4zbGQyam9jcSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/DzQJvwh01gDYgUDoyc/giphy.gif"
