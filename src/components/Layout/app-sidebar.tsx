@@ -6,6 +6,8 @@ import {
   ClipboardList,
   NotebookText,
   CoinsIcon,
+  Bolt,
+  ClipboardPen,
 } from "lucide-react";
 
 import {
@@ -115,6 +117,17 @@ const menuItems = [
     icon: CoinsIcon,
     label: "Saldo y Egresos",
     href: "/historial/depositos-egresos",
+  },
+  {
+    icon: Bolt,
+    label: "Config",
+    href: "/config/user",
+  },
+
+  {
+    icon: ClipboardPen,
+    label: "Ventas Eliminaciones historial",
+    href: "/historial/ventas-eliminaciones",
   },
 ];
 

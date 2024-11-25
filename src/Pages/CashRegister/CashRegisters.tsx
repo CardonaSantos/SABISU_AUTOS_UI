@@ -95,14 +95,14 @@ export default function CashRegisters() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-xl font-bold">
-                  Turno de Caja #{shift.id}
+                  Turno de Caja #{shift?.id || "N/A"}
                   <Badge
                     className="ml-2"
                     variant={
-                      shift.estado === "CERRADO" ? "destructive" : "default"
+                      shift?.estado === "CERRADO" ? "destructive" : "default"
                     }
                   >
-                    {shift.estado}
+                    {shift?.estado || "Sin estado"}
                   </Badge>
                 </CardTitle>
               </CardHeader>
@@ -110,32 +110,41 @@ export default function CashRegisters() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p>
-                      <strong>Sucursal:</strong> {shift.sucursal.nombre}
+                      <strong>Sucursal:</strong>{" "}
+                      {shift?.sucursal?.nombre || "No disponible"}
                     </p>
                     <p>
-                      <strong>Usuario:</strong> {shift.usuario.nombre}
+                      <strong>Usuario:</strong>{" "}
+                      {shift?.usuario?.nombre || "No disponible"}
                     </p>
                     <p>
                       <strong>Fecha de inicio:</strong>{" "}
-                      {formatearFecha(shift.fechaInicio)}
+                      {formatearFecha(shift?.fechaInicio) || "Sin fecha"}
                     </p>
                     <p>
                       <strong>Fecha de cierre:</strong>{" "}
-                      {formatearFecha(shift.fechaCierre)}
+                      {formatearFecha(shift?.fechaCierre) || "Sin fecha"}
                     </p>
                   </div>
                   <div>
                     <p>
                       <strong>Saldo inicial:</strong>{" "}
-                      {formatCurrency(shift.saldoInicial)}
+                      {shift?.saldoInicial !== undefined
+                        ? formatCurrency(shift.saldoInicial)
+                        : "No disponible"}
                     </p>
                     <p>
                       <strong>Saldo final:</strong>{" "}
-                      {formatCurrency(shift.saldoFinal)}
+                      {shift?.saldoFinal !== undefined
+                        ? formatCurrency(shift.saldoFinal)
+                        : "No disponible"}
                     </p>
                     <p>
                       <strong>Diferencia:</strong>{" "}
-                      {formatCurrency(shift.saldoFinal - shift.saldoInicial)}
+                      {shift?.saldoInicial !== undefined &&
+                      shift?.saldoFinal !== undefined
+                        ? formatCurrency(shift.saldoFinal - shift.saldoInicial)
+                        : "No disponible"}
                     </p>
                   </div>
                 </div>
@@ -154,28 +163,26 @@ export default function CashRegisters() {
                         <TableHead>Fecha</TableHead>
                         <TableHead>Usuario</TableHead>
                         <TableHead>Descripción</TableHead>
-
                         <TableHead>Usado para cierre</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {shift &&
+                      {shift?.depositos?.length ? (
                         shift.depositos.map((deposito) => (
                           <TableRow key={deposito.id}>
-                            <TableCell>{deposito.banco}</TableCell>
+                            <TableCell>{deposito.banco || "N/A"}</TableCell>
                             <TableCell>
-                              {formatCurrency(deposito.monto)}
+                              {formatCurrency(deposito.monto || 0)}
                             </TableCell>
                             <TableCell>
-                              {formatearFecha(deposito.fechaDeposito)}
+                              {formatearFecha(deposito.fechaDeposito) || "N/A"}
                             </TableCell>
                             <TableCell>
-                              {deposito?.usuario?.nombre
-                                ? deposito?.usuario?.nombre
-                                : "No disponible"}
+                              {deposito?.usuario?.nombre || "No disponible"}
                             </TableCell>
-
-                            <TableCell>{deposito.descripcion}</TableCell>
+                            <TableCell>
+                              {deposito.descripcion || "Sin descripción"}
+                            </TableCell>
                             <TableCell>
                               <Badge
                                 variant={
@@ -188,7 +195,14 @@ export default function CashRegisters() {
                               </Badge>
                             </TableCell>
                           </TableRow>
-                        ))}
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center">
+                            No hay depósitos registrados
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </AccordionContent>
@@ -204,21 +218,33 @@ export default function CashRegisters() {
                         <TableHead>Monto</TableHead>
                         <TableHead>Fecha</TableHead>
                         <TableHead>Usuario</TableHead>
-                        <TableHead>Descripción</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {shift.egresos.map((egreso) => (
-                        <TableRow key={egreso.id}>
-                          <TableCell>{egreso.descripcion}</TableCell>
-                          <TableCell>{formatCurrency(egreso.monto)}</TableCell>
-                          <TableCell>
-                            {formatearFecha(egreso.fechaEgreso)}
+                      {shift?.egresos?.length ? (
+                        shift.egresos.map((egreso) => (
+                          <TableRow key={egreso.id}>
+                            <TableCell>
+                              {egreso.descripcion || "Sin descripción"}
+                            </TableCell>
+                            <TableCell>
+                              {formatCurrency(egreso.monto || 0)}
+                            </TableCell>
+                            <TableCell>
+                              {formatearFecha(egreso.fechaEgreso) || "N/A"}
+                            </TableCell>
+                            <TableCell>
+                              {egreso?.usuario?.nombre || "No disponible"}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center">
+                            No hay egresos registrados
                           </TableCell>
-                          <TableCell>{egreso.usuario.nombre}</TableCell>
-                          <TableCell>{egreso.descripcion}</TableCell>
                         </TableRow>
-                      ))}
+                      )}
                     </TableBody>
                   </Table>
                 </AccordionContent>
@@ -238,22 +264,30 @@ export default function CashRegisters() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {shift.ventas.map((venta) =>
-                        venta.productos.map((producto, index) => (
-                          <TableRow key={`${venta.id}-${index}`}>
-                            <TableCell>{venta.id}</TableCell>
-                            <TableCell>
-                              {producto.producto.nombre || "N/A"}
-                            </TableCell>
-                            <TableCell>{producto.cantidad}</TableCell>
-                            <TableCell>
-                              {producto.producto.codigoProducto || "N/A"}
-                            </TableCell>
-                            <TableCell>
-                              {formatearFecha(venta.fechaVenta)}
-                            </TableCell>
-                          </TableRow>
-                        ))
+                      {shift?.ventas?.length ? (
+                        shift.ventas.map((venta) =>
+                          venta.productos.map((producto, index) => (
+                            <TableRow key={`${venta.id}-${index}`}>
+                              <TableCell>{venta.id || "N/A"}</TableCell>
+                              <TableCell>
+                                {producto?.producto?.nombre || "N/A"}
+                              </TableCell>
+                              <TableCell>{producto.cantidad || 0}</TableCell>
+                              <TableCell>
+                                {producto?.producto?.codigoProducto || "N/A"}
+                              </TableCell>
+                              <TableCell>
+                                {formatearFecha(venta.fechaVenta) || "N/A"}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center">
+                            No hay ventas registradas
+                          </TableCell>
+                        </TableRow>
                       )}
                     </TableBody>
                   </Table>
@@ -263,7 +297,9 @@ export default function CashRegisters() {
               <AccordionItem value="comentario">
                 <AccordionTrigger>Comentario</AccordionTrigger>
                 <AccordionContent>
-                  <p className="whitespace-pre-wrap">{shift.comentario}</p>
+                  <p className="whitespace-pre-wrap">
+                    {shift?.comentario || "Sin comentarios"}
+                  </p>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

@@ -287,7 +287,11 @@ export default function Layout2({ children }: LayoutProps) {
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="icon">
                         <User className="h-5 w-5" />
-                        <span className="sr-only">User menu</span>
+                        {/* <span className="sr-only">User menu</span> */}
+                        {/* <Avatar>
+                        <AvatarImage src="https://github.com/shadcn.png" />
+                        <AvatarFallback>CN</AvatarFallback>
+                      </Avatar> */}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">

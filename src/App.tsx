@@ -47,6 +47,8 @@ import RegistroDeposito from "./Pages/CashRegister/RegistroDeposito";
 import RegistroCaja from "./Pages/CashRegister/RegistroCaja";
 import CashRegisters from "./Pages/CashRegister/CashRegisters";
 import BalanceSucursal from "./Pages/CashRegister/BalanceSucursal";
+import UserConfig from "./Pages/Config/UserConfig";
+import SalesDeleted from "./Pages/SalesDeleted/SalesDeleted";
 
 function App() {
   return (
@@ -396,6 +398,24 @@ function App() {
               element={
                 <ProtectedRoute>
                   <BalanceSucursal />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/config/user"
+              element={
+                <ProtectedRoute>
+                  <UserConfig />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/historial/ventas-eliminaciones"
+              element={
+                <ProtectedRoute>
+                  <SalesDeleted />
                 </ProtectedRoute>
               }
             />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -6,6 +6,7 @@ import {
   FileSpreadsheet,
   FileText,
   Ticket,
+  Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -19,7 +20,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -52,9 +60,38 @@ const API_URL = import.meta.env.VITE_API_URL;
 import DatePicker, { registerLocale } from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
+import { useStore } from "@/components/Context/ContextSucursal";
+import { Textarea } from "@/components/ui/textarea";
 registerLocale("es", es);
 
+interface Producto {
+  productoId: number;
+  cantidad: number;
+  precioVenta: number;
+}
+
+interface VentaToDelete {
+  sucursalId: number;
+  ventaId: number;
+  usuarioId: number;
+  motivo: string;
+  totalVenta: number;
+  clienteId: number;
+  productos: Producto[];
+}
+
 export default function HistorialVentas() {
+  const sucursalId = useStore((state) => state.sucursalId) ?? 0;
+  const [ventaEliminar, setVentaEliminar] = useState<VentaToDelete>({
+    usuarioId: 0,
+    motivo: "",
+    totalVenta: 0,
+    clienteId: 0,
+    productos: [],
+    ventaId: 0,
+    sucursalId: sucursalId,
+  });
+
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
 
   const [filtroVenta, setFiltroVenta] = useState("");
@@ -65,7 +102,9 @@ export default function HistorialVentas() {
 
   const getVentas = async () => {
     try {
-      const response = await axios.get(`${API_URL}/venta`);
+      const response = await axios.get(
+        `${API_URL}/venta/find-my-sucursal-sales/${sucursalId}`
+      );
       if (response.status === 200) {
         setVentas(response.data);
       }
@@ -76,8 +115,10 @@ export default function HistorialVentas() {
   };
 
   useEffect(() => {
-    getVentas();
-  }, []);
+    if (sucursalId) {
+      getVentas();
+    }
+  }, [sucursalId]);
 
   console.log("Las ventas en el historial ventas son: ", ventas);
 
@@ -243,7 +284,77 @@ export default function HistorialVentas() {
   };
 
   console.log("LA FECHA SELECCIONADA ES: ", startDate);
+  const userId = useStore((state) => state.userId) ?? 0;
 
+  console.log("La venta para eliminar seleccionada es: ", ventaEliminar);
+
+  const [isOpenDelete, setIsOpenDelete] = useState(false); // Estado del modal
+  const [isDeleting, setIsDeleting] = useState(false); // Estado para deshabilitar el botón
+
+  const handleDeleteSale = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validaciones básicas
+    if (!adminPassword || adminPassword.trim().length === 0) {
+      toast.info("Contraseña no ingresada");
+      return;
+    }
+
+    if (!ventaEliminar.motivo || ventaEliminar.motivo.trim().length === 0) {
+      toast.info("Debe ingresar un motivo para la eliminación");
+      return;
+    }
+
+    if (!ventaEliminar || ventaEliminar.productos.length === 0) {
+      toast.info("No se ha seleccionado una venta para eliminar");
+      return;
+    }
+
+    setIsDeleting(true); // Deshabilitar el botón mientras se procesa la solicitud
+    try {
+      const response = await axios.post(`${API_URL}/sale-deleted`, {
+        ...ventaEliminar,
+        adminPassword, // Enviar la contraseña junto con los datos
+      });
+
+      if (response.status === 201) {
+        console.log("Lo que devuele el servidor es: ", response.data);
+
+        toast.success("Venta eliminada exitosamente");
+        setIsOpenDelete(false); // Cerrar el modal después de eliminar
+        setVentaEliminar({
+          usuarioId: userId,
+          motivo: "",
+          totalVenta: 0,
+          clienteId: 0,
+          productos: [],
+          ventaId: 0,
+          sucursalId,
+        }); // Reiniciar el estado de la venta
+        setAdminPassword(""); // Limpiar la contraseña
+        getVentas();
+        setTimeout(() => {
+          setIsDeleting(false); // Habilitar el botón nuevamente
+        }, 1000);
+      }
+    } catch (error) {
+      toast.error("Ocurrió un error al eliminar la venta");
+      setIsDeleting(false); // Habilitar el botón nuevamente
+    }
+  };
+
+  const handleChangeTextAreaMotivo = (
+    e: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    const texto = e.target.value;
+
+    setVentaEliminar((datosPrevios) => ({
+      ...datosPrevios,
+      motivo: texto,
+    }));
+  };
+
+  const [adminPassword, setAdminPassword] = useState("");
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Historial de Ventas</h1>
@@ -278,6 +389,7 @@ export default function HistorialVentas() {
                   <TableHead>Total</TableHead>
                   <TableHead>Acciones</TableHead>
                   <TableHead>Ticket</TableHead>
+                  <TableHead>Eliminar</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -360,13 +472,103 @@ export default function HistorialVentas() {
                         </Tooltip>
                       </TooltipProvider>
                     </TableCell>
-                    <div className="flex space-x-2"></div>
+                    {/* COMETARIO SEPARADOR DE ELIMINACIOND DE REGISTRO */}
+                    <TableCell>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            {/* <Link to={`/ticket/generar-ticket/${venta.id}`}> */}
+                            <Button
+                              onClick={() => {
+                                setVentaEliminar((datosPrevios) => ({
+                                  ...datosPrevios,
+                                  // motivo: "Venta eliminada por prueba",
+                                  usuarioId: userId,
+                                  ventaId: venta.id,
+                                  clienteId: Number(venta.cliente?.id),
+                                  productos: venta.productos.map((prod) => ({
+                                    cantidad: prod.cantidad,
+                                    precioVenta: prod.precioVenta,
+                                    productoId: prod.productoId, // Corrección aquí
+                                  })),
+
+                                  totalVenta: venta.totalVenta,
+                                }));
+                                setIsOpenDelete(true);
+                              }}
+                              variant="outline"
+                              size="icon"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            {/* </Link> */}
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Eliminar</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </ScrollArea>
         </CardContent>
+        <Dialog onOpenChange={setIsOpenDelete} open={isOpenDelete}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-center">
+                ¿Estás seguro de eliminar este registro de venta?
+              </DialogTitle>
+              <DialogDescription className="text-center">
+                Esto eliminará por completo el registro, y se restará de las
+                ganancias de la sucursal.
+              </DialogDescription>
+              <DialogDescription className="text-center">
+                ¿Continuar?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="">
+              <Textarea
+                placeholder="Escriba el motivo de la eliminación del registro"
+                className="mb-2"
+                value={ventaEliminar.motivo}
+                onChange={handleChangeTextAreaMotivo}
+              />
+
+              <Input
+                type="password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                placeholder="Ingrese su contraseña como administrador para confirmar"
+              ></Input>
+            </div>
+            <div className="flex gap-2">
+              {/* Botón para cancelar */}
+              <Button
+                className="w-full"
+                onClick={() => setIsOpenDelete(false)}
+                variant={"destructive"}
+                disabled={isDeleting} // Deshabilitar si está eliminando
+              >
+                Cancelar
+              </Button>
+
+              {/* Botón para confirmar eliminación */}
+              <Button
+                className="w-full"
+                variant={"default"}
+                onClick={handleDeleteSale}
+                disabled={isDeleting} // Deshabilitar mientras se procesa la solicitud
+              >
+                {isDeleting ? "Eliminando..." : "Sí, continúa y elimina"}{" "}
+                {/* Texto dinámico */}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         <div className="flex items-center justify-center py-4">
           <Pagination>
             <PaginationContent>

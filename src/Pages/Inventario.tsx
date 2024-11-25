@@ -32,7 +32,6 @@ import {
   Barcode,
   ChevronLeft,
   ChevronRight,
-  Download,
   Edit,
   Eye,
 } from "lucide-react";
@@ -160,10 +159,6 @@ export default function Inventario() {
       console.log(error);
       toast.error("Error al crear producto");
     }
-  };
-
-  const handleExport = (format: string) => {
-    console.log("Exporting inventory data as:", format);
   };
 
   const [categorias, setCategorias] = useState<Categorias[]>([]);
@@ -551,11 +546,6 @@ export default function Inventario() {
                 </form>
               </DialogContent>
             </Dialog>
-
-            <Button variant="outline" onClick={() => handleExport("csv")}>
-              <Download className="mr-2 h-4 w-4" />
-              Exportar CSV
-            </Button>
           </div>
         </div>
         <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-4">

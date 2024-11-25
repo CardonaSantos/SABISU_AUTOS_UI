@@ -159,14 +159,18 @@ function BalanceSucursal() {
     //=============PAGINACION
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 25;
-    const totalPages = Math.ceil(deposito.length / itemsPerPage);
+    const totalPages = deposito?.length
+      ? Math.ceil(deposito.length / itemsPerPage)
+      : 1;
 
     // Calcular el índice del último elemento de la página actual
     const indexOfLastItem = currentPage * itemsPerPage;
     // Calcular el índice del primer elemento de la página actual
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     // Obtener los elementos de la página actual
-    const currentItems = deposito.slice(indexOfFirstItem, indexOfLastItem);
+    const currentItems = deposito
+      ? deposito.slice(indexOfFirstItem, indexOfLastItem)
+      : [];
 
     // Cambiar de página
     const onPageChange = (page: number) => {
@@ -189,38 +193,49 @@ function BalanceSucursal() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentItems &&
+            {currentItems.length > 0 ? (
               currentItems.map((dep) => (
-                <TableRow key={dep.id}>
-                  <TableCell className="font-medium">#{dep.id}</TableCell>
-                  <TableCell>{dep.banco}</TableCell>
+                <TableRow key={dep?.id || `row-${Math.random()}`}>
+                  <TableCell className="font-medium">
+                    #{dep?.id || "N/A"}
+                  </TableCell>
+                  <TableCell>{dep?.banco || "No disponible"}</TableCell>
                   <TableCell>
-                    {new Intl.NumberFormat("es-GT", {
-                      style: "currency",
-                      currency: "GTQ",
-                    }).format(dep.monto)}
+                    {dep?.monto !== undefined
+                      ? new Intl.NumberFormat("es-GT", {
+                          style: "currency",
+                          currency: "GTQ",
+                        }).format(dep.monto)
+                      : "No disponible"}
                   </TableCell>
                   <TableCell className="text-right">
-                    {formatearFecha(dep.fechaDeposito)}
+                    {dep?.fechaDeposito
+                      ? formatearFecha(dep.fechaDeposito)
+                      : "Sin fecha"}
                   </TableCell>
                   <TableCell className="text-right">
-                    {dep?.usuario?.nombre ? dep?.usuario?.nombre : "N/A"}{" "}
-                    {dep?.usuario?.rol ? `(${dep?.usuario?.rol})` : "N/A"}
+                    {dep?.usuario?.nombre || "N/A"}{" "}
+                    {dep?.usuario?.rol ? `(${dep.usuario.rol})` : ""}
                   </TableCell>
                   <TableCell className="text-right">
-                    {dep.descripcion}
+                    {dep?.descripcion || "No disponible"}
                   </TableCell>
                   <TableCell className="text-right">
                     <Badge
-                      variant={
-                        dep.usadoParaCierre === true ? "default" : "secondary"
-                      }
+                      variant={dep?.usadoParaCierre ? "default" : "secondary"}
                     >
-                      {dep.usadoParaCierre ? "Sí" : "No"}
+                      {dep?.usadoParaCierre ? "Sí" : "No"}
                     </Badge>
                   </TableCell>
                 </TableRow>
-              ))}
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center">
+                  No hay depósitos disponibles.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
         <div className="flex items-center justify-center py-4">
@@ -309,142 +324,155 @@ function BalanceSucursal() {
   }
 
   function ComponenteMapeaEgresos({ egreso }: ComponenteMapeaEgresosProps) {
-    //=============PAGINACION
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 25;
-    const totalPages = Math.ceil(egreso.length / itemsPerPage);
+
+    // Manejo de egresos vacíos o nulos
+    const totalItems = egreso?.length || 0;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
 
     // Calcular el índice del último elemento de la página actual
     const indexOfLastItem = currentPage * itemsPerPage;
     // Calcular el índice del primer elemento de la página actual
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     // Obtener los elementos de la página actual
-    const currentItems = egreso.slice(indexOfFirstItem, indexOfLastItem);
+    const currentItems = egreso?.slice(indexOfFirstItem, indexOfLastItem) || [];
 
     // Cambiar de página
     const onPageChange = (page: number) => {
       setCurrentPage(page);
     };
+
     return (
       <>
-        <Table>
-          <TableCaption>Una lista de sus egresos.</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="">No.</TableHead>
-              <TableHead>Descripción</TableHead>
-              <TableHead>Monto</TableHead>
-              <TableHead className="text-right">Fecha</TableHead>
-              <TableHead className="text-right">Registrado por</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {currentItems &&
-              currentItems.map((egreso) => (
-                <TableRow key={egreso.id}>
-                  <TableCell className="font-medium">#{egreso.id}</TableCell>
-                  <TableCell>
-                    {egreso.descripcion ? egreso.descripcion : "N/A"}
-                  </TableCell>
-                  <TableCell>
-                    {new Intl.NumberFormat("es-GT", {
-                      style: "currency",
-                      currency: "GTQ",
-                    }).format(egreso.monto)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatearFecha(egreso.fechaEgreso)}
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    {egreso.usuario.nombre ? egreso.usuario.nombre : "N/A"}{" "}
-                    {egreso.usuario.rol ? `(${egreso.usuario.rol})` : "N/A"}
-                  </TableCell>
+        {totalItems > 0 ? (
+          <>
+            <Table>
+              <TableCaption>Una lista de sus egresos.</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="">No.</TableHead>
+                  <TableHead>Descripción</TableHead>
+                  <TableHead>Monto</TableHead>
+                  <TableHead className="text-right">Fecha</TableHead>
+                  <TableHead className="text-right">Registrado por</TableHead>
                 </TableRow>
-              ))}
-          </TableBody>
-        </Table>
-        <div className="flex items-center justify-center py-4">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <Button onClick={() => onPageChange(1)}>Primero</Button>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </PaginationPrevious>
-              </PaginationItem>
-
-              {/* Sistema de truncado */}
-              {currentPage > 3 && (
-                <>
+              </TableHeader>
+              <TableBody>
+                {currentItems.map((egreso) => (
+                  <TableRow key={egreso.id}>
+                    <TableCell className="font-medium">#{egreso.id}</TableCell>
+                    <TableCell>
+                      {egreso.descripcion ? egreso.descripcion : "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      {new Intl.NumberFormat("es-GT", {
+                        style: "currency",
+                        currency: "GTQ",
+                      }).format(egreso.monto)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatearFecha(egreso.fechaEgreso)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {egreso.usuario?.nombre || "N/A"}{" "}
+                      {egreso.usuario?.rol ? `(${egreso.usuario.rol})` : "N/A"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="flex items-center justify-center py-4">
+              <Pagination>
+                <PaginationContent>
                   <PaginationItem>
-                    <PaginationLink onClick={() => onPageChange(1)}>
-                      1
-                    </PaginationLink>
+                    <Button onClick={() => onPageChange(1)}>Primero</Button>
                   </PaginationItem>
                   <PaginationItem>
-                    <span className="text-muted-foreground">...</span>
+                    <PaginationPrevious
+                      onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </PaginationPrevious>
                   </PaginationItem>
-                </>
-              )}
 
-              {Array.from({ length: totalPages }, (_, index) => {
-                const page = index + 1;
-                if (
-                  page === currentPage ||
-                  (page >= currentPage - 1 && page <= currentPage + 1)
-                ) {
-                  return (
-                    <PaginationItem key={index}>
-                      <PaginationLink
-                        onClick={() => onPageChange(page)}
-                        isActive={page === currentPage}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  );
-                }
-                return null;
-              })}
+                  {/* Sistema de truncado */}
+                  {currentPage > 3 && (
+                    <>
+                      <PaginationItem>
+                        <PaginationLink onClick={() => onPageChange(1)}>
+                          1
+                        </PaginationLink>
+                      </PaginationItem>
+                      <PaginationItem>
+                        <span className="text-muted-foreground">...</span>
+                      </PaginationItem>
+                    </>
+                  )}
 
-              {currentPage < totalPages - 2 && (
-                <>
+                  {Array.from({ length: totalPages }, (_, index) => {
+                    const page = index + 1;
+                    if (
+                      page === currentPage ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={index}>
+                          <PaginationLink
+                            onClick={() => onPageChange(page)}
+                            isActive={page === currentPage}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    return null;
+                  })}
+
+                  {currentPage < totalPages - 2 && (
+                    <>
+                      <PaginationItem>
+                        <span className="text-muted-foreground">...</span>
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationLink
+                          onClick={() => onPageChange(totalPages)}
+                        >
+                          {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
+                    </>
+                  )}
+
                   <PaginationItem>
-                    <span className="text-muted-foreground">...</span>
+                    <PaginationNext
+                      onClick={() =>
+                        onPageChange(Math.min(totalPages, currentPage + 1))
+                      }
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </PaginationNext>
                   </PaginationItem>
                   <PaginationItem>
-                    <PaginationLink onClick={() => onPageChange(totalPages)}>
-                      {totalPages}
-                    </PaginationLink>
+                    <Button
+                      variant={"destructive"}
+                      onClick={() => onPageChange(totalPages)}
+                    >
+                      Último
+                    </Button>
                   </PaginationItem>
-                </>
-              )}
-
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() =>
-                    onPageChange(Math.min(totalPages, currentPage + 1))
-                  }
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </PaginationNext>
-              </PaginationItem>
-              <PaginationItem>
-                <Button
-                  variant={"destructive"}
-                  onClick={() => onPageChange(totalPages)}
-                >
-                  Último
-                </Button>
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-muted-foreground">
+              No hay egresos registrados para mostrar.
+            </p>
+          </div>
+        )}
       </>
     );
   }

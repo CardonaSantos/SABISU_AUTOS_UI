@@ -183,7 +183,13 @@ export default function PuntoVenta() {
   const handleClose = () => {
     setOpenSection(false);
   };
+
+  const [isDisableButton, setIsDisableButton] = useState(false);
+
   const handleCompleteSale = async () => {
+    // Deshabilitar el botón al iniciar el proceso
+    setIsDisableButton(true);
+
     const saleData = {
       sucursalId: sucursalId,
       clienteId: selectedCustomerID?.id,
@@ -205,10 +211,9 @@ export default function PuntoVenta() {
       imei: imei.trim(),
     };
 
-    // Validación para ventas mayores a 1000 con cliente obligatorio
+    // Validar si los datos del cliente son obligatorios para ventas mayores a 1000
     const isCustomerInfoProvided =
       saleData.nombre && saleData.telefono && saleData.direccion;
-    // saleData.dpi;
 
     if (
       saleData.monto > 1000 &&
@@ -218,40 +223,38 @@ export default function PuntoVenta() {
       toast.warning(
         "Para ventas mayores a 1000 es necesario ingresar o seleccionar un cliente"
       );
+      setIsDisableButton(false); // Rehabilitar el botón
       return;
     }
-
-    console.log("El cart es: ", saleData);
 
     try {
       const response = await axios.post(`${API_URL}/venta`, saleData);
 
       if (response.status === 201) {
-        console.log("LO QUE NOS HAN DEVUELTO ES ESTO: ", response.data);
-
         toast.success("Venta completada con éxito");
+        // Restablecer los estados y cerrar el diálogo
         setIsDialogOpen(false);
-        setCart([]); // Reiniciar el carrito
-        getProducts(); // Obtener productos actualizados
+        setCart([]);
+        getProducts();
         setImei("");
         setventaResponse(response.data);
-        // setSelectedCustomerID(null);
-        setSelectedCustomerID(null); // Limpiar el cliente seleccionado
-
+        setSelectedCustomerID(null);
         setNombre("");
         setTelefono("");
         setDireccion("");
         setDpi("");
-
         setTimeout(() => {
           setOpenSection(true);
+        }, 1000);
+        setTimeout(() => {
+          setIsDisableButton(false);
         }, 1000);
       } else {
         toast.error("Error al completar la venta");
       }
     } catch (error) {
-      console.log(error);
-      toast.error("ERROR");
+      toast.error("Ocurrió un error al completar la venta");
+      setIsDisableButton(false); // Rehabilitar el botón
     }
   };
 
@@ -743,13 +746,16 @@ export default function PuntoVenta() {
                     <Button
                       onClick={() => setIsDialogOpen(false)}
                       variant="outline"
-                      className="text-white bg-red-500 border-none hover:bg-red-600 hover:text-white"
+                      style={{ color: "white" }}
+                      className="text-white bg-red-600 border-none hover:bg-red-600 shadow-md hover:shadow-lg w-full "
                     >
                       Cancelar
                     </Button>
                     <Button
+                      disabled={isDisableButton}
+                      style={{ color: "white" }}
                       onClick={handleCompleteSale}
-                      className="text-white bg-green-500 border-none hover:bg-green-600"
+                      className="text-white bg-green-600 border-none hover:bg-green-600 shadow-md hover:shadow-lg w-full"
                     >
                       Confirmar
                     </Button>
