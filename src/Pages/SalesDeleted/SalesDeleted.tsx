@@ -113,17 +113,22 @@ export default function SalesDeleted() {
         </TableHeader>
         <TableBody>
           {salesDeletedRecords.map((sale) => (
-            <TableRow key={sale.id}>
-              <TableCell>#{sale.id}</TableCell>
-              <TableCell>{sale.motivo || "N/A"}</TableCell>
+            <TableRow key={sale.id || Math.random()}>
+              <TableCell>#{sale.id || "N/A"}</TableCell>
+              <TableCell>{sale.motivo || "Sin motivo especificado"}</TableCell>
               <TableCell>
-                {new Intl.NumberFormat("es-GT", {
-                  style: "currency",
-                  currency: "GTQ",
-                }).format(sale.totalVenta)}
+                {sale.totalVenta
+                  ? new Intl.NumberFormat("es-GT", {
+                      style: "currency",
+                      currency: "GTQ",
+                    }).format(sale.totalVenta)
+                  : "N/A"}
               </TableCell>
-
-              <TableCell>{formatearFecha(sale.fechaEliminacion)}</TableCell>
+              <TableCell>
+                {sale.fechaEliminacion
+                  ? formatearFecha(sale.fechaEliminacion)
+                  : "Sin fecha"}
+              </TableCell>
               <TableCell>
                 {sale.usuario?.nombre || "Usuario Desconocido"}
               </TableCell>
@@ -147,34 +152,36 @@ export default function SalesDeleted() {
                           Información General
                         </h3>
                         <p>
-                          <strong>No.</strong> #{selectedSale.id}
+                          <strong>No.</strong> #{selectedSale.id || "N/A"}
                         </p>
                         <p>
                           <strong>Motivo:</strong>{" "}
-                          {selectedSale.motivo || "N/A"}
+                          {selectedSale.motivo || "Sin motivo especificado"}
                         </p>
                         <p>
-                          <strong>Total Venta: </strong>
-                          {new Intl.NumberFormat("es-GT", {
-                            style: "currency",
-                            currency: "GTQ",
-                          }).format(selectedSale.totalVenta)}
+                          <strong>Total Venta:</strong>{" "}
+                          {selectedSale.totalVenta
+                            ? new Intl.NumberFormat("es-GT", {
+                                style: "currency",
+                                currency: "GTQ",
+                              }).format(selectedSale.totalVenta)
+                            : "N/A"}
                         </p>
                         <p>
                           <strong>Fecha Eliminación:</strong>{" "}
-                          {formatearFecha(selectedSale.fechaEliminacion)}
+                          {selectedSale.fechaEliminacion
+                            ? formatearFecha(selectedSale.fechaEliminacion)
+                            : "Sin fecha"}
                         </p>
                         <p>
-                          <strong>Cliente :</strong>{" "}
-                          {selectedSale.cliente.nombre
-                            ? selectedSale.cliente.nombre
-                            : ""}
+                          <strong>Cliente:</strong>{" "}
+                          {selectedSale.cliente?.nombre || "Cliente final"}
                         </p>
-
                         <p>
                           <strong>Usuario:</strong>{" "}
-                          {selectedSale.usuario?.nombre} (
-                          {selectedSale.usuario?.rol})
+                          {selectedSale.usuario?.nombre ||
+                            "Usuario desconocido"}{" "}
+                          ({selectedSale.usuario?.rol || "Rol no disponible"})
                         </p>
 
                         <h3 className="text-lg font-semibold mt-4 mb-2">
@@ -190,21 +197,34 @@ export default function SalesDeleted() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {selectedSale.VentaEliminadaProducto.map(
-                              (product) => (
-                                <TableRow key={product.id}>
-                                  <TableCell>
-                                    {product.producto.nombre}
-                                  </TableCell>
-                                  <TableCell>
-                                    {product.producto.codigoProducto}
-                                  </TableCell>
-                                  <TableCell>{product.cantidad}</TableCell>
-                                  <TableCell>
-                                    ${product.precioVenta.toFixed(2)}
-                                  </TableCell>
-                                </TableRow>
+                            {selectedSale.VentaEliminadaProducto?.length > 0 ? (
+                              selectedSale.VentaEliminadaProducto.map(
+                                (product) => (
+                                  <TableRow key={product.id || Math.random()}>
+                                    <TableCell>
+                                      {product.producto?.nombre || "N/A"}
+                                    </TableCell>
+                                    <TableCell>
+                                      {product.producto?.codigoProducto ||
+                                        "N/A"}
+                                    </TableCell>
+                                    <TableCell>
+                                      {product.cantidad || "N/A"}
+                                    </TableCell>
+                                    <TableCell>
+                                      {product.precioVenta
+                                        ? `$${product.precioVenta.toFixed(2)}`
+                                        : "N/A"}
+                                    </TableCell>
+                                  </TableRow>
+                                )
                               )
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={4} className="text-center">
+                                  Sin productos disponibles
+                                </TableCell>
+                              </TableRow>
                             )}
                           </TableBody>
                         </Table>
