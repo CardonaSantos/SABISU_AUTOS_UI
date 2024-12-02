@@ -4,21 +4,14 @@ import {
   BrowserRouter as Router,
   Routes,
 } from "react-router-dom";
-// import Layout from "./components/Layout/Layout";
 import { Toaster } from "sonner";
-import Dashboard from "./Pages/Dashboard";
+import Dashboard from "./Pages/Dashboard/Dashboard";
 import PuntoVenta from "./Pages/PuntoVenta";
 import Inventario from "./Pages/Inventario";
-// import Clientes from "./Pages/Clientes";
-import Reportes from "./Pages/Reportes";
-import Productos from "./Pages/Productos";
-import Proveedores from "./Pages/Proveedores";
+import Reportes from "./Pages/Reports/Reportes";
 import EntregasStock from "./Pages/EntregasStock";
-// import Devoluciones from "./Pages/Devoluciones";
 import Vencimientos from "./Pages/Vencimientos";
-import CategoriasDeProductos from "./Pages/CategoriasDeProductos";
 import HistorialVentas from "./Pages/HistorialVentas";
-import Notificaciones from "./Pages/Notificaciones";
 import Stock from "./Pages/Stock";
 import Invoice from "./components/PDF/Invoice";
 import Login from "./Pages/Auth/Login";
@@ -49,6 +42,11 @@ import CashRegisters from "./Pages/CashRegister/CashRegisters";
 import BalanceSucursal from "./Pages/CashRegister/BalanceSucursal";
 import UserConfig from "./Pages/Config/UserConfig";
 import SalesDeleted from "./Pages/SalesDeleted/SalesDeleted";
+import ClientHistorialPurchase from "./Pages/Client/ClientHistorialPurchase";
+import CreatePlaceholder from "./Pages/VentaCuotas/CreatePlaceholder";
+import CreateVentaCuotaForm from "./Pages/VentaCuotas/CreateVentaCuotas";
+import ContratoCredito from "./Pages/VentaCuotas/ContratoCredito";
+import EditPlaceHolder from "./Pages/VentaCuotas/EditPlaceHolder";
 
 function App() {
   return (
@@ -160,24 +158,6 @@ function App() {
             />
 
             <Route
-              path="/productos"
-              element={
-                <ProtectedRoute>
-                  <Productos />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/proveedores"
-              element={
-                <ProtectedRoute>
-                  <Proveedores />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
               path="/entregas-stock"
               element={
                 <ProtectedRoute>
@@ -185,15 +165,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-
-            {/* <Route
-              path="/devoluciones"
-              element={
-                <ProtectedRoute>
-                  <Devoluciones />
-                </ProtectedRoute>
-              }
-            /> */}
 
             <Route
               path="/vencimientos"
@@ -205,28 +176,10 @@ function App() {
             />
 
             <Route
-              path="/categorias-de-productos"
-              element={
-                <ProtectedRoute>
-                  <CategoriasDeProductos />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
               path="/historial/ventas"
               element={
                 <ProtectedRoute>
                   <HistorialVentas />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/notificaciones"
-              element={
-                <ProtectedRoute>
-                  <Notificaciones />
                 </ProtectedRoute>
               }
             />
@@ -416,6 +369,51 @@ function App() {
               element={
                 <ProtectedRoute>
                   <SalesDeleted />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/cliente-historial-compras/:id"
+              element={
+                <ProtectedRoute>
+                  <ClientHistorialPurchase />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/plantillas-venta-cuotas"
+              element={
+                <ProtectedRoute>
+                  <CreatePlaceholder />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/creditos"
+              element={
+                <ProtectedRoute>
+                  <CreateVentaCuotaForm />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/imprimir/contrato/:recordId/:plantillaId"
+              element={
+                <ProtectedRoute>
+                  <ContratoCredito />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/edit/plantilla/:id"
+              element={
+                <ProtectedRoute>
+                  <EditPlaceHolder />
                 </ProtectedRoute>
               }
             />

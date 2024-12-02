@@ -30,10 +30,14 @@ import {
 import {
   ArrowDownUp,
   Barcode,
+  Box,
   ChevronLeft,
   ChevronRight,
+  Coins,
   Edit,
   Eye,
+  FileText,
+  Tag,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import axios from "axios";
@@ -127,7 +131,10 @@ export default function Inventario() {
       !productCreate.nombre ||
       productCreate.categorias.length <= 0 ||
       !productCreate.codigoProducto ||
-      !productCreate.precioVenta
+      !productCreate.precioVenta ||
+      productCreate.precioVenta.length <= 0 ||
+      !productCreate.precioCostoActual ||
+      productCreate.precioCostoActual <= 0
     ) {
       toast.info("Algunos campos son obligatorios");
       return;
@@ -258,9 +265,6 @@ export default function Inventario() {
               supplierFilter.trim().toLocaleLowerCase()
           ));
 
-      // Filtrado por cantidad en stock
-      // Filtrado por cantidad en stock
-
       // Se filtra por el término de búsqueda y luego por los demás filtros
       return matchesSearchTerm && matchesCategory && matchesSupplier;
     })
@@ -304,18 +308,13 @@ export default function Inventario() {
 
   // PAGINACIÓN
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-
-  // Calcular el índice del último elemento de la página actual
   const indexOfLastItem = currentPage * itemsPerPage;
-  // Calcular el índice del primer elemento de la página actual
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  // Obtener los elementos de la página actual
   const currentItems = filteredProducts.slice(
     indexOfFirstItem,
     indexOfLastItem
   );
 
-  // Cambiar de página
   const onPageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -336,8 +335,6 @@ export default function Inventario() {
       precioVenta: updatedPrecios, // Update the state with the modified array
     });
   };
-
-  console.log("El producto creando es: ", productCreate);
 
   return (
     <div className="container mx-auto p-4 shadow-xl">
@@ -370,19 +367,22 @@ export default function Inventario() {
                       <Label htmlFor="nombre" className="text-right">
                         Producto
                       </Label>
-                      <Input
-                        onChange={(e) =>
-                          setProductCreate({
-                            ...productCreate,
-                            nombre: e.target.value,
-                          })
-                        }
-                        value={productCreate.nombre}
-                        id="nombre"
-                        name="nombre"
-                        placeholder="Nombre del producto"
-                        className="col-span-3"
-                      />
+                      <div className="col-span-3 relative">
+                        <Box className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
+                        <Input
+                          onChange={(e) =>
+                            setProductCreate({
+                              ...productCreate,
+                              nombre: e.target.value,
+                            })
+                          }
+                          value={productCreate.nombre}
+                          id="nombre"
+                          name="nombre"
+                          placeholder="Nombre del producto"
+                          className="pl-10 shadow-sm rounded-md"
+                        />
+                      </div>
                     </div>
 
                     {/* Dropdown de categorías con selección múltiple */}
@@ -392,7 +392,7 @@ export default function Inventario() {
                       </Label>
                       <div className="col-span-3">
                         <SelectM
-                          placeholder="Seleccionar..."
+                          placeholder="Seleccionar categoría..."
                           isMulti
                           name="categorias"
                           options={categorias.map((categoria) => ({
@@ -431,38 +431,44 @@ export default function Inventario() {
                       <Label htmlFor="code" className="text-right">
                         Código Producto
                       </Label>
-                      <Input
-                        value={productCreate.codigoProducto}
-                        onChange={(e) =>
-                          setProductCreate({
-                            ...productCreate,
-                            codigoProducto: e.target.value,
-                          })
-                        }
-                        id="code"
-                        name="code"
-                        placeholder="Código de producto"
-                        className="col-span-3"
-                      />
+                      <div className="col-span-3 relative">
+                        <Barcode className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
+                        <Input
+                          value={productCreate.codigoProducto}
+                          onChange={(e) =>
+                            setProductCreate({
+                              ...productCreate,
+                              codigoProducto: e.target.value,
+                            })
+                          }
+                          id="code"
+                          name="code"
+                          placeholder="Código único producto"
+                          className="pl-10 shadow-sm rounded-md"
+                        />
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="desc" className="text-right">
                         Descripción
                       </Label>
-                      <Textarea
-                        value={productCreate.descripcion}
-                        onChange={(e) =>
-                          setProductCreate({
-                            ...productCreate,
-                            descripcion: e.target.value,
-                          })
-                        }
-                        placeholder="Breve descripción..."
-                        id="desc"
-                        name="desc"
-                        className="col-span-3"
-                      />
+                      <div className="col-span-3 relative">
+                        <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
+                        <Textarea
+                          value={productCreate.descripcion}
+                          onChange={(e) =>
+                            setProductCreate({
+                              ...productCreate,
+                              descripcion: e.target.value,
+                            })
+                          }
+                          placeholder="Breve descripción..."
+                          id="desc"
+                          name="desc"
+                          className="pl-10 shadow-sm rounded-md"
+                        />
+                      </div>
                     </div>
 
                     {/* NUEVO CAMPO PARA PRECIO COSTO */}
@@ -470,23 +476,27 @@ export default function Inventario() {
                       <Label htmlFor="price1" className="text-right">
                         Precio Costo
                       </Label>
-                      <Input
-                        value={productCreate.precioCostoActual ?? 0} // Asigna 0 si es null
-                        onChange={(e) =>
-                          setProductCreate({
-                            ...productCreate,
-                            precioCostoActual: e.target.value
-                              ? Number(e.target.value)
-                              : null,
-                          })
-                        }
-                        id="price1"
-                        name="price1"
-                        type="number"
-                        step="0.5"
-                        placeholder="Precio del producto"
-                        className="col-span-3"
-                      />
+                      <div className="col-span-3 relative">
+                        {/* Icono de dólar */}
+                        <Coins className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
+                        <Input
+                          value={productCreate.precioCostoActual ?? ""} // Si es null, asigna una cadena vacía
+                          onChange={(e) =>
+                            setProductCreate({
+                              ...productCreate,
+                              precioCostoActual: e.target.value
+                                ? Number(e.target.value)
+                                : null,
+                            })
+                          }
+                          id="price1"
+                          name="price1"
+                          type="number"
+                          step="1"
+                          placeholder="Precio costo del producto"
+                          className="pl-10 shadow-sm rounded-md border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
                     </div>
 
                     {/* Input for Price 1 */}
@@ -494,16 +504,19 @@ export default function Inventario() {
                       <Label htmlFor="price1" className="text-right">
                         Precio Venta 1
                       </Label>
-                      <Input
-                        value={productCreate.precioVenta[0] || ""} // If no value exists, show empty string
-                        onChange={(e) => handlePriceChange(0, e.target.value)} // Update the first price
-                        id="price1"
-                        name="price1"
-                        type="number"
-                        step="0.5"
-                        placeholder="Precio del producto"
-                        className="col-span-3"
-                      />
+                      <div className="col-span-3 relative">
+                        <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
+                        <Input
+                          value={productCreate.precioVenta[0] || ""} // If no value exists, show empty string
+                          onChange={(e) => handlePriceChange(0, e.target.value)} // Update the first price
+                          id="price1"
+                          name="price1"
+                          type="number"
+                          step="1"
+                          placeholder="0.00"
+                          className="pl-10 shadow-sm rounded-md"
+                        />
+                      </div>
                     </div>
 
                     {/* Input for Price 2 */}
@@ -511,16 +524,19 @@ export default function Inventario() {
                       <Label htmlFor="price2" className="text-right">
                         Precio Venta 2
                       </Label>
-                      <Input
-                        value={productCreate.precioVenta[1] || ""} // If no value exists, show empty string
-                        onChange={(e) => handlePriceChange(1, e.target.value)} // Update the second price
-                        id="price2"
-                        name="price2"
-                        type="number"
-                        step="0.5"
-                        placeholder="Precio del producto"
-                        className="col-span-3"
-                      />
+                      <div className="col-span-3 relative">
+                        <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
+                        <Input
+                          value={productCreate.precioVenta[1] || ""} // If no value exists, show empty string
+                          onChange={(e) => handlePriceChange(1, e.target.value)} // Update the second price
+                          id="price2"
+                          name="price2"
+                          type="number"
+                          step="1"
+                          placeholder="0.00"
+                          className="pl-10 shadow-sm rounded-md"
+                        />
+                      </div>
                     </div>
 
                     {/* Input for Price 3 */}
@@ -528,16 +544,19 @@ export default function Inventario() {
                       <Label htmlFor="price3" className="text-right">
                         Precio Venta 3
                       </Label>
-                      <Input
-                        value={productCreate.precioVenta[2] || ""} // If no value exists, show empty string
-                        onChange={(e) => handlePriceChange(2, e.target.value)} // Update the third price
-                        id="price3"
-                        name="price3"
-                        type="number"
-                        step="0.5"
-                        placeholder="Precio del producto"
-                        className="col-span-3"
-                      />
+                      <div className="col-span-3 relative">
+                        <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
+                        <Input
+                          value={productCreate.precioVenta[2] || ""} // If no value exists, show empty string
+                          onChange={(e) => handlePriceChange(2, e.target.value)} // Update the third price
+                          id="price3"
+                          name="price3"
+                          type="number"
+                          step="1"
+                          placeholder="0.00"
+                          className="pl-10 shadow-sm rounded-md"
+                        />
+                      </div>
                     </div>
                   </div>
                   <DialogFooter>

@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   UserIcon,
   Eye,
@@ -96,7 +95,6 @@ interface Transferencia {
 
 export default function TransferenciaProductosHistorial() {
   const [transferencias, setTransferencias] = useState<Transferencia[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const sucursalId = useStore((state) => state.sucursalId);
   console.log("Las transferencias de sucursales son:", transferencias);
@@ -120,8 +118,6 @@ export default function TransferenciaProductosHistorial() {
         setError(
           "Hubo un error al cargar los datos. Por favor, intenta de nuevo."
         );
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -145,19 +141,6 @@ export default function TransferenciaProductosHistorial() {
   const onPageChange = (page: number) => {
     setCurrentPage(page);
   };
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto p-4 space-y-4">
-        <Skeleton className="h-12 w-3/4" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, index) => (
-            <Skeleton key={index} className="h-48" />
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   if (error) {
     return (

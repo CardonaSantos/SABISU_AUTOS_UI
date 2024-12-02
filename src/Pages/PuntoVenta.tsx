@@ -230,7 +230,7 @@ export default function PuntoVenta() {
     try {
       const response = await axios.post(`${API_URL}/venta`, saleData);
 
-      if (response.status === 201) {
+      if (response.status === 201 || response.status === 200) {
         toast.success("Venta completada con éxito");
         // Restablecer los estados y cerrar el diálogo
         setIsDialogOpen(false);

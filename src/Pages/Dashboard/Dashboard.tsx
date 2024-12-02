@@ -29,6 +29,7 @@ import {
   Calendar,
   ChevronDown,
   ChevronUp,
+  Coins,
   CoinsIcon,
   IdCard,
   MapPin,
@@ -65,6 +66,17 @@ import {
   TooltipTrigger,
   Tooltip as Tooltip2,
 } from "@/components/ui/tooltip";
+import { CreditoRegistro } from "../VentaCuotas/CreditosType";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Producto {
   id: number;
@@ -461,13 +473,11 @@ export default function Dashboard() {
 
   const estadoColor = {
     [EstadoGarantia.RECIBIDO]: "bg-blue-500",
-    // [EstadoGarantia.EN_PROCESO]: "bg-yellow-500",
-    // [EstadoGarantia.FINALIZADO]: "bg-green-500",
+
     [EstadoGarantia.ENVIADO_A_PROVEEDOR]: "bg-purple-500",
     [EstadoGarantia.EN_REPARACION]: "bg-orange-500",
     [EstadoGarantia.REPARADO]: "bg-green-500",
     [EstadoGarantia.REEMPLAZADO]: "bg-teal-500",
-    // [EstadoGarantia.ENTREGADO_CLIENTE]: "bg-indigo-500",
     [EstadoGarantia.CERRADO]: "bg-gray-500",
   };
 
@@ -564,6 +574,409 @@ export default function Dashboard() {
 
   const toggleCard = (id: number) => {
     setExpandedCard(expandedCard === id ? null : id);
+  };
+
+  const [creditos, setCreditos] = useState<CreditoRegistro[]>([]);
+  const getCredits = async () => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/cuotas/get-credits-without-paying`
+      );
+      if (response.status === 200) {
+        setCreditos(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al cargar datos");
+    }
+  };
+
+  useEffect(() => {
+    getCredits();
+  }, []);
+
+  console.log("Los registros de creditos abiertos son: ", creditos);
+
+  //==================================================>
+  interface VentaCuotaCardProps {
+    ventaCuota: CreditoRegistro;
+  }
+
+  const VentaCuotaCard: React.FC<VentaCuotaCardProps> = ({ ventaCuota }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    const totalConInteres = (totalVenta: number, interes: number) => {
+      const montoInteres = totalVenta * (interes / 100);
+      return totalVenta + montoInteres;
+    };
+
+    const formatearMoneda = (cantidad: number) => {
+      return new Intl.NumberFormat("es-GT", {
+        style: "currency",
+        currency: "GTQ",
+      }).format(cantidad);
+    };
+
+    const calcularDetallesCredito = () => {
+      const montoTotalConInteres = totalConInteres(
+        ventaCuota.totalVenta,
+        ventaCuota.interes
+      );
+      const saldoRestante = montoTotalConInteres - ventaCuota.totalPagado;
+      const montoPorCuota =
+        (montoTotalConInteres - ventaCuota.cuotaInicial) /
+        ventaCuota.cuotasTotales;
+
+      const cuotasPagadas = ventaCuota.cuotas.filter(
+        (cuota) => cuota.estado === "PAGADA"
+      ).length;
+
+      const cuotasRestantes =
+        ventaCuota.cuotasTotales - cuotasPagadas > 0
+          ? ventaCuota.cuotasTotales - cuotasPagadas
+          : 0;
+
+      const fechaProximoPago = dayjs(ventaCuota.fechaInicio)
+        .add(cuotasPagadas * ventaCuota.diasEntrePagos, "day")
+        .format("D [de] MMMM [de] YYYY");
+
+      return {
+        saldoRestante,
+        montoPorCuota,
+        cuotasPagadas,
+        cuotasRestantes,
+        fechaProximoPago,
+      };
+    };
+
+    const { saldoRestante, montoPorCuota, cuotasPagadas } =
+      calcularDetallesCredito();
+
+    const [openRegistCuota, setOpenRegistCuota] = useState(false);
+
+    let diaInicio = dayjs(ventaCuota.fechaContrato);
+    console.log("el dia de inicio es: ", diaInicio);
+    const cuotasFechas = [];
+
+    for (let index = 0; index < ventaCuota.cuotasTotales; index++) {
+      const fechaAPagar = diaInicio.add(ventaCuota.diasEntrePagos, "day");
+      // cuotasFechas.push(fechaAPagar.format("YYYY-MMMM-DD"));
+      cuotasFechas.push(fechaAPagar.format("D [de] MMMM [de] YYYY"));
+
+      diaInicio = fechaAPagar;
+    }
+    console.log("Las fechas a pagar cada x días son: ", cuotasFechas);
+
+    return (
+      <Card className="w-full max-w-sm">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            <span className="font-bold">Crédito #{ventaCuota.id}</span>
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? "Collapse details" : "Expand details"}
+          >
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="text-xl font-bold text-green-600">
+            Saldo Restante: {formatearMoneda(saldoRestante)}
+          </div>
+          <p className="text-sm">
+            Cliente: <strong>{ventaCuota.cliente.nombre}</strong>
+          </p>
+          <p className="text-sm">
+            Monto por Cuota: <strong>{formatearMoneda(montoPorCuota)}</strong>
+          </p>
+          <p className="text-sm">
+            Cuotas Pagadas: <strong>{cuotasPagadas}</strong> /{" "}
+            {ventaCuota.cuotasTotales}
+          </p>
+          <p className="text-sm">
+            Fechas de pago: <strong>{cuotasFechas.join(", ")}</strong>
+          </p>
+          <Badge className="mt-2">{ventaCuota.estado}</Badge>
+          {isExpanded && (
+            <div className="mt-4 space-y-2">
+              <p className="text-sm">
+                Monto Total (con Interés):{" "}
+                {formatearMoneda(
+                  totalConInteres(ventaCuota.totalVenta, ventaCuota.interes)
+                )}
+              </p>
+              <p className="text-sm">
+                Cuota Inicial: {formatearMoneda(ventaCuota.cuotaInicial)}
+              </p>
+              <p className="text-sm">
+                Fecha Inicio:{" "}
+                {new Date(ventaCuota.fechaInicio).toLocaleDateString()}
+              </p>
+            </div>
+          )}
+          <Dialog onOpenChange={setOpenRegistCuota} open={openRegistCuota}>
+            <Button
+              onClick={() => {
+                setOpenRegistCuota(true);
+              }}
+              type="button"
+              className="w-full mt-4"
+              size="sm"
+            >
+              <Coins className="mr-2 h-4 w-4" />
+              Registrar Cuota
+            </Button>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Registrar Pago de Cuota</DialogTitle>
+              </DialogHeader>
+              <PaymentForm ventaCuotaId={ventaCuota.id} />
+            </DialogContent>
+          </Dialog>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  type EstadoPago = "PENDIENTE" | "PAGADA" | "ATRASADA";
+  type EstadoCierre = "CANCELADA" | "COMPLETADA";
+
+  interface PaymentFormProps {
+    ventaCuotaId: number;
+  }
+
+  const PaymentForm: React.FC<PaymentFormProps> = ({ ventaCuotaId }) => {
+    const usuarioId = useStore((state) => state.userId) ?? 0;
+    const [monto, setMonto] = useState<string>("");
+    const [estado, setEstado] = useState<EstadoPago>("PENDIENTE");
+    const [error, setError] = useState<string | null>(null);
+    const [comentario, setComentario] = useState<string>("");
+    const [comentarioCierre, setComentarioCierre] = useState<string>("");
+
+    const validateForm = (): boolean => {
+      if (!monto || parseFloat(monto) <= 0) {
+        setError("El monto debe ser un número positivo");
+        return false;
+      }
+      setError(null);
+      return true;
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      if (!validateForm()) return;
+
+      const data = {
+        monto: Number(monto),
+        ventaCuotaId: Number(ventaCuotaId),
+        estado: estado,
+        comentario,
+        usuarioId: Number(usuarioId),
+      };
+
+      try {
+        const response = await axios.post(
+          `${API_URL}/cuotas/register-new-pay`,
+          data
+        );
+
+        if (response.status === 201) {
+          toast.success("Registro de pago de cuota registrado");
+          getCredits();
+        }
+
+        console.log("Pago registrado exitosamente");
+        setMonto("");
+        setEstado("PENDIENTE");
+      } catch (error) {
+        console.error("Error:", error);
+        setError("Error al registrar el pago. Por favor, intente nuevamente.");
+        console.log("Error al registrar pago de crédito. Inténtelo de nuevo");
+      }
+    };
+
+    const [openColoseCredit, setOpenCloseCredit] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [estadoCierre, setEstadoCierre] =
+      useState<EstadoCierre>("COMPLETADA");
+
+    const handleCloseCredit = async (creditID: number) => {
+      if (!creditID) {
+        toast.error("El ID del crédito no es válido.");
+        return;
+      }
+
+      if (isDeleting) {
+        // Previene múltiples solicitudes simultáneas
+        toast.info("El cierre ya está en proceso...");
+        return;
+      }
+
+      setIsDeleting(true); // Marca como en proceso
+
+      if (!estadoCierre) {
+        toast.info("Seleccione un estado");
+        setIsDeleting(false);
+        return;
+      }
+
+      try {
+        // Prepara el payload solo con datos válidos
+        const payload = {
+          comentario: comentarioCierre?.trim() || null, // Comentario opcional
+          estado: estadoCierre,
+        };
+        // Realiza la solicitud
+        const response = await axios.patch(
+          `${API_URL}/cuotas/close-credit-regist/${creditID}`,
+          payload
+        );
+
+        if (response.status === 200) {
+          toast.success("Crédito cerrado con éxito");
+          setOpenCloseCredit(false); // Cierra el diálogo
+          getCredits(); // Actualiza la lista de créditos
+        } else {
+          throw new Error("Respuesta inesperada del servidor");
+        }
+      } catch (error) {
+        toast.error("Error al registrar el cierre. Inténtelo de nuevo.");
+        setIsDeleting(false); // Restaura el estado independientemente del resultado
+      }
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <Label htmlFor="monto">Monto</Label>
+          <Input
+            id="monto"
+            type="number"
+            step="0.01"
+            value={monto}
+            onChange={(e) => setMonto(e.target.value)}
+            placeholder="Ingrese el monto"
+            required
+            aria-describedby="monto-error"
+          />
+          {error && (
+            <p id="monto-error" className="text-sm text-red-500 mt-1">
+              {error}
+            </p>
+          )}
+        </div>
+        <div>
+          <Label htmlFor="estado">Estado</Label>
+          <Select
+            value={estado}
+            onValueChange={(value: EstadoPago) => setEstado(value)}
+          >
+            <SelectTrigger id="estado">
+              <SelectValue placeholder="Seleccione el estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="PENDIENTE">Pendiente</SelectItem>
+              <SelectItem value="PAGADA">Pagada</SelectItem>
+              <SelectItem value="ATRASADA">Atrasada</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Textarea
+            className="my-2"
+            onChange={(e) => setComentario(e.target.value)}
+            value={comentario}
+            placeholder="Ingresar comentario (opcional)"
+          />
+        </div>
+        <Button type="submit" className="w-full">
+          Registrar Pago
+        </Button>
+        <Button
+          className="w-full"
+          variant="destructive"
+          type="button"
+          disabled={isDeleting}
+          // onClick={() => handleCloseCredit(ventaCuotaId)}
+          onClick={() => setOpenCloseCredit(true)}
+        >
+          Cerrar Registro
+        </Button>
+
+        <Dialog onOpenChange={setOpenCloseCredit} open={openColoseCredit}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmar Cierre del Crédito</DialogTitle>
+              <DialogDescription>
+                Estás a punto de cerrar este registro de crédito. Una vez
+                cerrado:
+              </DialogDescription>
+              <ul className="list-disc pl-6 text-muted-foreground text-sm">
+                <li>No se podrán registrar más pagos.</li>
+                <li>El estado del crédito será marcado como finalizado.</li>
+                <li>Esta acción no se puede deshacer.</li>
+              </ul>
+
+              <DialogDescription className="mt-2">
+                ¿Estás seguro de que deseas continuar?
+              </DialogDescription>
+
+              <div className="py-2">
+                <Label htmlFor="estadoCierre">Estado</Label>
+                <Select
+                  value={estadoCierre}
+                  onValueChange={(value: EstadoCierre) =>
+                    setEstadoCierre(value)
+                  }
+                >
+                  <SelectTrigger id="estadoCierre">
+                    <SelectValue placeholder="Seleccione el estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="COMPLETADA">COMPLETADA</SelectItem>
+                    <SelectItem value="CANCELADA">CANCELADA</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </DialogHeader>
+            <div className="mt-4 space-y-4">
+              <Textarea
+                placeholder="Añadir un comentario final (opcional)"
+                value={comentarioCierre}
+                onChange={(e) => setComentarioCierre(e.target.value)}
+                className="w-full"
+              />
+              <div className="flex justify-end space-x-2">
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => setOpenCloseCredit(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  className="w-full"
+                  variant="destructive"
+                  disabled={isDeleting}
+                  onClick={() => {
+                    handleCloseCredit(ventaCuotaId);
+                  }}
+                >
+                  {isDeleting ? "Cerrando..." : "Cerrar Crédito"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </form>
+    );
   };
 
   return (
@@ -1037,6 +1450,13 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
+      </div>
+
+      {/* MOSTRAR LOS CRÉDITOS ACTIVOS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {creditos.map((ventaCuota) => (
+          <VentaCuotaCard key={ventaCuota.id} ventaCuota={ventaCuota} />
+        ))}
       </div>
 
       {/* MOSTRAR DIALOG DE ACTUALIZAR REGISTRO DE GARANTÍA */}

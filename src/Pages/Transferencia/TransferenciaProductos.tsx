@@ -1,30 +1,9 @@
-"use client";
-
 import { useEffect, useState } from "react";
-import {
-  Box,
-  Building,
-  Building2,
-  Check,
-  ChevronsUpDown,
-  Layers2,
-} from "lucide-react";
+import { Box, Building2, Layers2 } from "lucide-react";
+import SelectComponent, { SingleValue } from "react-select";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+
 import {
   Dialog,
   DialogContent,
@@ -76,8 +55,7 @@ export default function TransferenciaProductos() {
   const [selectedSucursalDestino, setSelectedSucursalDestino] =
     useState<Sucursal | null>(null);
   const [cantidad, setCantidad] = useState<number>(1);
-  const [openProduct, setOpenProduct] = useState(false);
-  const [openSucursal, setOpenSucursal] = useState(false);
+
   const [openDialog, setOpenDialog] = useState(false);
   const encargadoId = useStore((state) => state.userId);
 
@@ -113,12 +91,6 @@ export default function TransferenciaProductos() {
         sucursalDestinoId: selectedSucursalDestino.id,
         usuarioSolicitanteId: encargadoId, // ID de usuario fijo para este ejemplo
       };
-      // Realiza la solicitud de transferencia
-      // const response = await axios.post(
-      //   `${API_URL}/transferencia-producto/`,
-      //   transferenciaData
-      // );
-
       const response = await axios.post(
         `${API_URL}/solicitud-transferencia-producto`,
         transferenciaData
@@ -208,13 +180,54 @@ export default function TransferenciaProductos() {
   console.log("Los productos son: ", productos);
   console.log("EL id seleccionado es: ", selectedProduct);
 
+  // Opciones para productos
+  const productosOptions = productos?.map((producto) => ({
+    value: producto.id,
+    label: `${producto.nombre} (${producto.codigoProducto})`,
+    stock: producto.stock, // Incluimos stock para su uso posterior
+  }));
+
+  // Opciones para sucursales
+  const sucursalesOptions = sucursales
+    ?.filter((sucursal) => sucursal.id !== sucursalId) // Excluir sucursal origen
+    .map((sucursal) => ({
+      value: sucursal.id,
+      label: sucursal.nombre,
+    }));
+
+  const handleProductChange = (
+    option: SingleValue<{ value: number; label: string }>
+  ) => {
+    if (option) {
+      const productoSeleccionado = productos?.find(
+        (prod) => prod.id === option.value
+      );
+      setSelectedProduct(productoSeleccionado || null);
+    } else {
+      setSelectedProduct(null); // Limpia la selección si `option` es null
+    }
+  };
+
+  const handleSucursalChange = (
+    option: SingleValue<{ value: number; label: string }>
+  ) => {
+    if (option) {
+      const sucursalSeleccionada = sucursales.find(
+        (suc) => suc.id === option.value
+      );
+      setSelectedSucursalDestino(sucursalSeleccionada || null);
+    } else {
+      setSelectedSucursalDestino(null); // Limpia la selección si `option` es null
+    }
+  };
+
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <h1 className="text-2xl font-bold mb-4 text-center">
         Transferencia de Productos
       </h1>
       <div className="space-y-4">
-        <Popover open={openProduct} onOpenChange={setOpenProduct}>
+        {/* <Popover open={openProduct} onOpenChange={setOpenProduct}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -260,7 +273,24 @@ export default function TransferenciaProductos() {
               </CommandList>
             </Command>
           </PopoverContent>
-        </Popover>
+        </Popover> */}
+
+        <div className="space-y-2">
+          <Label htmlFor="producto-select">Seleccionar Producto</Label>
+          <SelectComponent
+            isClearable={true}
+            id="producto-select"
+            options={productosOptions}
+            value={
+              selectedProduct
+                ? { value: selectedProduct.id, label: selectedProduct.nombre }
+                : null
+            }
+            onChange={handleProductChange}
+            placeholder="Buscar producto..."
+            classNamePrefix="react-select"
+          />
+        </div>
 
         <Card className="">
           <CardHeader className="  p-4 rounded-t-md">
@@ -302,55 +332,25 @@ export default function TransferenciaProductos() {
             min={1}
           />
         </div>
-        <Popover open={openSucursal} onOpenChange={setOpenSucursal}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={openProduct}
-              className="w-full justify-between"
-            >
-              {selectedSucursalDestino
-                ? selectedSucursalDestino.nombre
-                : "Seleccionar producto..."}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-full p-0">
-            <Command className="rounded-lg border shadow-md md:min-w-[450px]">
-              <CommandInput placeholder="Buscar producto..." />
-              <CommandList>
-                <CommandEmpty>No se encontraron productos.</CommandEmpty>
-                <CommandGroup heading="Producto a transferir stock">
-                  {sucursales &&
-                    sucursales
-                      .filter((sucursal) => sucursal.id !== sucursalId)
-                      .map((sucursal) => (
-                        <CommandItem
-                          key={sucursal.id}
-                          value={sucursal.nombre}
-                          onSelect={() => {
-                            setSelectedSucursalDestino(sucursal);
-                            setOpenSucursal(false);
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedSucursalDestino?.id === sucursal.id
-                                ? "opacity-100"
-                                : "opacity-0"
-                            )}
-                          />
-                          <Building />
-                          {sucursal.nombre}
-                        </CommandItem>
-                      ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+        <div className="space-y-2">
+          <Label htmlFor="sucursal-select">Seleccionar Sucursal</Label>
+          <SelectComponent
+            isClearable={true}
+            id="sucursal-select"
+            options={sucursalesOptions}
+            value={
+              selectedSucursalDestino
+                ? {
+                    value: selectedSucursalDestino.id,
+                    label: selectedSucursalDestino.nombre,
+                  }
+                : null
+            }
+            onChange={handleSucursalChange}
+            placeholder="Buscar sucursal..."
+            classNamePrefix="react-select"
+          />
+        </div>
 
         <Dialog open={openDialog} onOpenChange={setOpenDialog}>
           <DialogTrigger asChild>

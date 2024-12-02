@@ -1,17 +1,6 @@
-import React, { useEffect, useState } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  FileSpreadsheet,
-  FileText,
-  Ticket,
-  Trash2,
-} from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -21,6 +10,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  ProductoVenta,
+  Venta,
+  VentasHistorial,
+} from "@/Types/SalesHistory/HistorialVentas";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -28,41 +27,33 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-
-// Importa los tipos
-import type {
-  VentasHistorial,
-  Venta,
-  ProductoVenta,
-} from "../Types/SalesHistory/HistorialVentas";
-import axios from "axios";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
-  Pagination,
-  PaginationContent,
-  // PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { Link } from "react-router-dom";
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  FileSpreadsheet,
+  FileText,
+  Ticket,
+  Trash2,
+} from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-const API_URL = import.meta.env.VITE_API_URL;
-
-import DatePicker, { registerLocale } from "react-datepicker";
-
-import "react-datepicker/dist/react-datepicker.css";
 import { useStore } from "@/components/Context/ContextSucursal";
 import { Textarea } from "@/components/ui/textarea";
-registerLocale("es", es);
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { es } from "date-fns/locale";
 
 interface Producto {
   productoId: number;
@@ -80,7 +71,10 @@ interface VentaToDelete {
   productos: Producto[];
 }
 
-export default function HistorialVentas() {
+const API_URL = import.meta.env.VITE_API_URL;
+
+function ClientHistorialPurchase() {
+  const { id } = useParams();
   const sucursalId = useStore((state) => state.sucursalId) ?? 0;
   const [ventaEliminar, setVentaEliminar] = useState<VentaToDelete>({
     usuarioId: 0,
@@ -92,9 +86,6 @@ export default function HistorialVentas() {
     sucursalId: sucursalId,
   });
 
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-
-  const [filtroVenta, setFiltroVenta] = useState("");
   const [ventas, setVentas] = useState<VentasHistorial>([]);
   const formatearFecha = (fecha: string) => {
     return format(new Date(fecha), "dd/MM/yyyy", { locale: es });
@@ -103,7 +94,7 @@ export default function HistorialVentas() {
   const getVentas = async () => {
     try {
       const response = await axios.get(
-        `${API_URL}/venta/find-my-sucursal-sales/${sucursalId}`
+        `${API_URL}/venta/find-customer-sales/${id}`
       );
       if (response.status === 200) {
         setVentas(response.data);
@@ -115,17 +106,13 @@ export default function HistorialVentas() {
   };
 
   useEffect(() => {
-    if (sucursalId) {
+    if (id) {
       getVentas();
     }
-  }, [sucursalId]);
-
-  console.log("Las ventas en el historial ventas son: ", ventas);
+  }, [id]);
 
   const DetallesVenta = ({ venta }: { venta: Venta }) => (
     <Card className="w-full shadow-xl">
-      {" "}
-      {/* Cambia max-w-3xl a w-full */}
       <CardHeader>
         <CardTitle>Detalles de la Venta #{venta.id}</CardTitle>
       </CardHeader>
@@ -149,7 +136,6 @@ export default function HistorialVentas() {
             {venta.cliente ? (
               <>
                 <p>Nombre: {venta.cliente.nombre || "N/A"}</p>
-                {/* <p>Correo: {venta.cliente.correo || "N/A"}</p> */}
                 <p>Teléfono: {venta.cliente.telefono || "N/A"}</p>
                 <p>DPI: {venta.cliente.dpi || "N/A"}</p>
                 <p>Direccion: {venta.cliente.direccion || "N/A"}</p>
@@ -157,8 +143,6 @@ export default function HistorialVentas() {
             ) : (
               <>
                 <p>Nombre: {venta.nombreClienteFinal || "CF"}</p>
-                {/* <p>Teléfono: {venta.telefonoClienteFinal || "N/A"}</p> */}
-                {/* <p>Dirección: {venta.direccionClienteFinal || "N/A"}</p> */}
               </>
             )}
           </div>
@@ -216,77 +200,23 @@ export default function HistorialVentas() {
     </Card>
   );
 
-  const filter = ventas
-    .filter((venta) => {
-      // Convertir la fecha de la venta a formato sin hora
-      const ventaFecha = new Date(venta.fechaVenta);
-      // Eliminar la hora de la fecha seleccionada
-      const fechaSeleccionada =
-        startDate && new Date(startDate).setHours(0, 0, 0, 0); // Solo la fecha sin la hora
-      const ventaFechaSinHora = ventaFecha.setHours(0, 0, 0, 0); // Solo la fecha sin la hora
-
-      // Compara solo las fechas sin tener en cuenta la hora
-      const fechaCoincide = fechaSeleccionada
-        ? fechaSeleccionada === ventaFechaSinHora
-        : true; // Si no hay fecha seleccionada, no se aplica filtro
-
-      // Filtra por nombre, teléfono, dpi, dirección o id, y también por fecha si se selecciona
-      return (
-        (venta.cliente?.nombre
-          .trim()
-          .toLowerCase()
-          .includes(filtroVenta.trim().toLowerCase()) ||
-          venta.cliente?.telefono
-            .trim()
-            .toLowerCase()
-            .includes(filtroVenta.trim().toLowerCase()) ||
-          venta.cliente?.dpi
-            .trim()
-            .toLowerCase()
-            .includes(filtroVenta.trim().toLowerCase()) ||
-          venta.cliente?.direccion
-            .trim()
-            .toLowerCase()
-            .includes(filtroVenta.trim().toLowerCase()) ||
-          venta.cliente?.id
-            .toString()
-            .trim()
-            .toLowerCase()
-            .includes(filtroVenta.trim().toLowerCase()) ||
-          venta.id
-            .toString()
-            .trim()
-            .toLowerCase()
-            .includes(filtroVenta.trim().toLowerCase())) &&
-        fechaCoincide
-      );
-    })
-    .sort((a, b) => {
-      const fechaA = new Date(a.fechaVenta).getTime();
-      const fechaB = new Date(b.fechaVenta).getTime();
-      return fechaB - fechaA;
-    });
-
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
-  const totalPages = Math.ceil(filter.length / itemsPerPage);
+  const totalPages = Math.ceil(ventas.length / itemsPerPage);
 
   // Calcular el índice del último elemento de la página actual
   const indexOfLastItem = currentPage * itemsPerPage;
   // Calcular el índice del primer elemento de la página actual
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   // Obtener los elementos de la página actual
-  const currentItems = filter.slice(indexOfFirstItem, indexOfLastItem);
+  const currentItems = ventas.slice(indexOfFirstItem, indexOfLastItem);
 
   // Cambiar de página
   const onPageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  console.log("LA FECHA SELECCIONADA ES: ", startDate);
   const userId = useStore((state) => state.userId) ?? 0;
-
-  console.log("La venta para eliminar seleccionada es: ", ventaEliminar);
 
   const [isOpenDelete, setIsOpenDelete] = useState(false); // Estado del modal
   const [isDeleting, setIsDeleting] = useState(false); // Estado para deshabilitar el botón
@@ -294,7 +224,6 @@ export default function HistorialVentas() {
   const handleDeleteSale = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validaciones básicas
     if (!adminPassword || adminPassword.trim().length === 0) {
       toast.info("Contraseña no ingresada");
       return;
@@ -358,25 +287,7 @@ export default function HistorialVentas() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Historial de Ventas</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <Input
-          placeholder="Filtrar por número de venta, nombre, teléfono, dpi, dirección"
-          value={filtroVenta}
-          onChange={(e) => setFiltroVenta(e.target.value)}
-        />
-        <div className="w-full md:w-1/2">
-          <DatePicker
-            locale="es"
-            selected={startDate}
-            onChange={(date) => {
-              setStartDate(date || undefined);
-            }}
-            className="w-full px-4 py-2 border rounded-md bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder-gray-500"
-            isClearable
-            placeholderText="Seleccionar una fecha"
-          />
-        </div>
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"></div>
       <Card className="shadow-xl">
         <CardContent>
           <ScrollArea className="h-[600px]">
@@ -654,3 +565,5 @@ export default function HistorialVentas() {
     </div>
   );
 }
+
+export default ClientHistorialPurchase;

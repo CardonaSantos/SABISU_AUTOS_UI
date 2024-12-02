@@ -69,6 +69,7 @@ interface FormData {
   telefono?: string;
   direccion?: string;
   dpi?: string;
+  iPInternet?: string;
 }
 
 interface FormDataEdit {
@@ -93,6 +94,7 @@ export default function CreateCustomer() {
     telefono: "",
     direccion: "",
     dpi: "",
+    iPInternet: "",
   });
 
   const [formDataEdit, setFormDataEdit] = useState<FormDataEdit>({
@@ -141,6 +143,7 @@ export default function CreateCustomer() {
             telefono: "",
             direccion: "",
             dpi: "",
+            iPInternet: "",
           });
         } else {
           throw new Error("Failed to create client");
@@ -346,6 +349,16 @@ export default function CreateCustomer() {
                     id="direccion"
                     name="direccion"
                     value={formData.direccion}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="direccion">IP (opcional)</Label>
+                  <Input
+                    id="iPInternet"
+                    name="iPInternet"
+                    value={formData.iPInternet}
                     onChange={handleChange}
                   />
                 </div>

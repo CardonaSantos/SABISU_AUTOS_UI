@@ -8,6 +8,8 @@ import {
   CoinsIcon,
   Bolt,
   ClipboardPen,
+  FileText,
+  CreditCard,
 } from "lucide-react";
 
 import {
@@ -126,11 +128,21 @@ const menuItems = [
 
   {
     icon: ClipboardPen,
-    label: "Ventas Eliminaciones historial",
+    label: "Ventas Eliminaciones",
     href: "/historial/ventas-eliminaciones",
   },
-];
 
+  {
+    icon: FileText,
+    label: "Plantillas de Créditos",
+    href: "/plantillas-venta-cuotas",
+  },
+  {
+    icon: CreditCard,
+    label: "Créditos",
+    href: "/creditos",
+  },
+];
 const menuVendedor = [
   // Sección de Ventas
   { icon: Home, label: "Home", href: "/" },
