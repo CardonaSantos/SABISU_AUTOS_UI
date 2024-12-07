@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,14 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-// import { Switch } from "@/components/ui/switch"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import {
   Building2,
   Phone,
@@ -46,6 +37,7 @@ type Sucursal = {
   nombre: string;
   direccion: string;
   telefono: string;
+  pbx: string;
   creadoEn: string;
   actualizadoEn: string;
   tipoSucursal: "TIENDA" | "BODEGA";
@@ -96,13 +88,6 @@ export default function Sucursales() {
       return;
     }
 
-    const confirmEdit = window.confirm(
-      "¿Estás seguro de que deseas guardar los cambios?"
-    );
-    if (!confirmEdit) return;
-
-    console.log("Editando sucursal con datos:", editingSucursal);
-
     try {
       const response = await axios.patch(
         `${API_URL}/sucursales/editar-sucursal/${editingSucursal.id}`,
@@ -136,17 +121,6 @@ export default function Sucursales() {
     }
   };
 
-  const handleSelectChange = (value: string) => {
-    if (editingSucursal) {
-      const newSucursal = {
-        ...editingSucursal,
-        tipoSucursal: value as "TIENDA" | "BODEGA",
-      };
-      setEditingSucursal(newSucursal);
-      console.log("Tipo de sucursal actualizado:", newSucursal);
-    }
-  };
-
   return (
     <div className="container mx-auto p-4">
       {/* Renderiza un spinner o algún indicador de carga */}
@@ -158,6 +132,8 @@ export default function Sucursales() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>ID</TableHead>
+
               <TableHead>Nombre</TableHead>
               <TableHead>Dirección</TableHead>
               <TableHead>Teléfono</TableHead>
@@ -171,6 +147,8 @@ export default function Sucursales() {
           <TableBody>
             {sucursales.map((sucursal) => (
               <TableRow key={sucursal.id}>
+                <TableCell>{sucursal.id}</TableCell>
+
                 <TableCell>{sucursal.nombre}</TableCell>
                 <TableCell>{sucursal.direccion}</TableCell>
                 <TableCell>{sucursal.telefono}</TableCell>
@@ -182,7 +160,7 @@ export default function Sucursales() {
                 <TableCell>{sucursal._count.productos}</TableCell>
                 <TableCell>
                   <Dialog>
-                    <DialogTrigger asChild>
+                    <DialogTrigger>
                       <Button
                         variant="outline"
                         size="sm"
@@ -235,35 +213,18 @@ export default function Sucursales() {
                             className="col-span-3"
                           />
                         </div>
+
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="tipoSucursal" className="text-right">
-                            Tipo
+                          <Label htmlFor="telefono" className="text-right">
+                            PBX
                           </Label>
-                          <Select
-                            onValueChange={handleSelectChange}
-                            defaultValue={editingSucursal?.tipoSucursal}
-                          >
-                            <SelectTrigger className="col-span-3">
-                              <SelectValue placeholder="Selecciona un tipo" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="TIENDA">Tienda</SelectItem>
-                              <SelectItem value="BODEGA">Bodega</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label
-                            htmlFor="estadoOperacion"
-                            className="text-right"
-                          >
-                            Estado
-                          </Label>
-                          {/* <Switch
-                            id="estadoOperacion"
-                            checked={editingSucursal?.estadoOperacion || false}
-                            onCheckedChange={handleSwitchChange}
-                          /> */}
+                          <Input
+                            id="pbx"
+                            name="pbx"
+                            value={editingSucursal?.pbx || ""}
+                            onChange={handleInputChange}
+                            className="col-span-3"
+                          />
                         </div>
                       </div>
                       <Button onClick={handleEdit}>Guardar cambios</Button>
@@ -370,23 +331,20 @@ export default function Sucursales() {
                             className="col-span-3"
                           />
                         </div>
+
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="tipoSucursal" className="text-right">
-                            Tipo
+                          <Label htmlFor="pbx" className="text-right">
+                            PBX
                           </Label>
-                          <Select
-                            onValueChange={handleSelectChange}
-                            defaultValue={editingSucursal?.tipoSucursal}
-                          >
-                            <SelectTrigger className="col-span-3">
-                              <SelectValue placeholder="Selecciona un tipo" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="TIENDA">Tienda</SelectItem>
-                              <SelectItem value="BODEGA">Bodega</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Input
+                            id="pbx"
+                            name="pbx"
+                            value={editingSucursal?.pbx || ""}
+                            onChange={handleInputChange}
+                            className="col-span-3"
+                          />
                         </div>
+
                         <div className="grid grid-cols-4 items-center gap-4">
                           <Label
                             htmlFor="estadoOperacion"
@@ -394,11 +352,6 @@ export default function Sucursales() {
                           >
                             Estado
                           </Label>
-                          {/* <Switch
-                            id="estadoOperacion"
-                            checked={editingSucursal?.estadoOperacion || false}
-                            onCheckedChange={handleSwitchChange}
-                          /> */}
                         </div>
                       </div>
                       <Button onClick={handleEdit}>Guardar cambios</Button>

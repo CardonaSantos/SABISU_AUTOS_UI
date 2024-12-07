@@ -227,6 +227,8 @@ function UserConfig() {
     }
   };
 
+  const userRol = useStore((state) => state.userRol);
+
   return (
     <div className="container mx-auto flex justify-center items-center">
       <Tabs defaultValue="usuario" className="w-full">
@@ -348,7 +350,6 @@ function UserConfig() {
           </Card>
         </TabsContent>
         <TabsContent value="usuarios">
-          {/* Aquí podrías añadir contenido extra si es necesario */}
           <div className="container mx-auto p-4">
             <h1 className="text-2xl font-bold mb-4">Lista de Usuarios</h1>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -387,7 +388,11 @@ function UserConfig() {
                       <span className="font-medium">Rol:</span> {usuario.rol}
                     </p>
                     <div className="flex gap-2">
-                      <Button className="w-full" variant={"destructive"}>
+                      <Button
+                        disabled={userRol !== "SUPER_ADMIN"}
+                        className="w-full"
+                        variant={"destructive"}
+                      >
                         Eliminar
                       </Button>
                       <Button
@@ -460,16 +465,18 @@ function UserConfig() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="activo" className="text-right">
-                      Activo
-                    </Label>
-                    <Switch
-                      id="activo"
-                      checked={userEdit.activo}
-                      onCheckedChange={() => handleToggleEditActivo("activo")}
-                    />
-                  </div>
+                  {userRol === "SUPER_ADMIN" ? (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="activo" className="text-right">
+                        Activo
+                      </Label>
+                      <Switch
+                        id="activo"
+                        checked={userEdit.activo}
+                        onCheckedChange={() => handleToggleEditActivo("activo")}
+                      />
+                    </div>
+                  ) : null}
 
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="contrasenaConfirm" className="text-right">
@@ -480,7 +487,7 @@ function UserConfig() {
                       id="contrasenaConfirm"
                       name="contrasenaConfirm"
                       type="password"
-                      placeholder="Ingrese su contraseña como administrado para confirmar los cambios"
+                      placeholder="Ingrese su contraseña como administrador para confirmar los cambios"
                       value={userEdit.contrasenaConfirm}
                       className="col-span-3"
                     />

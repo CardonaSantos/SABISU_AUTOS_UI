@@ -24,25 +24,25 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import {
-  AlertCircle,
   Box,
   Calendar,
   ChevronDown,
   ChevronUp,
   Coins,
   CoinsIcon,
+  FileText,
   IdCard,
   MapPin,
   Phone,
   TextIcon,
   TicketCheck,
   User,
+  Wrench,
 } from "lucide-react";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useStore } from "@/components/Context/ContextSucursal";
-// import { useSocketStore } from "@/components/Context/ContextConection";
 const API_URL = import.meta.env.VITE_API_URL;
 
 import dayjs from "dayjs";
@@ -77,6 +77,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Reparacion } from "../Reparaciones/RepairRegisType";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Producto {
   id: number;
@@ -595,7 +597,28 @@ export default function Dashboard() {
     getCredits();
   }, []);
 
+  const [reparaciones, setReparaciones] = useState<Reparacion[]>([]);
+  const getReparacionesRegis = async () => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/repair/get-regist-open-repair`
+      );
+      if (response.status === 200) {
+        setReparaciones(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al conseguir datos");
+    }
+  };
+
+  useEffect(() => {
+    getReparacionesRegis();
+  }, []);
+
   console.log("Los registros de creditos abiertos son: ", creditos);
+
+  console.log("Las reparaciones son: ", reparaciones);
 
   //==================================================>
   interface VentaCuotaCardProps {
@@ -605,10 +628,7 @@ export default function Dashboard() {
   const VentaCuotaCard: React.FC<VentaCuotaCardProps> = ({ ventaCuota }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
-    const totalConInteres = (totalVenta: number, interes: number) => {
-      const montoInteres = totalVenta * (interes / 100);
-      return totalVenta + montoInteres;
-    };
+    console.log("EL CREDITO ES: ", ventaCuota);
 
     const formatearMoneda = (cantidad: number) => {
       return new Intl.NumberFormat("es-GT", {
@@ -618,10 +638,7 @@ export default function Dashboard() {
     };
 
     const calcularDetallesCredito = () => {
-      const montoTotalConInteres = totalConInteres(
-        ventaCuota.totalVenta,
-        ventaCuota.interes
-      );
+      const montoTotalConInteres = ventaCuota.montoTotalConInteres;
       const saldoRestante = montoTotalConInteres - ventaCuota.totalPagado;
       const montoPorCuota =
         (montoTotalConInteres - ventaCuota.cuotaInicial) /
@@ -666,9 +683,8 @@ export default function Dashboard() {
       diaInicio = fechaAPagar;
     }
     console.log("Las fechas a pagar cada x días son: ", cuotasFechas);
-
     return (
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             <span className="font-bold">Crédito #{ventaCuota.id}</span>
@@ -697,21 +713,24 @@ export default function Dashboard() {
           <p className="text-sm">
             Monto por Cuota: <strong>{formatearMoneda(montoPorCuota)}</strong>
           </p>
-          <p className="text-sm">
-            Cuotas Pagadas: <strong>{cuotasPagadas}</strong> /{" "}
-            {ventaCuota.cuotasTotales}
-          </p>
-          <p className="text-sm">
+
+          <Link to={"/creditos"}>
+            <p className="text-sm">
+              Cuotas Pagadas: <strong>{cuotasPagadas}</strong> /{" "}
+              {ventaCuota.cuotasTotales}
+            </p>
+          </Link>
+
+          {/* <p className="text-sm">
             Fechas de pago: <strong>{cuotasFechas.join(", ")}</strong>
-          </p>
+          </p> */}
+
           <Badge className="mt-2">{ventaCuota.estado}</Badge>
           {isExpanded && (
             <div className="mt-4 space-y-2">
               <p className="text-sm">
                 Monto Total (con Interés):{" "}
-                {formatearMoneda(
-                  totalConInteres(ventaCuota.totalVenta, ventaCuota.interes)
-                )}
+                {formatearMoneda(ventaCuota.montoTotalConInteres)}
               </p>
               <p className="text-sm">
                 Cuota Inicial: {formatearMoneda(ventaCuota.cuotaInicial)}
@@ -720,6 +739,16 @@ export default function Dashboard() {
                 Fecha Inicio:{" "}
                 {new Date(ventaCuota.fechaInicio).toLocaleDateString()}
               </p>
+
+              <ScrollArea className="h-32   p-2 text-sm">
+                {cuotasFechas.map((fecha, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <span className="">{index + 1}.</span>
+                    <span>{fecha}</span>
+                  </div>
+                ))}
+              </ScrollArea>
             </div>
           )}
           <Dialog onOpenChange={setOpenRegistCuota} open={openRegistCuota}>
@@ -979,6 +1008,362 @@ export default function Dashboard() {
     );
   };
 
+  //----------------------------------------------
+
+  interface ReparacionCardProps {
+    reparacion: Reparacion;
+    // onUpdate: (id: number, updates: Partial<Reparacion>) => void;
+  }
+  const estadosReparacion = [
+    "RECIBIDO",
+    "PENDIENTE",
+    "EN_PROCESO",
+    "ESPERANDO_PIEZAS",
+    "REPARADO",
+    "ENTREGADO",
+    // "CANCELADO",
+    "NO_REPARABLE",
+    // "FINALIZADO",
+  ];
+
+  const estadosReparacionClose = ["FINALIZADO", "CANCELADO", "NO_REPARABLE"];
+
+  const ReparacionCard: React.FC<ReparacionCardProps> = ({ reparacion }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [openDialog, setOpenDialog] = useState(false);
+    const [estado, setEstado] = useState(reparacion.estado);
+    const [problemas, setProblemas] = useState(reparacion.problemas);
+    const [observaciones, setObservaciones] = useState(
+      reparacion.observaciones || ""
+    );
+
+    const [openClose, setOpenClose] = useState(false);
+
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case "RECIBIDO":
+        case "PENDIENTE":
+          return "bg-yellow-500";
+        case "EN_PROCESO":
+        case "ESPERANDO_PIEZAS":
+          return "bg-blue-500";
+        case "REPARADO":
+          return "bg-green-500";
+        case "ENTREGADO":
+        case "FINALIZADO":
+          return "bg-purple-500";
+        // case "CANCELADO":
+        case "NO_REPARABLE":
+          return "bg-red-500";
+        default:
+          return "bg-gray-500";
+      }
+    };
+
+    const payload = {
+      estado,
+      observaciones,
+      problemas,
+    };
+
+    const handleUpdateRepair = async () => {
+      try {
+        const response = await axios.patch(
+          `${API_URL}/repair/update-repair/${reparacion.id}`,
+          payload
+        );
+        if (response.status === 200) {
+          toast.success("Registro actualizado");
+          getReparacionesRegis();
+        }
+      } catch (error) {
+        console.log(error);
+        toast.error("Error al actualizar el registro");
+      }
+    };
+
+    const [formCloseRegist, setFormCloseRegist] = useState({
+      comentarioFinal: "",
+      accionesRealizadas: "",
+      estado: "FINALIZADO",
+      montoPagado: 0,
+    });
+
+    console.log("El form de cerrar es: ", formCloseRegist);
+
+    const handleChangeCloseRegist = (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+      const { name, value } = e.target;
+
+      setFormCloseRegist((datosprevios) => ({
+        ...datosprevios,
+        [name]: value,
+      }));
+    };
+
+    const handleCloseRepairRegist = async () => {
+      try {
+        const payload = {
+          ...formCloseRegist,
+          usuarioId: userID,
+          sucursalId: sucursalId,
+        };
+
+        if (!payload.montoPagado || payload.montoPagado <= 0) {
+          toast.info("Ingrese un monto pagado valído");
+          return;
+        }
+
+        if (!payload.accionesRealizadas) {
+          toast.info("Debe ingresar las acciones que se realizaron");
+          return;
+        }
+
+        const response = await axios.patch(
+          `${API_URL}/repair/close-regist-repair/${reparacion.id}`,
+          payload
+        );
+        if (response.status === 200 || response.status === 201) {
+          toast.success("Registro cerrado correctamente");
+          getReparacionesRegis();
+        }
+      } catch (error) {
+        console.log(error);
+        toast.error("Error al cerrar registro");
+      }
+    };
+
+    return (
+      <Card className="w-full">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            <span className="font-bold">Reparación #{reparacion.id}</span>
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? "Collapse details" : "Expand details"}
+          >
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-between items-center mb-2">
+            <Badge className={getStatusColor(reparacion.estado)}>
+              {reparacion.estado}
+            </Badge>
+            <span className="text-sm text-gray-500">
+              {dayjs(reparacion.fechaRecibido).format("DD/MM/YYYY")}
+            </span>
+
+            <TooltipProvider>
+              <Tooltip2>
+                <TooltipTrigger asChild>
+                  <Link to={`/reparacion-comprobante/${reparacion.id}`}>
+                    <FileText className="w-4 h-4" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Imprimir comprobante</p>
+                </TooltipContent>
+              </Tooltip2>
+            </TooltipProvider>
+          </div>
+          <p className="text-sm font-semibold mb-1">
+            {reparacion.producto
+              ? reparacion.producto.nombre
+              : reparacion.productoExterno}
+          </p>
+          <p className="text-sm mb-2">
+            Cliente: <strong>{reparacion.cliente.nombre}</strong>
+          </p>
+          {isExpanded && (
+            <div className="mt-2 space-y-2 text-sm">
+              <p>Problemas: {reparacion.problemas}</p>
+              <p>Observaciones: {reparacion.observaciones || "N/A"}</p>
+              <p>Sucursal: {reparacion.sucursal.nombre}</p>
+              <p>Usuario: {reparacion.usuario.nombre}</p>
+            </div>
+          )}
+          <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+            <Button
+              onClick={() => setOpenDialog(true)}
+              type="button"
+              className="w-full mt-4"
+              size="sm"
+            >
+              <Wrench className="mr-2 h-4 w-4" />
+              Actualizar Reparación
+            </Button>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Actualizar Estado de Reparación</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="estado" className="text-right">
+                    Estado
+                  </label>
+                  <Select value={estado} onValueChange={setEstado}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Seleccionar estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {estadosReparacion.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="problemas" className="text-right">
+                    Problemas
+                  </label>
+                  <Textarea
+                    id="problemas"
+                    value={problemas}
+                    onChange={(e) => setProblemas(e.target.value)}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="observaciones" className="text-right">
+                    Observaciones
+                  </label>
+                  <Textarea
+                    id="observaciones"
+                    value={observaciones}
+                    onChange={(e) => setObservaciones(e.target.value)}
+                    className="col-span-3"
+                  />
+                </div>
+              </div>
+              <Button onClick={handleUpdateRepair}>Guardar cambios</Button>
+              <Button
+                variant={"destructive"}
+                onClick={() => {
+                  setOpenDialog(false);
+                  setOpenClose(true);
+                }}
+              >
+                Cerrar registro
+              </Button>
+            </DialogContent>
+          </Dialog>
+          <Dialog onOpenChange={setOpenClose} open={openClose}>
+            <DialogContent className="space-y-6">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-bold">
+                  Cerrar el registro de reparación
+                </DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
+                  ¿Estás seguro de cerrar el registro de reparación? Una vez
+                  cerrado, ya no podrás volver a editar esta información.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="estado"
+                    className="block text-sm font-medium text-muted-foreground mb-2"
+                  >
+                    Estado
+                  </label>
+                  <Select
+                    value={formCloseRegist.estado}
+                    onValueChange={(nuevoDato) =>
+                      setFormCloseRegist((datosprevios) => ({
+                        ...datosprevios,
+                        estado: nuevoDato,
+                      }))
+                    }
+                  >
+                    <SelectTrigger id="estado" className="w-full">
+                      <SelectValue placeholder="Seleccionar estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {estadosReparacionClose.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="accionesRealizadas"
+                    className="block text-sm font-medium text-muted-foreground mb-2"
+                  >
+                    Acciones realizadas
+                  </label>
+                  <Textarea
+                    id="accionesRealizadas"
+                    className="w-full"
+                    name="accionesRealizadas"
+                    placeholder="Describe las acciones realizadas"
+                    onChange={handleChangeCloseRegist}
+                    value={formCloseRegist.accionesRealizadas}
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="comentarioFinal"
+                    className="block text-sm font-medium text-muted-foreground mb-2"
+                  >
+                    Comentario final (opcional)
+                  </label>
+                  <Textarea
+                    id="comentarioFinal"
+                    className="w-full"
+                    name="comentarioFinal"
+                    placeholder="Escribe un comentario final"
+                    onChange={handleChangeCloseRegist}
+                    value={formCloseRegist.comentarioFinal}
+                  />
+
+                  <label
+                    htmlFor="montoPagado"
+                    className="block text-sm font-medium text-muted-foreground mb-2 mt-2"
+                  >
+                    Monto Pagado por reparación
+                  </label>
+                  <Input
+                    id="montoPagado"
+                    className="my-3"
+                    placeholder="100"
+                    name="montoPagado"
+                    value={formCloseRegist.montoPagado}
+                    onChange={handleChangeCloseRegist}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleCloseRepairRegist}
+                  variant={"destructive"}
+                  className="w-full"
+                >
+                  Cerrar registro
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold">Dashboard de Administrador</h1>
@@ -1033,6 +1418,223 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* MOSTRAR LOS CRÉDITOS ACTIVOS */}
+      <div
+        className={
+          creditos && creditos.length > 0
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4" // Usando grid de 2 columnas en sm y lg
+            : "w-full" // Para el caso cuando no hay créditos
+        }
+      >
+        {creditos && creditos.length > 0 ? (
+          creditos.map((ventacuota) => (
+            <VentaCuotaCard key={ventacuota.id} ventaCuota={ventacuota} />
+          ))
+        ) : (
+          <Card className="w-full">
+            <CardTitle className="text-xl px-6 py-4">Créditos</CardTitle>
+            <CardContent>
+              <p className="text-center text-gray-500">
+                No hay registros de créditos abiertos
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* MOSTRAR LAS REPARACIONES ACTIVAS */}
+      <div
+        className={
+          reparaciones && reparaciones.length > 0
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4" // Usando grid de 2 columnas en sm y lg
+            : "flex justify-center items-center w-full h-full" // Centrar el card cuando no hay reparaciones
+        }
+      >
+        {reparaciones && reparaciones.length > 0 ? (
+          reparaciones.map((reparacion) => (
+            <ReparacionCard key={reparacion.id} reparacion={reparacion} />
+          ))
+        ) : (
+          <Card className="w-full  mx-auto">
+            <CardTitle className="text-xl px-6 py-4 text-center">
+              Reparaciones
+            </CardTitle>
+            <CardContent className="flex justify-center items-center">
+              <p className="text-center text-gray-500">
+                No hay registros de reparaciones abiertos
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* MOSTRAR GARANTÍAS ACTIVAS */}
+      <div className="space-y-4">
+        {warranties && warranties.length > 0 ? (
+          warranties.map((garantia) => (
+            <Card
+              key={garantia.id}
+              className="w-full shadow-md hover:shadow-lg transition-shadow duration-300"
+            >
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-lg font-semibold">
+                    Garantía No. #{garantia.id}
+                  </CardTitle>
+                  <div className="flex items-center space-x-2">
+                    <Badge
+                      className={`${estadoColor[garantia.estado]} text-white`}
+                    >
+                      {garantia.estado}
+                    </Badge>
+                    <TooltipProvider>
+                      <Tooltip2>
+                        <TooltipTrigger asChild>
+                          <Link to={`/ticket-garantia/${garantia.id}`}>
+                            <TicketCheck className="cursor-pointer" />
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Generar ticket de garantía</p>
+                        </TooltipContent>
+                      </Tooltip2>
+                    </TooltipProvider>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleCard(garantia.id)}
+                    >
+                      {expandedCard === garantia.id ? (
+                        <ChevronUp />
+                      ) : (
+                        <ChevronDown />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center gap-1">
+                    <User className="w-4 h-4 text-gray-500" />
+                    <span className="font-medium">
+                      Cliente: {garantia.cliente.nombre}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Box className="w-4 h-4 text-gray-500" />
+                    <span className="font-medium">
+                      Producto: {garantia.producto.nombre}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <span>
+                      Fecha de recepción:{" "}
+                      {formatearFecha(garantia.fechaRecepcion)}
+                    </span>
+                  </div>
+                </div>
+                {expandedCard === garantia.id && (
+                  <>
+                    <Separator className="my-2" />
+                    <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                      <div className="flex items-center gap-1">
+                        <Phone className="w-4 h-4 text-gray-500" />
+                        <span>
+                          Teléfono cliente: {garantia.cliente.telefono}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4 text-gray-500" />
+                        <span>
+                          Dirección cliente: {garantia.cliente.direccion}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <IdCard className="w-4 h-4 text-gray-500" />
+                        <span>DPI: {garantia.cliente.dpi}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <TextIcon className="w-4 h-4 text-gray-500" />
+                        <span>{garantia.producto.descripcion}</span>
+                      </div>
+                    </div>
+                    {garantia.proveedor ? (
+                      <div className="mt-2 text-sm">
+                        <Badge className="mb-2">
+                          <p className=" font-semibold">Enviado a proveedor:</p>
+                        </Badge>
+                        <p>{garantia.proveedor.nombre}</p>
+                        <p>Teléfono: {garantia.proveedor.telefono}</p>
+                        <p>
+                          Teléfono contacto:{" "}
+                          {garantia.proveedor.telefonoContacto}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mt-2 text-sm">
+                        <Badge variant={"default"}>
+                          <p className="font-medium">{garantia.estado}</p>
+                        </Badge>
+                      </div>
+                    )}
+                    <Separator className="my-2" />
+                    <div className="mt-2 text-sm">
+                      <p className="font-medium">Comentario:</p>
+                      <p className="text-gray-600">{garantia.comentario}</p>
+                      <p className="font-medium mt-2">
+                        Descripción del problema:
+                      </p>
+                      <p className="text-gray-600">
+                        {garantia.descripcionProblema}
+                      </p>
+                    </div>
+                    <Separator className="my-2" />
+                    <div className="mt-2 text-xs text-gray-500">
+                      <p>
+                        Recibido por: {garantia.usuarioRecibe.nombre} (
+                        {garantia.usuarioRecibe.rol})
+                      </p>
+                      <p>Sucursal: {garantia.usuarioRecibe.sucursal.nombre}</p>
+                      <p>Creado: {formatearFecha(garantia.creadoEn)}</p>
+                      <p>
+                        Actualizado: {formatearFecha(garantia.actualizadoEn)}
+                      </p>
+                    </div>
+                    <div className="mt-4">
+                      <Button
+                        // onClick={() => openUpdateWarranty(garantia.id)}
+
+                        onClick={() => {
+                          setWarrantyId(garantia.id);
+                          handleOpenUpdateDialog(garantia);
+                          setProductoIdW(garantia.productoId);
+                        }}
+                        variant={"destructive"}
+                      >
+                        Actualizar registro
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Registros de garantía</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-center text-base">
+                No hay registros de garantía disponibles
+              </CardDescription>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* MOSTRAR LAS SOLICITUDES DE PRECIO */}
@@ -1285,180 +1887,6 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* MOSTRAR GARANTÍAS ACTIVAS */}
-      <div className="space-y-4">
-        {warranties && warranties.length > 0 ? (
-          warranties.map((garantia) => (
-            <Card
-              key={garantia.id}
-              className="w-full shadow-md hover:shadow-lg transition-shadow duration-300"
-            >
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-lg font-semibold">
-                    Garantía No. #{garantia.id}
-                  </CardTitle>
-                  <div className="flex items-center space-x-2">
-                    <Badge
-                      className={`${estadoColor[garantia.estado]} text-white`}
-                    >
-                      {garantia.estado}
-                    </Badge>
-                    <TooltipProvider>
-                      <Tooltip2>
-                        <TooltipTrigger asChild>
-                          <Link to={`/ticket-garantia/${garantia.id}`}>
-                            <TicketCheck className="cursor-pointer" />
-                          </Link>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Generar ticket de garantía</p>
-                        </TooltipContent>
-                      </Tooltip2>
-                    </TooltipProvider>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleCard(garantia.id)}
-                    >
-                      {expandedCard === garantia.id ? (
-                        <ChevronUp />
-                      ) : (
-                        <ChevronDown />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center gap-1">
-                    <User className="w-4 h-4 text-gray-500" />
-                    <span className="font-medium">
-                      Cliente: {garantia.cliente.nombre}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Box className="w-4 h-4 text-gray-500" />
-                    <span className="font-medium">
-                      Producto: {garantia.producto.nombre}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-gray-500" />
-                    <span>
-                      Fecha de recepción:{" "}
-                      {formatearFecha(garantia.fechaRecepcion)}
-                    </span>
-                  </div>
-                </div>
-                {expandedCard === garantia.id && (
-                  <>
-                    <Separator className="my-2" />
-                    <div className="grid grid-cols-2 gap-2 text-sm mt-2">
-                      <div className="flex items-center gap-1">
-                        <Phone className="w-4 h-4 text-gray-500" />
-                        <span>
-                          Teléfono cliente: {garantia.cliente.telefono}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4 text-gray-500" />
-                        <span>
-                          Dirección cliente: {garantia.cliente.direccion}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <IdCard className="w-4 h-4 text-gray-500" />
-                        <span>DPI: {garantia.cliente.dpi}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <TextIcon className="w-4 h-4 text-gray-500" />
-                        <span>{garantia.producto.descripcion}</span>
-                      </div>
-                    </div>
-                    {garantia.proveedor ? (
-                      <div className="mt-2 text-sm">
-                        <Badge className="mb-2">
-                          <p className=" font-semibold">Enviado a proveedor:</p>
-                        </Badge>
-                        <p>{garantia.proveedor.nombre}</p>
-                        <p>Teléfono: {garantia.proveedor.telefono}</p>
-                        <p>
-                          Teléfono contacto:{" "}
-                          {garantia.proveedor.telefonoContacto}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="mt-2 text-sm">
-                        <Badge variant={"default"}>
-                          <p className="font-medium">{garantia.estado}</p>
-                        </Badge>
-                      </div>
-                    )}
-                    <Separator className="my-2" />
-                    <div className="mt-2 text-sm">
-                      <p className="font-medium">Comentario:</p>
-                      <p className="text-gray-600">{garantia.comentario}</p>
-                      <p className="font-medium mt-2">
-                        Descripción del problema:
-                      </p>
-                      <p className="text-gray-600">
-                        {garantia.descripcionProblema}
-                      </p>
-                    </div>
-                    <Separator className="my-2" />
-                    <div className="mt-2 text-xs text-gray-500">
-                      <p>
-                        Recibido por: {garantia.usuarioRecibe.nombre} (
-                        {garantia.usuarioRecibe.rol})
-                      </p>
-                      <p>Sucursal: {garantia.usuarioRecibe.sucursal.nombre}</p>
-                      <p>Creado: {formatearFecha(garantia.creadoEn)}</p>
-                      <p>
-                        Actualizado: {formatearFecha(garantia.actualizadoEn)}
-                      </p>
-                    </div>
-                    <div className="mt-4">
-                      <Button
-                        // onClick={() => openUpdateWarranty(garantia.id)}
-
-                        onClick={() => {
-                          setWarrantyId(garantia.id);
-                          handleOpenUpdateDialog(garantia);
-                          setProductoIdW(garantia.productoId);
-                        }}
-                        variant={"destructive"}
-                      >
-                        Actualizar registro
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Registros de garantía</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-center text-base">
-                No hay registros de garantía disponibles
-              </CardDescription>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* MOSTRAR LOS CRÉDITOS ACTIVOS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {creditos.map((ventaCuota) => (
-          <VentaCuotaCard key={ventaCuota.id} ventaCuota={ventaCuota} />
-        ))}
-      </div>
-
       {/* MOSTRAR DIALOG DE ACTUALIZAR REGISTRO DE GARANTÍA */}
       <Dialog open={openUpdateWarranty} onOpenChange={setOpenUpdateWarranty}>
         <DialogContent>
@@ -1683,19 +2111,6 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
 
       {/* Notificaciones y alertas */}
-      <Card className="shadow-xl">
-        <CardHeader>
-          <CardTitle>Notificaciones y Alertas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-2">
-            <li className="flex items-center text-yellow-600">
-              <AlertCircle className="mr-2 h-4 w-4" />
-              Inventario bajo para Producto X
-            </li>
-          </ul>
-        </CardContent>
-      </Card>
     </div>
   );
 }

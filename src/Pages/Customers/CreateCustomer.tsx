@@ -281,12 +281,7 @@ export default function CreateCustomer() {
       {/* Formulario para crear cliente */}
       <TabsContent value="crear-cliente">
         <Card className="shadow-xl">
-          <CardHeader>
-            <CardTitle>Crear Cliente</CardTitle>
-            <CardDescription>
-              Completa el siguiente formulario para añadir un nuevo cliente.
-            </CardDescription>
-          </CardHeader>
+          <CardHeader></CardHeader>
           <CardContent className="space-y-2">
             <form
               onSubmit={handleSubmit}
@@ -385,7 +380,7 @@ export default function CreateCustomer() {
           <Select
             onValueChange={(value) => setFilterType(value as "more" | "less")}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full max-w-md">
               <SelectValue placeholder="Selecciona un filtro" />
             </SelectTrigger>
             <SelectContent>

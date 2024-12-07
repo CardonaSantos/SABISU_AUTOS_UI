@@ -1,4 +1,3 @@
-"use client";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +20,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Eye,
@@ -32,6 +37,8 @@ import {
   Package,
   FileText,
   MessageSquareText,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { CreditoRegistro } from "./CreditosType";
 
@@ -42,6 +49,21 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import axios from "axios";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 const API_URL = import.meta.env.VITE_API_URL;
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -111,11 +133,12 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
   const calcularCuotas = () => {
     if (selectedRecord) {
       // Monto de interés sobre el total de la venta
+      // const montoInteres2 = selectedRecord.montoTotalConInteres
       const montoInteres =
         selectedRecord.totalVenta * (selectedRecord.interes / 100);
 
       // Total con interés
-      const montoTotalConInteres = selectedRecord.totalVenta + montoInteres;
+      const montoTotalConInteres = selectedRecord.montoTotalConInteres;
 
       // Saldo restante después del enganche
       const saldoRestante = montoTotalConInteres - selectedRecord.cuotaInicial;
@@ -154,7 +177,7 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
 
   function CuotasCard({ cuotas }: CuotasCardProps) {
     return (
-      <Card className="w-full shadow-sm">
+      <Card className="w-full shadow-sm my-2">
         <CardHeader>
           <h2 className="font-bold text-center">Historial de pagos</h2>
         </CardHeader>
@@ -168,6 +191,7 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
                 <TableHead>Monto</TableHead>
                 <TableHead>Comentarios</TableHead>
                 <TableHead>Usuario</TableHead>
+                <TableHead>Comprobante</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -188,16 +212,42 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
                         ? formatearMoneda(cuota.monto)
                         : "Sin monto"}
                     </TableCell>
-                    <TableCell>{cuota.comentario ?? ""}</TableCell>
+                    <TableCell>
+                      {cuota.comentario ?? "Sin comentarios"}
+                    </TableCell>
                     <TableCell>
                       {cuota.usuario?.nombre ?? "Usuario no asignado"}
+                    </TableCell>
+
+                    <TableCell className="flex justify-center">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Link to={`/cuota/comprobante/${cuota.id}`}>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                aria-label="Imprimir Comprobante"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Imprimir Comprobante</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center">
-                    No hay cuotas disponibles
+                  <TableCell
+                    colSpan={5} // Esto asegura que la celda ocupe todas las columnas
+                    className=""
+                  >
+                    <p>No hay cuotas pagadas disponibles</p>
                   </TableCell>
                 </TableRow>
               )}
@@ -207,12 +257,47 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
       </Card>
     );
   }
+
+  const [filtro, setFiltro] = useState<string>("");
+
+  const filtrados = records?.filter((rec) => {
+    const lowerCaseFiltro = filtro.trim().toLocaleLowerCase();
+    return (
+      rec?.cliente?.nombre?.toLocaleLowerCase().includes(lowerCaseFiltro) ||
+      rec?.cliente?.telefono?.toLocaleLowerCase().includes(lowerCaseFiltro) ||
+      rec?.cliente?.direccion?.toLocaleLowerCase().includes(lowerCaseFiltro) ||
+      rec?.cliente?.dpi?.toLocaleLowerCase().includes(lowerCaseFiltro)
+    );
+  });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 25;
+  const totalPages = Math.ceil(filtrados.length / itemsPerPage);
+
+  // Calcular el índice del último elemento de la página actual
+  const indexOfLastItem = currentPage * itemsPerPage;
+  // Calcular el índice del primer elemento de la página actual
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  // Obtener los elementos de la página actual
+  const currentItems = filtrados.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Cambiar de página
+  const onPageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
-    <Card className="w-full">
+    <Card className="w-full ">
       <CardHeader>
         <CardTitle>Créditos</CardTitle>
       </CardHeader>
       <CardContent>
+        <Input
+          className="w-full my-5"
+          placeholder="Buscar por nombre, telefono, dirección, dpi"
+          onChange={(e) => setFiltro(e.target.value)}
+          value={filtro}
+        />
         <Table>
           <TableHeader>
             <TableRow>
@@ -228,83 +313,83 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {records.map((record) => (
-              <TableRow key={record.id}>
-                <TableCell>#{record.id}</TableCell>
-                <TableCell>{record.cliente.nombre}</TableCell>
-                <TableCell>
-                  {Intl.NumberFormat("es-GT", {
-                    style: "currency",
-                    currency: "GTQ",
-                  }).format(record.totalVenta)}
-                </TableCell>
+            {currentItems &&
+              currentItems.map((record) => (
+                <TableRow key={record.id}>
+                  <TableCell>#{record.id}</TableCell>
+                  <TableCell>{record.cliente.nombre}</TableCell>
+                  <TableCell>
+                    {Intl.NumberFormat("es-GT", {
+                      style: "currency",
+                      currency: "GTQ",
+                    }).format(record.totalVenta)}
+                  </TableCell>
 
-                <TableCell>
-                  {formatearMoneda(
-                    calcularMontoInteres(record.totalVenta, record.interes)
-                      .montoTotalConInteres
-                  )}
-                </TableCell>
+                  <TableCell>
+                    {formatearMoneda(
+                      calcularMontoInteres(record.totalVenta, record.interes)
+                        .montoTotalConInteres
+                    )}
+                  </TableCell>
 
-                <TableCell>
-                  {Intl.NumberFormat("es-GT", {
-                    style: "currency",
-                    currency: "GTQ",
-                  }).format(record.totalPagado)}
-                </TableCell>
+                  <TableCell>
+                    {Intl.NumberFormat("es-GT", {
+                      style: "currency",
+                      currency: "GTQ",
+                    }).format(record.totalPagado)}
+                  </TableCell>
 
-                <TableCell>
-                  {formatearMoneda(
-                    calcularMontoInteres(record.totalVenta, record.interes)
-                      .montoTotalConInteres - record.totalPagado
-                  )}
-                </TableCell>
+                  <TableCell>
+                    {formatearMoneda(
+                      record.montoTotalConInteres - record.totalPagado
+                    )}
+                  </TableCell>
 
-                <TableCell>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      record.estado === "ACTIVA"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {record.estado}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    className="flex justify-center items-center"
-                    variant={"outline"}
-                    onClick={() => setSelectedRecord(record)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </TableCell>
+                  <TableCell>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        record.estado === "ACTIVA"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {record.estado}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      className="flex justify-center items-center"
+                      variant={"outline"}
+                      onClick={() => setSelectedRecord(record)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
 
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {plantillas &&
-                        plantillas.map((plantilla) => (
-                          <Link
-                            to={`/imprimir/contrato/${record.id}/${plantilla.id}`}
-                          >
-                            <DropdownMenuItem key={plantilla.id}>
-                              <FileText className="mr-2 h-4 w-4" />
-                              Imprimir con: {plantilla.nombre}
-                            </DropdownMenuItem>
-                          </Link>
-                        ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {plantillas &&
+                          plantillas.map((plantilla) => (
+                            <Link
+                              to={`/imprimir/contrato/${record.id}/${plantilla.id}`}
+                            >
+                              <DropdownMenuItem key={plantilla.id}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                Imprimir con: {plantilla.nombre}
+                              </DropdownMenuItem>
+                            </Link>
+                          ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
       </CardContent>
@@ -313,13 +398,13 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
         open={!!selectedRecord}
         onOpenChange={(open) => !open && setSelectedRecord(null)}
       >
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-5xl">
           <DialogHeader>
             <DialogTitle>Más detalles del registro</DialogTitle>
           </DialogHeader>
           {selectedRecord && (
             <ScrollArea className="h-[85vh] pr-4">
-              <div className="grid grid-cols-2 gap-1">
+              <div className="grid grid-cols-2 gap-2">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center">
@@ -398,6 +483,26 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
                     </p>
 
                     <p>
+                      <strong>Por pagar:</strong>{" "}
+                      <span
+                        className={
+                          selectedRecord.totalPagado <
+                          calcularCuotas().montoTotalConInteres
+                            ? "text-red-500 font-bold"
+                            : "text-green-500 font-bold"
+                        }
+                      >
+                        {new Intl.NumberFormat("es-GT", {
+                          style: "currency",
+                          currency: "GTQ",
+                        }).format(
+                          selectedRecord.montoTotalConInteres -
+                            selectedRecord.totalPagado
+                        )}
+                      </span>
+                    </p>
+
+                    <p>
                       <strong>Interés Aplicado:</strong>{" "}
                       {selectedRecord.interes}%
                     </p>
@@ -432,16 +537,27 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ul className="list-disc pl-5">
+                    <ul className="list-disc pl-5 space-y-2">
                       {selectedRecord.productos.map((producto) => (
-                        <li key={producto.id}>
-                          {producto.producto.nombre} - ({"Código: "}
-                          {producto.producto.codigoProducto}) -{" "}
-                          {new Intl.NumberFormat("es-GT", {
-                            style: "currency",
-                            currency: "GTQ",
-                          }).format(producto.precioVenta)}
-                          {producto.cantidad}
+                        <li key={producto.id} className="text-sm">
+                          <div>
+                            <strong>Producto:</strong>{" "}
+                            {producto.producto.nombre}
+                          </div>
+                          <div>
+                            <strong>Código:</strong>{" "}
+                            {producto.producto.codigoProducto}
+                          </div>
+                          <div>
+                            <strong>Precio:</strong>{" "}
+                            {new Intl.NumberFormat("es-GT", {
+                              style: "currency",
+                              currency: "GTQ",
+                            }).format(producto.precioVenta)}
+                          </div>
+                          <div>
+                            <strong>Cantidad:</strong> {producto.cantidad}
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -516,9 +632,13 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
                 </CardHeader>
                 <CardContent>
                   <p>
-                    {selectedRecord.comentario
-                      ? selectedRecord.comentario
-                      : "No hay comentarios disponibles"}
+                    {selectedRecord.comentario ? (
+                      selectedRecord.comentario
+                    ) : (
+                      <p className="text-center">
+                        No hay comentarios disponibles
+                      </p>
+                    )}
                   </p>
                 </CardContent>
               </Card>
@@ -526,6 +646,90 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      <CardFooter className="w-full flex justify-center items-center">
+        <div className="flex items-center justify-center py-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <Button onClick={() => onPageChange(1)}>Primero</Button>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </PaginationPrevious>
+              </PaginationItem>
+
+              {/* Sistema de truncado */}
+              {currentPage > 3 && (
+                <>
+                  <PaginationItem>
+                    <PaginationLink onClick={() => onPageChange(1)}>
+                      1
+                    </PaginationLink>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <span className="text-muted-foreground">...</span>
+                  </PaginationItem>
+                </>
+              )}
+
+              {Array.from({ length: totalPages }, (_, index) => {
+                const page = index + 1;
+                if (
+                  page === currentPage ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <PaginationItem key={index}>
+                      <PaginationLink
+                        onClick={() => onPageChange(page)}
+                        isActive={page === currentPage}
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                }
+                return null;
+              })}
+
+              {currentPage < totalPages - 2 && (
+                <>
+                  <PaginationItem>
+                    <span className="text-muted-foreground">...</span>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationLink onClick={() => onPageChange(totalPages)}>
+                      {totalPages}
+                    </PaginationLink>
+                  </PaginationItem>
+                </>
+              )}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    onPageChange(Math.min(totalPages, currentPage + 1))
+                  }
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </PaginationNext>
+              </PaginationItem>
+              <PaginationItem>
+                <Button
+                  variant={"destructive"}
+                  onClick={() => onPageChange(totalPages)}
+                >
+                  Último
+                </Button>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      </CardFooter>
     </Card>
   );
 }

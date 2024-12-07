@@ -23,6 +23,7 @@ interface Cliente {
   nombre: string;
   telefono: string;
   direccion: string;
+  dpi: string;
 }
 
 interface Sucursal {
@@ -74,4 +75,5 @@ export interface CreditoRegistro {
   diasEntrePagos: number;
   interes: number;
   comentario: string;
+  montoTotalConInteres: number;
 }

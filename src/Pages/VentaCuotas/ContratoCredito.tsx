@@ -11,11 +11,6 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 
 dayjs.extend(localizedFormat);
 dayjs.locale("es");
-type Testigo = {
-  nombre: string;
-  direccion: string;
-  telefono: string;
-};
 
 type Producto = {
   id: number;
@@ -45,32 +40,36 @@ type Usuario = {
 type Cliente = {
   id: number;
   nombre: string;
+  telefono: string;
+  direccion: string;
+  dpi: string;
+};
+
+type Testigo = {
+  nombre: string;
+  telefono: string;
+  direccion: string;
 };
 
 type VentaCuota = {
-  id: number;
-  clienteId: number;
-  usuarioId: number;
-  sucursalId: number;
-  totalVenta: number;
-  cuotaInicial: number;
-  cuotasTotales: number;
-  fechaInicio: string;
-  estado: "ACTIVA" | "COMPLETADA" | "CANCELADA";
-  creadoEn: string;
-  actualizadoEn: string;
-  dpi: string;
-  testigos: Testigo[];
-  fechaContrato: string;
-  montoVenta: number;
-  garantiaMeses: number;
-  cliente: Cliente;
-  productos: Producto[];
-  sucursal: Sucursal;
-  usuario: Usuario;
-  diasEntrePagos: number;
-  interes: number;
+  id: number; // Código único del contrato
+  fechaContrato: string; // Fecha del contrato
+  cliente: Cliente; // Información del cliente
+  usuario: Usuario; // Información del vendedor
+  testigos: Testigo[]; // Lista de testigos
+  sucursal: Sucursal; // Información de la sucursal
+  productos: Producto[]; // Lista de productos vendidos
+  montoVenta: number; // Monto total de la venta
+  cuotaInicial: number; // Pago inicial
+  cuotasTotales: number; // Número total de cuotas
+  garantiaMeses: number; // Meses de garantía
+  dpi: string; // DPI del cliente (puede ser vacío)
+  diasEntrePagos: number; // Días entre cada cuota
+  interes: number; // Interés aplicado
+  totalVenta: number; // Monto total de la venta con intereses
 };
+
+//------------
 
 function ContratoCredito() {
   const { recordId, plantillaId } = useParams();
@@ -123,7 +122,6 @@ function ContratoCredito() {
     garantiaMeses, // Meses de garantía
     dpi, // DPI del cliente
     diasEntrePagos,
-
     interes,
     totalVenta,
   } = cuota;

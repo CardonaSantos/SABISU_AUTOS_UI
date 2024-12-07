@@ -5,14 +5,15 @@ interface ProtectedRouteProps {
   children: ReactNode;
 }
 
-export function ProtectRouteAdmin({ children }: ProtectedRouteProps) {
+export function ProtectRSuperAdmin({ children }: ProtectedRouteProps) {
   const isAuth = localStorage.getItem("authTokenPos");
+
   const userRol = useStore((state) => state.userRol);
 
   if (!isAuth || !userRol) return <Navigate to="/dashboard" />;
 
-  if (userRol !== "ADMIN") {
-    return <Navigate to="/dashboard-empleado" />;
+  if (userRol !== "SUPER_ADMIN") {
+    return <Navigate to="/dashboard" />;
   }
 
   return children;

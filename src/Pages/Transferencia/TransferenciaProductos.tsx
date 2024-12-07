@@ -278,6 +278,7 @@ export default function TransferenciaProductos() {
         <div className="space-y-2">
           <Label htmlFor="producto-select">Seleccionar Producto</Label>
           <SelectComponent
+            className="text-black"
             isClearable={true}
             id="producto-select"
             options={productosOptions}
@@ -335,6 +336,7 @@ export default function TransferenciaProductos() {
         <div className="space-y-2">
           <Label htmlFor="sucursal-select">Seleccionar Sucursal</Label>
           <SelectComponent
+            className="text-black"
             isClearable={true}
             id="sucursal-select"
             options={sucursalesOptions}

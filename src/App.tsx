@@ -47,6 +47,14 @@ import CreatePlaceholder from "./Pages/VentaCuotas/CreatePlaceholder";
 import CreateVentaCuotaForm from "./Pages/VentaCuotas/CreateVentaCuotas";
 import ContratoCredito from "./Pages/VentaCuotas/ContratoCredito";
 import EditPlaceHolder from "./Pages/VentaCuotas/EditPlaceHolder";
+import CuotasPage from "./components/PDF/Cuotas/CuotasPage";
+import { ProtectRSuperAdmin } from "./components/Auth/ProtectedRSuperAdmin";
+import { ProtectRouteAdmin } from "./components/Auth/ProtectRouteAdmin";
+import DashboardEmpleado from "./Pages/Dashboard/DashboardEmpleado";
+import RepairOrderForm from "./Pages/Reparaciones/RepairOrder";
+import ReparacionPage1 from "./components/PDF/ReparacionesPDF/ReparacionPage1";
+import ReparacionPdfPageFinal from "./components/PDF/ReparacionesPDF/ReparacionPdfPageFinal";
+// import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
   return (
@@ -63,24 +71,37 @@ function App() {
 
         <Routes>
           {/* Redirecciona a dashboard */}
-          <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route
+            path="/"
+            element={
+              <ProtectRouteAdmin>
+                <Navigate to="/dashboard" />
+              </ProtectRouteAdmin>
+            }
+          />
+
+          {/* <Route path="/" element={<RedirectToDashboard />} /> */}
 
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<RegisterView />} />
-
           <Route path="*" element={<NotFoundPage />} />
-
-          {/* Rutas no protegidas */}
-          {/* <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<CreateUser />} /> */}
 
           {/* Rutas protegidas con Layout */}
           <Route element={<Layout2 />}>
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <Dashboard />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/dashboard-empleado"
+              element={
+                <ProtectedRoute>
+                  <DashboardEmpleado />
                 </ProtectedRoute>
               }
             />
@@ -106,9 +127,9 @@ function App() {
             <Route
               path="/add-sucursal"
               element={
-                // <ProtectedRoute>
-                <CreateSucursal />
-                // </ProtectedRoute>
+                <ProtectRSuperAdmin>
+                  <CreateSucursal />
+                </ProtectRSuperAdmin>
               }
             />
 
@@ -124,18 +145,18 @@ function App() {
             <Route
               path="/agregar-proveedor"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <AgregarProveedor />
-                </ProtectedRoute>
+                </ProtectRouteAdmin>
               }
             />
 
             <Route
               path="/categorias"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <CreateCategory />
-                </ProtectedRoute>
+                </ProtectRouteAdmin>
               }
             />
 
@@ -151,18 +172,18 @@ function App() {
             <Route
               path="/reportes"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <Reportes />
-                </ProtectedRoute>
+                </ProtectRouteAdmin>
               }
             />
 
             <Route
               path="/entregas-stock"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <EntregasStock />
-                </ProtectedRoute>
+                </ProtectRouteAdmin>
               }
             />
 
@@ -187,36 +208,36 @@ function App() {
             <Route
               path="/editar-producto/:id"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <ProductEditForm />
-                </ProtectedRoute>
+                </ProtectRouteAdmin>
               }
             />
 
             <Route
               path="/sucursal"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <Sucursales />
-                </ProtectedRoute>
+                </ProtectRouteAdmin>
               }
             />
 
             <Route
               path="/transferencia"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <TransferenciaProductos />
-                </ProtectedRoute>
+                </ProtectRouteAdmin>
               }
             />
 
             <Route
               path="/transferencia-historial"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <TransferenciaProductosHistorial />
-                </ProtectedRoute>
+                </ProtectRouteAdmin>
               }
             />
 
@@ -232,9 +253,9 @@ function App() {
             <Route
               path="/stock-edicion/:id"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <StockEdicion />
-                </ProtectedRoute>
+                </ProtectRouteAdmin>
               }
             />
 
@@ -277,18 +298,9 @@ function App() {
             <Route
               path="/ticket/manage"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <TicketManage />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/ticket/manage"
-              element={
-                <ProtectedRoute>
-                  <TicketManage />
-                </ProtectedRoute>
+                </ProtectRouteAdmin>
               }
             />
 
@@ -340,27 +352,27 @@ function App() {
             <Route
               path="/registros-caja"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <CashRegisters />
-                </ProtectedRoute>
+                </ProtectRouteAdmin>
               }
             />
 
             <Route
               path="/historial/depositos-egresos"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <BalanceSucursal />
-                </ProtectedRoute>
+                </ProtectRouteAdmin>
               }
             />
 
             <Route
               path="/config/user"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <UserConfig />
-                </ProtectedRoute>
+                </ProtectRouteAdmin>
               }
             />
 
@@ -385,9 +397,9 @@ function App() {
             <Route
               path="/plantillas-venta-cuotas"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <CreatePlaceholder />
-                </ProtectedRoute>
+                </ProtectRouteAdmin>
               }
             />
 
@@ -412,8 +424,44 @@ function App() {
             <Route
               path="/edit/plantilla/:id"
               element={
-                <ProtectedRoute>
+                <ProtectRouteAdmin>
                   <EditPlaceHolder />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/cuota/comprobante/:id"
+              element={
+                <ProtectedRoute>
+                  <CuotasPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/reparaciones"
+              element={
+                <ProtectedRoute>
+                  <RepairOrderForm />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/reparacion-comprobante/:id"
+              element={
+                <ProtectedRoute>
+                  <ReparacionPage1 />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/reparacion-comprobante-final/:id"
+              element={
+                <ProtectedRoute>
+                  <ReparacionPdfPageFinal />
                 </ProtectedRoute>
               }
             />

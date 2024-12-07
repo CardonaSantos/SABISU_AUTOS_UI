@@ -10,7 +10,7 @@ interface Sucursal {
   nombre: string;
   direccion: string;
   id: number;
-  pxb: number;
+  pbx: number;
   telefono: number;
 }
 

@@ -132,7 +132,7 @@ const Factura: React.FC<VentaProps> = ({ venta }) => {
             {venta?.sucursal.telefono ?? venta?.sucursal.telefono ?? null}
           </Text>
           <Text style={styles.addressTitle}>
-            PBX: {venta?.sucursal?.pxb ?? venta?.sucursal.pxb ?? "22968040"}
+            PBX: {venta?.sucursal?.pbx ?? venta?.sucursal.pbx ?? "N/A"}
           </Text>
         </View>
       </View>

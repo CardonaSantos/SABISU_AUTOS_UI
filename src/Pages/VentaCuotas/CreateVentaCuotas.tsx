@@ -172,7 +172,9 @@ export default function CreateVentaCuotaForm() {
         clienteId: Number(formData.clienteId),
         usuarioId: Number(formData.usuarioId),
         sucursalId: Number(formData.sucursalId),
-        totalVenta: Number(totalVentaCrédito),
+        // totalVenta: Number(totalVentaCrédito),
+        totalVenta: Number(formData.cuotaInicial), //INTENTANDO QUE LA VENTA, SEA EL TOTAL DE LA CUOTA INICIAL
+
         cuotaInicial: Number(formData.cuotaInicial),
         cuotasTotales: Number(formData.cuotasTotales),
         montoVenta: Number(totalVentaCrédito),
@@ -188,7 +190,9 @@ export default function CreateVentaCuotaForm() {
         clienteId: Number(formData.clienteId),
         usuarioId: Number(userId),
         sucursalId: Number(sucursalId),
-        totalVenta: Number(totalVentaCrédito),
+        // totalVenta: Number(totalVentaCrédito),
+        totalVenta: Number(formData.cuotaInicial),
+        montoTotalConInteres: montoTotalConInteres,
         cuotaInicial: Number(formData.cuotaInicial),
         cuotasTotales: Number(formData.cuotasTotales),
         montoVenta: Number(totalVentaCrédito),
@@ -198,7 +202,7 @@ export default function CreateVentaCuotaForm() {
       });
 
       if (response.status === 201) {
-        toast.success("La venta a cuota se ha registrado exitosamente.");
+        toast.success("Se ha registrado correctament el crédito.");
         // Reset form
         setFormData({
           clienteId: 0,
@@ -220,11 +224,14 @@ export default function CreateVentaCuotaForm() {
         });
         setCustomerSelected(null);
         setOpenCreate(false);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       }
     } catch (error) {
       console.error("Error al crear la venta a cuota:", error);
-      toast.success(
-        "Hubo un problema al crear la venta a cuota. Por favor, intente de nuevo."
+      toast.info(
+        "No se pudo registrar el crédito. Verifique la disponibilidad de los productos, los datos ingresados y vuelva a intentarlo."
       );
     } finally {
       setIsLoading(false);
@@ -626,18 +633,6 @@ export default function CreateVentaCuotaForm() {
                     onChange={handleChangeSelectCustomer}
                     isClearable={true}
                     className="text-black"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="dpi">DPI</Label>
-                  <Input
-                    id="dpi"
-                    name="dpi"
-                    type="text"
-                    required
-                    value={formData.dpi}
-                    onChange={handleInputChange}
                   />
                 </div>
 

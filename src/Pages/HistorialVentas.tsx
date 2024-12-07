@@ -5,7 +5,6 @@ import {
   Eye,
   FileSpreadsheet,
   FileText,
-  Ticket,
   Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -205,7 +204,7 @@ export default function HistorialVentas() {
           <h3 className="font-semibold">Método de Pago</h3>
           <p>Tipo: {venta.metodoPago.metodoPago}</p>
           <p>
-            Monto total:{" "}
+            Monto total pagado:{" "}
             {new Intl.NumberFormat("es-GT", {
               style: "currency",
               currency: "GTQ",
@@ -388,10 +387,11 @@ export default function HistorialVentas() {
                   <TableHead>Fecha</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead>Acciones</TableHead>
-                  <TableHead>Ticket</TableHead>
+                  <TableHead>Impresiones</TableHead>
                   <TableHead>Eliminar</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
                 {currentItems.map((venta) => (
                   <TableRow key={venta.id}>
@@ -410,11 +410,17 @@ export default function HistorialVentas() {
                         currency: "GTQ",
                       }).format(venta.totalVenta)}
                     </TableCell>
+
+                    {/* Acciones de venta */}
                     <TableCell>
                       <div className="flex space-x-2">
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="outline" size="icon">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              aria-label="Ver detalles de venta"
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
@@ -422,12 +428,40 @@ export default function HistorialVentas() {
                             <DetallesVenta venta={venta} />
                           </DialogContent>
                         </Dialog>
+                      </div>
+                    </TableCell>
 
+                    {/* Botones de impresión */}
+                    <TableCell>
+                      <div className="flex space-x-2">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Link to={`/venta/generar-factura/${venta.id}`}>
-                                <Button variant="outline" size="icon">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  aria-label="Imprimir Comprobante"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Imprimir Comprobante</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        {/* <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Link to={`/ticket-garantia/${venta.id}`}>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  aria-label="Imprimir Ticket Garantía"
+                                >
                                   <FileText className="h-4 w-4" />
                                 </Button>
                               </Link>
@@ -436,7 +470,7 @@ export default function HistorialVentas() {
                               <p>Imprimir Ticket Garantía</p>
                             </TooltipContent>
                           </Tooltip>
-                        </TooltipProvider>
+                        </TooltipProvider> */}
 
                         <TooltipProvider>
                           <Tooltip>
@@ -444,7 +478,11 @@ export default function HistorialVentas() {
                               <Link
                                 to={`/garantía/generar-garantía/${venta.id}`}
                               >
-                                <Button variant="outline" size="icon">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  aria-label="Imprimir Garantía"
+                                >
                                   <FileSpreadsheet className="h-4 w-4" />
                                 </Button>
                               </Link>
@@ -456,33 +494,16 @@ export default function HistorialVentas() {
                         </TooltipProvider>
                       </div>
                     </TableCell>
+
+                    {/* Eliminar registro */}
                     <TableCell>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger>
-                            <Link to={`/ticket/generar-ticket/${venta.id}`}>
-                              <Button variant="outline" size="icon">
-                                <Ticket className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Imprimir Ticket</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-                    {/* COMETARIO SEPARADOR DE ELIMINACIOND DE REGISTRO */}
-                    <TableCell>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            {/* <Link to={`/ticket/generar-ticket/${venta.id}`}> */}
                             <Button
                               onClick={() => {
                                 setVentaEliminar((datosPrevios) => ({
                                   ...datosPrevios,
-                                  // motivo: "Venta eliminada por prueba",
                                   usuarioId: userId,
                                   ventaId: venta.id,
                                   clienteId: Number(venta.cliente?.id),
@@ -491,17 +512,16 @@ export default function HistorialVentas() {
                                     precioVenta: prod.precioVenta,
                                     productoId: prod.productoId, // Corrección aquí
                                   })),
-
                                   totalVenta: venta.totalVenta,
                                 }));
                                 setIsOpenDelete(true);
                               }}
                               variant="outline"
                               size="icon"
+                              aria-label="Eliminar Venta"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                            {/* </Link> */}
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>Eliminar Registro</p>
