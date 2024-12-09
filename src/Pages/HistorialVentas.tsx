@@ -5,6 +5,7 @@ import {
   Eye,
   FileSpreadsheet,
   FileText,
+  Ticket,
   Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -388,6 +389,8 @@ export default function HistorialVentas() {
                   <TableHead>Total</TableHead>
                   <TableHead>Acciones</TableHead>
                   <TableHead>Impresiones</TableHead>
+                  <TableHead>Ticket</TableHead>
+
                   <TableHead>Eliminar</TableHead>
                 </TableRow>
               </TableHeader>
@@ -492,8 +495,33 @@ export default function HistorialVentas() {
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
+
+                        {/* GENERAR EL TICKET */}
                       </div>
                     </TableCell>
+
+                    <TableCell className="flex justify-center items-center">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Link to={`/ticket/generar-ticket/${venta.id}`}>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                aria-label="Imprimir Garantía"
+                              >
+                                <Ticket className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Generar Ticket</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+
+                    {/* GENERAR EL TICKER */}
 
                     {/* Eliminar registro */}
                     <TableCell>
