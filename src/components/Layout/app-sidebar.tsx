@@ -12,6 +12,7 @@ import {
   CreditCard,
   WrenchIcon,
   ChevronDown,
+  PackageOpen,
 } from "lucide-react";
 
 import {
@@ -238,6 +239,8 @@ const menuItemsAdmin = [
     icon: Package,
     label: "Inventario y Stock",
     submenu: [
+      { icon: PackageOpen, label: "Inventario", href: "/inventario" },
+
       { icon: Box, label: "Añadir Stock", href: "/adicion-stock" },
       {
         icon: NotepadText,
