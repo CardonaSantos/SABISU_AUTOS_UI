@@ -721,10 +721,6 @@ export default function Dashboard() {
             </p>
           </Link>
 
-          {/* <p className="text-sm">
-            Fechas de pago: <strong>{cuotasFechas.join(", ")}</strong>
-          </p> */}
-
           <Badge className="mt-2">{ventaCuota.estado}</Badge>
           {isExpanded && (
             <div className="mt-4 space-y-2">

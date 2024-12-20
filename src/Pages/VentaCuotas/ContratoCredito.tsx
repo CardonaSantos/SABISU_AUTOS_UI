@@ -67,6 +67,8 @@ type VentaCuota = {
   diasEntrePagos: number; // Días entre cada cuota
   interes: number; // Interés aplicado
   totalVenta: number; // Monto total de la venta con intereses
+  montoTotalConInteres: number;
+  totalPagado: number;
 };
 
 //------------
@@ -123,7 +125,8 @@ function ContratoCredito() {
     dpi, // DPI del cliente
     diasEntrePagos,
     interes,
-    totalVenta,
+    montoTotalConInteres,
+    totalPagado,
   } = cuota;
 
   let diaInicio = dayjs(fechaContrato);
@@ -167,23 +170,6 @@ function ContratoCredito() {
     nombre: sucursal.nombre, // Nombre de la sucursal
     direccion: sucursal.direccion, // Dirección de la sucursal
   };
-  // Cálculo de cuota mensual
-  const calcularCuotas = () => {
-    const montoInteres = totalVenta * (interes / 100);
-    // Total con interés
-    const montoTotalConInteres = totalVenta + montoInteres;
-    // Saldo restante después del enganche
-    const saldoRestante = montoTotalConInteres - cuotaInicial;
-    // Pago por cuota
-    const pagoPorCuota = saldoRestante / cuotasTotales;
-
-    return {
-      saldoRestante,
-      montoInteres,
-      montoTotalConInteres,
-      pagoPorCuota,
-    };
-  };
 
   function formatearMoneda(cantidad: number) {
     return new Intl.NumberFormat("es-GT", {
@@ -191,7 +177,15 @@ function ContratoCredito() {
       currency: "GTQ",
     }).format(cantidad);
   }
+  const calcularDetallesCredito = () => {
+    // const saldoRestante = montoTotalConInteres - totalPagado;
+    const montoPorCuota = (montoTotalConInteres - cuotaInicial) / cuotasTotales;
 
+    return {
+      montoPorCuota,
+    };
+  };
+  const { montoPorCuota } = calcularDetallesCredito();
   // Datos listos para la plantilla Handlebars
   const data = {
     id, // Código del contrato
@@ -207,19 +201,39 @@ function ContratoCredito() {
     interes,
     cuotaInicial: formatearMoneda(cuotaInicial),
     cuotasTotales,
-    cuotaMensual: formatearMoneda(calcularCuotas().pagoPorCuota),
+    cuotaMensual: formatearMoneda(montoPorCuota),
     garantiaMeses,
     testigos: testigosData,
     cuotasFechas: cuotasFechas,
+    montoTotalConInteres,
+    totalPagado,
+    montoPorCuota: montoPorCuota,
   };
-
   // Generar el HTML usando Handlebars
   const htmlOutput = template(data);
 
   // Función para generar el PDF usando html2pdf.js
   const generarPDF = () => {
+    // Incluir los estilos usados en el editor enriquecido
     const element = document.createElement("div");
-    element.innerHTML = htmlOutput; // Usamos el HTML generado por Handlebars
+    element.innerHTML = `
+      <style>
+        /* Estilos personalizados usados en el editor enriquecido */
+        .ql-align-justify {
+          text-align: justify;
+        }
+        .ql-align-center {
+          text-align: center;
+        }
+        .ql-align-right {
+          text-align: right;
+        }
+        p {
+          margin: 0; /* Asegurarte de que no haya márgenes extraños */
+        }
+      </style>
+      ${htmlOutput} <!-- Usamos el HTML generado por Handlebars -->
+    `;
 
     const options = {
       margin: [15, 15, 15, 15],
@@ -228,14 +242,12 @@ function ContratoCredito() {
         scale: 3,
         logging: true,
         useCORS: true,
-        letterRendering: true, // Habilitar el renderizado de letras
-        x: 0,
-        y: 0,
+        letterRendering: true, // Mejor renderizado de texto
       },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
     };
 
-    // Convertir el contenido HTML a PDF
+    // Generar el PDF
     html2pdf()
       .from(element)
       .set(options)
