@@ -87,6 +87,11 @@ function CreateCategory() {
 
   const updateCategory = async () => {
     try {
+      if (!editCategory.nombre) {
+        toast.info("El nombre no debe estár vacío");
+        return;
+      }
+
       const response = await axios.patch(
         `${API_URL}/categoria/edit-category/${editCategory.id}`,
         editCategory
@@ -105,7 +110,7 @@ function CreateCategory() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-transparent flex flex-col items-center justify-center p-6">
-      <Card className="w-full max-w-2xl mx-auto shadow-xl rounded-lg overflow-hidden">
+      <Card className="w-full max-w-5xl mx-auto shadow-xl rounded-lg overflow-hidden">
         <CardHeader className="bg-primary text-primary-foreground p-6">
           <CardTitle className="text-2xl font-bold text-center">
             Gestión de Categorías
@@ -165,8 +170,10 @@ function CreateCategory() {
                               </DialogTrigger>
                               <DialogContent>
                                 <DialogHeader>
-                                  <DialogTitle>Editar Categoría</DialogTitle>
-                                  <DialogDescription>
+                                  <DialogTitle className="text-center">
+                                    Editar Categoría
+                                  </DialogTitle>
+                                  <DialogDescription className="text-center">
                                     Esto afectará todos los productos donde fue
                                     referenciado
                                   </DialogDescription>
@@ -205,18 +212,28 @@ function CreateCategory() {
                               </DialogTrigger>
                               <DialogContent>
                                 <DialogHeader>
-                                  <DialogTitle>Eliminar Categoría</DialogTitle>
-                                  <DialogDescription>
+                                  <DialogTitle className="text-center">
+                                    Eliminar Categoría
+                                  </DialogTitle>
+                                  <DialogDescription className="text-center">
                                     Al eliminar esta categoría, desaparecerá de
                                     todas las referencias a productos donde fue
-                                    referenciada. ¿Estás seguro?
+                                    referenciada.
                                   </DialogDescription>
+                                  <DialogDescription className="text-center">
+                                    ¿Estás seguro?
+                                  </DialogDescription>{" "}
                                 </DialogHeader>
-                                <div className="flex justify-end space-x-2 py-4">
-                                  <Button variant="outline" onClick={() => {}}>
+                                <div className="flex space-x-2 py-4">
+                                  <Button
+                                    className="w-full"
+                                    variant="outline"
+                                    onClick={() => {}}
+                                  >
                                     Cancelar
                                   </Button>
                                   <Button
+                                    className="w-full"
                                     onClick={handleDeleteCategory}
                                     variant="destructive"
                                   >

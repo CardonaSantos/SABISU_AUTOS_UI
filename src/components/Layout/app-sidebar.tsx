@@ -13,6 +13,7 @@ import {
   WrenchIcon,
   ChevronDown,
   PackageOpen,
+  Tag,
 } from "lucide-react";
 
 import {
@@ -255,6 +256,8 @@ const menuItemsAdmin = [
       { icon: NotebookIcon, label: "Entregas Stock", href: "/entregas-stock" },
     ],
   },
+
+  { icon: Tag, label: "Categorías", href: "/categorias" },
 
   // Vencimientos
   { icon: AlertCircle, label: "Vencimientos", href: "/vencimientos" },

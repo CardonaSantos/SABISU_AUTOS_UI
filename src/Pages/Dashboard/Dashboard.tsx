@@ -248,6 +248,8 @@ export default function Dashboard() {
     }
   };
 
+  console.log("LAS VENTAS DEL DÍA SON: ", ventasDia);
+
   console.log("Las ventas semanales del chart son: ", ventasSemanalChart);
   console.log("Mas vendidos: ", masVendidos);
 
