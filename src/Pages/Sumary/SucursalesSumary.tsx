@@ -172,8 +172,8 @@ function SucursalesSummary() {
                           Ventas del Mes
                         </span>
                         <span className="font-semibold">
-                          {suc.ventasMes
-                            ? suc.ventasMes.toLocaleString("es-GT", {
+                          {suc.ventasSemana
+                            ? suc.ventasSemana.toLocaleString("es-GT", {
                                 style: "currency",
                                 currency: "GTQ",
                               })
@@ -186,8 +186,8 @@ function SucursalesSummary() {
                           Ventas de la Semana
                         </span>
                         <span className="font-semibold">
-                          {suc.ventasSemana
-                            ? suc.ventasSemana.toLocaleString("es-GT", {
+                          {suc.ventasMes
+                            ? suc.ventasMes.toLocaleString("es-GT", {
                                 style: "currency",
                                 currency: "GTQ",
                               })
@@ -210,52 +210,6 @@ function SucursalesSummary() {
                       </div>
                     </div>
                   </TabsContent>
-                  {/* <TabsContent value="ventas">
-                    <div className="mt-4 space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="flex items-center">
-                          <Calendar className="mr-2 text-purple-500" />
-                          Ventas del Mes
-                        </span>
-                        <span className="font-semibold">
-                          {suc.ventasMes
-                            ? suc.ventasMes.toLocaleString("es-GT", {
-                                style: "currency",
-                                currency: "GTQ",
-                              })
-                            : "Q0"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="flex items-center">
-                          <BarChart3 className="mr-2 text-indigo-500" />
-                          Ventas de la Semana
-                        </span>
-                        <span className="font-semibold">
-                          {suc.ventasSemana
-                            ? suc.ventasSemana.toLocaleString("es-GT", {
-                                style: "currency",
-                                currency: "GTQ",
-                              })
-                            : "Q0"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="flex items-center">
-                          <DollarSign className="mr-2 text-green-500" />
-                          Ventas del Día
-                        </span>
-                        <span className="font-semibold">
-                          {suc.ventasDia?.totalDeHoy
-                            ? suc.ventasDia.totalDeHoy.toLocaleString("es-GT", {
-                                style: "currency",
-                                currency: "GTQ",
-                              })
-                            : "Q0"}
-                        </span>
-                      </div>
-                    </div>
-                  </TabsContent> */}
                 </Tabs>
               </div>
             </CardContent>
