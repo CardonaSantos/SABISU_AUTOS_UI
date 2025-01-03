@@ -54,6 +54,7 @@ import DashboardEmpleado from "./Pages/Dashboard/DashboardEmpleado";
 import RepairOrderForm from "./Pages/Reparaciones/RepairOrder";
 import ReparacionPage1 from "./components/PDF/ReparacionesPDF/ReparacionPage1";
 import ReparacionPdfPageFinal from "./components/PDF/ReparacionesPDF/ReparacionPdfPageFinal";
+import SucursalesSumary from "./Pages/Sumary/SucursalesSumary";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
@@ -463,6 +464,15 @@ function App() {
                 <ProtectedRoute>
                   <ReparacionPdfPageFinal />
                 </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/sumary"
+              element={
+                <ProtectRouteAdmin>
+                  <SucursalesSumary />
+                </ProtectRouteAdmin>
               }
             />
           </Route>

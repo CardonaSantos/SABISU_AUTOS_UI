@@ -216,6 +216,11 @@ export default function HistorialVentas() {
     </Card>
   );
 
+  console.log(
+    "Las fechas de las ventas son: ",
+    ventas.map((venta) => venta.fechaVenta)
+  );
+
   const filter = ventas
     .filter((venta) => {
       // Convertir la fecha de la venta a formato sin hora

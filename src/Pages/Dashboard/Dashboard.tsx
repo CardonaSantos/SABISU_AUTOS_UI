@@ -195,9 +195,15 @@ export default function Dashboard() {
     };
   }
 
+  interface dailyMoney {
+    totalDeHoy: number;
+  }
+
   const [ventasMes, setVentasMes] = useState(0);
   const [ventasSemana, setVentasSemana] = useState(0);
-  const [ventasDia, setVentasDia] = useState(0);
+  const [ventasDia, setVentasDia] = useState<dailyMoney>({
+    totalDeHoy: 0,
+  });
   const [ventasSemanalChart, setVentasSemanalChart] = useState<
     VentasSemanalChart[]
   >([]);
@@ -212,15 +218,18 @@ export default function Dashboard() {
       // Realiza las tres peticiones en paralelo
       const [
         ventasMes,
-        ventasDia,
         ventasSemana,
+        ventasDia,
         ventasSemanalChart,
         productoMasVendidos,
         transaccionesRecientesR,
       ] = await Promise.all([
         axios.get(`${API_URL}/analytics/get-ventas/mes/${sucursalId}`),
-        axios.get(`${API_URL}/analytics/get-ventas/dia/${sucursalId}`),
         axios.get(`${API_URL}/analytics/get-ventas/semana/${sucursalId}`),
+        axios.get(`${API_URL}/analytics/venta-dia/${sucursalId}`),
+
+        // {API_URL}/analytics/venta-dia/${suc.id}
+
         axios.get(
           `${API_URL}/analytics/get-ventas/semanal-chart/${sucursalId}`
         ),
@@ -231,7 +240,7 @@ export default function Dashboard() {
 
       // Accede a los datos de cada respuesta
       console.log("Ventas del mes:", ventasMes.data);
-      console.log("Ventas del día:", ventasDia.data);
+      console.log("Ventas del díaXXXXXXXXXXXXXXXXXXX:", ventasDia.data);
       console.log("Ventas de la semana:", ventasSemana.data);
 
       // Si necesitas combinar la información de alguna manera, puedes hacerlo aquí
@@ -1409,10 +1418,14 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Intl.NumberFormat("es-GT", {
-                style: "currency",
-                currency: "GTQ",
-              }).format(ventasDia)}
+              {ventasDia &&
+              typeof ventasDia.totalDeHoy === "number" &&
+              !isNaN(ventasDia.totalDeHoy)
+                ? new Intl.NumberFormat("es-GT", {
+                    style: "currency",
+                    currency: "GTQ",
+                  }).format(ventasDia.totalDeHoy)
+                : "Sin ventas aún"}
             </div>
           </CardContent>
         </Card>

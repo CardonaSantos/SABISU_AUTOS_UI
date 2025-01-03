@@ -14,6 +14,7 @@ import {
   ChevronDown,
   PackageOpen,
   Tag,
+  Building2,
 } from "lucide-react";
 
 import {
@@ -356,6 +357,8 @@ const menuItemsAdmin = [
   // Créditos
   { icon: CreditCard, label: "Créditos", href: "/creditos" },
   { icon: WrenchIcon, label: "Reparaciones", href: "/reparaciones" },
+
+  { icon: Building2, label: "Resumen sucursales", href: "/sumary" },
 
   { icon: Bolt, label: "Config", href: "/config/user" },
 ];
