@@ -15,6 +15,7 @@ import {
   PackageOpen,
   Tag,
   Building2,
+  FileSpreadsheet,
 } from "lucide-react";
 
 import {
@@ -359,6 +360,7 @@ const menuItemsAdmin = [
   { icon: WrenchIcon, label: "Reparaciones", href: "/reparaciones" },
 
   { icon: Building2, label: "Resumen sucursales", href: "/sumary" },
+  { icon: FileSpreadsheet, label: "Reportes", href: "/reportes" },
 
   { icon: Bolt, label: "Config", href: "/config/user" },
 ];

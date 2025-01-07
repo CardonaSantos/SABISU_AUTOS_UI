@@ -8,7 +8,7 @@ import { Toaster } from "sonner";
 import Dashboard from "./Pages/Dashboard/Dashboard";
 import PuntoVenta from "./Pages/PuntoVenta";
 import Inventario from "./Pages/Inventario";
-import Reportes from "./Pages/Reports/Reportes";
+// import Reportes from "./Pages/Reports/Reportes";
 import EntregasStock from "./Pages/EntregasStock";
 import Vencimientos from "./Pages/Vencimientos";
 import HistorialVentas from "./Pages/HistorialVentas";
@@ -55,6 +55,7 @@ import RepairOrderForm from "./Pages/Reparaciones/RepairOrder";
 import ReparacionPage1 from "./components/PDF/ReparacionesPDF/ReparacionPage1";
 import ReparacionPdfPageFinal from "./components/PDF/ReparacionesPDF/ReparacionPdfPageFinal";
 import SucursalesSumary from "./Pages/Sumary/SucursalesSumary";
+import VentasReport from "./Pages/Reports/Ventas/VentasReport";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
@@ -174,7 +175,7 @@ function App() {
               path="/reportes"
               element={
                 <ProtectRouteAdmin>
-                  <Reportes />
+                  <VentasReport />
                 </ProtectRouteAdmin>
               }
             />
