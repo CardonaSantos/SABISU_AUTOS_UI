@@ -258,6 +258,8 @@ export default function PuntoVenta() {
     }
   };
 
+  console.log("El metodo de pago seleccionado es: ", paymentMethod);
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const [productos, setProductos] = useState<ProductosResponse[]>([]);

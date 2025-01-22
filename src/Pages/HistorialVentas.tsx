@@ -124,29 +124,37 @@ export default function HistorialVentas() {
 
   const DetallesVenta = ({ venta }: { venta: Venta }) => (
     <Card className="w-full shadow-xl">
-      {" "}
-      {/* Cambia max-w-3xl a w-full */}
       <CardHeader>
-        <CardTitle>Detalles de la Venta #{venta.id}</CardTitle>
+        <CardTitle>Detalles de la Venta #{venta?.id || "N/A"}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <h3 className="font-semibold">Información de la Venta</h3>
-            <p>Fecha: {formatearFecha(venta.fechaVenta)}</p>
-            <p>Hora: {new Date(venta.horaVenta).toLocaleTimeString()}</p>
+            <p>
+              Fecha:{" "}
+              {venta?.fechaVenta ? formatearFecha(venta.fechaVenta) : "N/A"}
+            </p>
+            <p>
+              Hora:{" "}
+              {venta?.horaVenta
+                ? new Date(venta.horaVenta).toLocaleTimeString()
+                : "N/A"}
+            </p>
             <p>
               Cantidad:{" "}
-              {venta.productos.reduce(
-                (total, producto) => total + producto.cantidad,
-                0
-              )}{" "}
-              unidades de {venta.productos.length} Productos
+              {venta?.productos
+                ? venta.productos.reduce(
+                    (total, producto) => total + producto.cantidad,
+                    0
+                  )
+                : "N/A"}{" "}
+              unidades de {venta?.productos?.length || "0"} Productos
             </p>
           </div>
           <div>
             <h3 className="font-semibold">Cliente</h3>
-            {venta.cliente ? (
+            {venta?.cliente ? (
               <>
                 <p>Nombre: {venta.cliente.nombre || "N/A"}</p>
                 {/* <p>Correo: {venta.cliente.correo || "N/A"}</p> */}
@@ -156,9 +164,9 @@ export default function HistorialVentas() {
               </>
             ) : (
               <>
-                <p>Nombre: {venta.nombreClienteFinal || "CF"}</p>
-                {/* <p>Teléfono: {venta.telefonoClienteFinal || "N/A"}</p> */}
-                {/* <p>Dirección: {venta.direccionClienteFinal || "N/A"}</p> */}
+                <p>Nombre: {venta?.nombreClienteFinal || "CF"}</p>
+                {/* <p>Teléfono: {venta?.telefonoClienteFinal || "N/A"}</p> */}
+                {/* <p>Dirección: {venta?.direccionClienteFinal || "N/A"}</p> */}
               </>
             )}
           </div>
@@ -178,24 +186,39 @@ export default function HistorialVentas() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {venta.productos.map((producto: ProductoVenta) => (
-                  <TableRow key={producto.id}>
-                    <TableCell>{producto.producto.nombre}</TableCell>
-                    <TableCell>{producto.cantidad}</TableCell>
-                    <TableCell>
-                      {new Intl.NumberFormat("es-GT", {
-                        style: "currency",
-                        currency: "GTQ",
-                      }).format(producto.precioVenta)}
-                    </TableCell>
-                    <TableCell>
-                      {new Intl.NumberFormat("es-GT", {
-                        style: "currency",
-                        currency: "GTQ",
-                      }).format(producto.cantidad * producto.precioVenta)}
+                {venta?.productos?.length > 0 ? (
+                  venta.productos.map((producto: ProductoVenta) => (
+                    <TableRow key={producto.id}>
+                      <TableCell>
+                        {producto.producto?.nombre || "N/A"}
+                      </TableCell>
+                      <TableCell>{producto.cantidad || "N/A"}</TableCell>
+                      <TableCell>
+                        {producto.precioVenta !== undefined
+                          ? new Intl.NumberFormat("es-GT", {
+                              style: "currency",
+                              currency: "GTQ",
+                            }).format(producto.precioVenta)
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        {producto.cantidad !== undefined &&
+                        producto.precioVenta !== undefined
+                          ? new Intl.NumberFormat("es-GT", {
+                              style: "currency",
+                              currency: "GTQ",
+                            }).format(producto.cantidad * producto.precioVenta)
+                          : "N/A"}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center">
+                      No hay productos disponibles
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
@@ -203,13 +226,15 @@ export default function HistorialVentas() {
 
         <div className="mt-4">
           <h3 className="font-semibold">Método de Pago</h3>
-          <p>Tipo: {venta.metodoPago.metodoPago}</p>
+          <p>Tipo: {venta?.metodoPago?.metodoPago || "N/A"}</p>
           <p>
             Monto total pagado:{" "}
-            {new Intl.NumberFormat("es-GT", {
-              style: "currency",
-              currency: "GTQ",
-            }).format(venta.totalVenta)}
+            {venta?.totalVenta !== undefined
+              ? new Intl.NumberFormat("es-GT", {
+                  style: "currency",
+                  currency: "GTQ",
+                }).format(venta.totalVenta)
+              : "N/A"}
           </p>
         </div>
       </CardContent>
@@ -461,25 +486,6 @@ export default function HistorialVentas() {
                           </Tooltip>
                         </TooltipProvider>
 
-                        {/* <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Link to={`/ticket-garantia/${venta.id}`}>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  aria-label="Imprimir Ticket Garantía"
-                                >
-                                  <FileText className="h-4 w-4" />
-                                </Button>
-                              </Link>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Imprimir Ticket Garantía</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider> */}
-
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger>
@@ -568,6 +574,7 @@ export default function HistorialVentas() {
             </Table>
           </ScrollArea>
         </CardContent>
+
         <Dialog onOpenChange={setIsOpenDelete} open={isOpenDelete}>
           <DialogContent>
             <DialogHeader>
