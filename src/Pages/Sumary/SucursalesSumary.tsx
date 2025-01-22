@@ -112,11 +112,10 @@ function SucursalesSummary() {
                   <span>{suc.telefono || "Teléfono no disponible"}</span>
                 </div>
 
-                <Tabs defaultValue="saldo" className="w-full">
+                <Tabs defaultValue="ingresos" className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="saldo">Saldo</TabsTrigger>
                     <TabsTrigger value="ingresos">Ingresos</TabsTrigger>
-                    {/* <TabsTrigger value="ventas">Ventas</TabsTrigger> */}
+                    <TabsTrigger value="saldo">Saldo</TabsTrigger>
                   </TabsList>
                   <TabsContent value="saldo">
                     <div className="mt-4 space-y-2">
@@ -164,6 +163,7 @@ function SucursalesSummary() {
                       </div>
                     </div>
                   </TabsContent>
+
                   <TabsContent value="ingresos">
                     <div className="mt-4 space-y-2">
                       <div className="flex justify-between items-center">
@@ -172,8 +172,8 @@ function SucursalesSummary() {
                           Ventas del Mes
                         </span>
                         <span className="font-semibold">
-                          {suc.ventasSemana
-                            ? suc.ventasSemana.toLocaleString("es-GT", {
+                          {suc.ventasMes
+                            ? suc.ventasMes.toLocaleString("es-GT", {
                                 style: "currency",
                                 currency: "GTQ",
                               })
@@ -186,8 +186,8 @@ function SucursalesSummary() {
                           Ventas de la Semana
                         </span>
                         <span className="font-semibold">
-                          {suc.ventasMes
-                            ? suc.ventasMes.toLocaleString("es-GT", {
+                          {suc.ventasSemana
+                            ? suc.ventasSemana.toLocaleString("es-GT", {
                                 style: "currency",
                                 currency: "GTQ",
                               })
