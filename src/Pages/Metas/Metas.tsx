@@ -297,6 +297,8 @@ function Metas() {
       if (response.status === 201) {
         toast.success(`Meta registrada para el usuario ${user?.nombre}`);
         resetForm(); // Restablecer el formulario
+        getMetasCobros();
+        getMetasTienda();
       }
     } catch (error) {
       console.error(error);
