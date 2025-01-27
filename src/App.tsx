@@ -56,6 +56,8 @@ import ReparacionPage1 from "./components/PDF/ReparacionesPDF/ReparacionPage1";
 import ReparacionPdfPageFinal from "./components/PDF/ReparacionesPDF/ReparacionPdfPageFinal";
 import SucursalesSumary from "./Pages/Sumary/SucursalesSumary";
 import VentasReport from "./Pages/Reports/Ventas/VentasReport";
+import Metas from "./Pages/Metas/Metas";
+import MyGoals from "./Pages/Metas/MyGoals";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
@@ -473,6 +475,24 @@ function App() {
               element={
                 <ProtectRouteAdmin>
                   <SucursalesSumary />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/metas"
+              element={
+                <ProtectRouteAdmin>
+                  <Metas />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/mis-metas"
+              element={
+                <ProtectRouteAdmin>
+                  <MyGoals />
                 </ProtectRouteAdmin>
               }
             />

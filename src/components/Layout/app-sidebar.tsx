@@ -16,6 +16,8 @@ import {
   Tag,
   Building2,
   FileSpreadsheet,
+  Target,
+  Goal,
 } from "lucide-react";
 
 import {
@@ -359,7 +361,11 @@ const menuItemsAdmin = [
   { icon: CreditCard, label: "Créditos", href: "/creditos" },
   { icon: WrenchIcon, label: "Reparaciones", href: "/reparaciones" },
 
+  { icon: Target, label: "Metas", href: "/metas" },
+  { icon: Goal, label: "Mis Metas", href: "/mis-metas" },
+
   { icon: Building2, label: "Resumen sucursales", href: "/sumary" },
+
   { icon: FileSpreadsheet, label: "Reportes", href: "/reportes" },
 
   { icon: Bolt, label: "Config", href: "/config/user" },
