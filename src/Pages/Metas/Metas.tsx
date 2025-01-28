@@ -35,12 +35,13 @@ import {
   Coins,
   CreditCard,
   FileText,
-  MinusCircle,
   Percent,
   Search,
   Store,
   Target,
   Trash2,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -54,6 +55,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import dayjs from "dayjs";
+
+import dayOfYear from "dayjs/plugin/dayOfYear";
+import isLeapYear from "dayjs/plugin/isLeapYear"; // ES 2015
+import advancedFormat from "dayjs/plugin/advancedFormat"; // ES 2015
+
+dayjs.extend(advancedFormat);
+dayjs.extend(dayOfYear);
+dayjs.extend(isLeapYear);
+
 const API_URL = import.meta.env.VITE_API_URL;
 interface MetaCobros {
   id: number; // ID de la meta
@@ -361,6 +372,16 @@ function Metas() {
     }
   };
 
+  const calcularReferencia = () => {
+    const hoy = dayjs();
+    const totalDiasMes = dayjs().daysInMonth(); // Obtiene el total de días en el mes actual
+    const diaActual = hoy.date(); // Obtiene el día actual del mes (1-31)
+
+    return (diaActual / totalDiasMes) * 100; // Calcula el porcentaje del mes transcurrido
+  };
+
+  console.log("Las metas de tienda son: ", metasTienda);
+
   return (
     <div className="container mx-auto p-4">
       <Tabs defaultValue="asignar" className="w-full">
@@ -519,6 +540,8 @@ function Metas() {
                       <TableHead>Faltante</TableHead>
 
                       <TableHead>Porcentaje</TableHead>
+                      <TableHead>Referencia</TableHead>
+
                       <TableHead>Diferencia</TableHead>
                       <TableHead>Estado</TableHead>
                     </TableRow>
@@ -529,7 +552,7 @@ function Metas() {
                         meta.montoMeta > 0
                           ? (meta.montoActual / meta.montoMeta) * 100
                           : 0;
-                      const diferencia = 100 - porcentaje;
+                      // const diferencia = 100 - porcentaje;
 
                       return (
                         <TableRow key={meta.id}>
@@ -547,24 +570,62 @@ function Metas() {
                             {formatearMoneda(meta.montoMeta - meta.montoActual)}
                           </TableCell>
 
+                          {/* EL PORCENTAJE */}
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Percent className="w-4 h-4 text-green-500" />
+                              <Percent
+                                className={`w-4 h-4 ${
+                                  porcentaje >= 70
+                                    ? "text-green-500"
+                                    : porcentaje >= 40
+                                    ? "text-yellow-500"
+                                    : "text-red-500"
+                                }`}
+                              />
                               {porcentaje.toFixed(2)}%
                             </div>
                           </TableCell>
+
+                          {/* LA REFERENCIA */}
                           <TableCell>
-                            <div
-                              className={`flex items-center gap-2 ${
-                                diferencia >= 0
-                                  ? "text-red-500"
-                                  : "text-green-500"
-                              }`}
-                            >
-                              <MinusCircle className="w-4 h-4" />
-                              {diferencia.toFixed(2)}%
+                            <div className="flex items-center gap-2">
+                              <Clock
+                                className={`w-4 h-4 ${
+                                  calcularReferencia() >= 70
+                                    ? "text-green-500"
+                                    : calcularReferencia() >= 40
+                                    ? "text-yellow-500"
+                                    : "text-red-500"
+                                }`}
+                              />
+                              {calcularReferencia().toFixed(2)}%
                             </div>
                           </TableCell>
+
+                          {/* LA DIFERENCIA */}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {/* Icono dinámico con color */}
+                              {porcentaje - calcularReferencia() >= 0 ? (
+                                <TrendingUp className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <TrendingDown className="w-4 h-4 text-red-500" />
+                              )}
+
+                              {/* Texto de la diferencia con color dinámico */}
+                              <span
+                                className={`${
+                                  porcentaje - calcularReferencia() >= 0
+                                    ? "text-green-500"
+                                    : "text-red-500"
+                                }`}
+                              >
+                                {(porcentaje - calcularReferencia()).toFixed(2)}
+                                %
+                              </span>
+                            </div>
+                          </TableCell>
+
                           <TableCell>
                             {meta.cumplida ? (
                               <div className="flex items-center gap-2 text-green-500">
@@ -620,8 +681,8 @@ function Metas() {
                       <TableHead>Monto Meta</TableHead>
                       <TableHead>Monto Actual</TableHead>
                       <TableHead>Faltante</TableHead>
-
                       <TableHead>Porcentaje</TableHead>
+                      <TableHead>Referencia</TableHead>
                       <TableHead>Diferencia</TableHead>
                       <TableHead>Depósitos</TableHead>
                       <TableHead>Estado</TableHead>
@@ -634,45 +695,89 @@ function Metas() {
                         meta.montoMeta > 0
                           ? (meta.montoActual / meta.montoMeta) * 100
                           : 0;
-                      const diferencia = 100 - porcentaje;
+
+                      const referencia = calcularReferencia(); // Basado en la fecha actual y el mes
+                      const diferencia = porcentaje - referencia;
 
                       return (
                         <TableRow key={meta.id}>
+                          {/* Título */}
                           <TableCell>
-                            {meta.tituloMeta ? meta.tituloMeta : ""}
+                            {meta.tituloMeta ? meta.tituloMeta : "Sin título"}
                           </TableCell>
 
+                          {/* Usuario */}
                           <TableCell>{meta.usuario.nombre}</TableCell>
+
+                          {/* Monto Meta */}
                           <TableCell>
                             {formatearMoneda(meta.montoMeta)}
                           </TableCell>
+
+                          {/* Monto Actual */}
                           <TableCell>
                             {formatearMoneda(meta.montoActual)}
                           </TableCell>
 
+                          {/* Faltante */}
                           <TableCell>
                             {formatearMoneda(meta.montoMeta - meta.montoActual)}
                           </TableCell>
 
+                          {/* Porcentaje de progreso */}
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Percent className="w-4 h-4 text-green-500" />
+                              <Percent
+                                className={`w-4 h-4 ${
+                                  porcentaje >= 70
+                                    ? "text-green-500"
+                                    : porcentaje >= 40
+                                    ? "text-yellow-500"
+                                    : "text-red-500"
+                                }`}
+                              />
                               {porcentaje.toFixed(2)}%
                             </div>
                           </TableCell>
+
+                          {/* Referencia (progreso ideal según el tiempo transcurrido) */}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Clock
+                                className={`w-4 h-4 ${
+                                  referencia >= 70
+                                    ? "text-green-500"
+                                    : referencia >= 40
+                                    ? "text-yellow-500"
+                                    : "text-red-500"
+                                }`}
+                              />
+                              {referencia.toFixed(2)}%
+                            </div>
+                          </TableCell>
+
+                          {/* Diferencia entre el progreso real y la referencia */}
                           <TableCell>
                             <div
                               className={`flex items-center gap-2 ${
                                 diferencia >= 0
-                                  ? "text-red-500"
-                                  : "text-green-500"
+                                  ? "text-green-500"
+                                  : "text-red-500"
                               }`}
                             >
-                              <MinusCircle className="w-4 h-4" />
+                              {diferencia >= 0 ? (
+                                <TrendingUp className="w-4 h-4" />
+                              ) : (
+                                <TrendingDown className="w-4 h-4" />
+                              )}
                               {diferencia.toFixed(2)}%
                             </div>
                           </TableCell>
+
+                          {/* Número de depósitos */}
                           <TableCell>{meta.DepositoCobro.length}</TableCell>
+
+                          {/* Estado de la meta */}
                           <TableCell>
                             {meta.cumplida ? (
                               <div className="flex items-center gap-2 text-green-500">
@@ -686,6 +791,8 @@ function Metas() {
                               </div>
                             )}
                           </TableCell>
+
+                          {/* Acciones */}
                           <TableCell>
                             <Button
                               onClick={() => handleOpenDepositos(meta)}
