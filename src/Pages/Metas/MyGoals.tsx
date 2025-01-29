@@ -18,11 +18,13 @@ import {
   Banknote,
   BarChart2,
   Calendar,
+  ChartBar,
   Coins,
   FileText,
-  Percent,
+  Plus,
   Target,
   Trash2,
+  TrendingDown,
   TrendingUp,
   User,
 } from "lucide-react";
@@ -35,6 +37,8 @@ import "dayjs/locale/es";
 import utc from "dayjs/plugin/utc";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -236,142 +240,308 @@ function MyGoals() {
     }
   };
 
+  const calcularReferencia = () => {
+    const hoy = dayjs();
+    const totalDiasMes = dayjs().daysInMonth(); // Obtiene el total de días en el mes actual
+    const diaActual = hoy.date(); // Obtiene el día actual del mes (1-31)
+
+    return (diaActual / totalDiasMes) * 100; // Calcula el porcentaje del mes transcurrido
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Mis Metas</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {metas?.metasCobros.map((meta) => (
-          <Card key={meta.id}>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Banknote className="mr-2" />
-                {meta.tituloMeta}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <p className="flex items-center">
-                  <User className="mr-2" /> {meta.usuario.nombre}
-                </p>
+        {metas?.metasCobros.map((meta) => {
+          const percentageComplete =
+            meta.montoMeta > 0 ? (meta.montoActual / meta.montoMeta) * 100 : 0;
+          const referencia = calcularReferencia();
+          const diferencia = percentageComplete - referencia;
 
-                <p className="flex items-center">
-                  <Calendar className="mr-2" />
-                  Plazo: {formatearFecha(meta.fechaInicio)} -{" "}
-                  {formatearFecha(meta.fechaFin)}
-                </p>
-                <p className="flex items-center">
-                  <Target className="mr-2" /> Meta:{" "}
-                  {formatearMoneda(meta.montoMeta)}
-                </p>
-                <p className="flex items-center">
-                  <TrendingUp className="mr-2" /> Actual:{" "}
-                  {formatearMoneda(meta.montoActual)}
-                </p>
-
-                <p className="flex items-center">
-                  <BarChart2 className="mr-2" /> Faltante:{" "}
-                  {formatearMoneda(meta.montoMeta - meta.montoActual)}
-                </p>
-
-                <p className="flex items-center">
-                  <Percent className="mr-2" /> Porcentaje:{" "}
-                  {meta.montoMeta > 0
-                    ? `${((meta.montoActual / meta.montoMeta) * 100).toFixed(
-                        2
-                      )}%`
-                    : "Meta no definida"}
-                </p>
-
-                <p className="flex items-center">
-                  <Percent className="mr-2" /> Diferencia:{" "}
-                  {meta.montoMeta > 0
-                    ? `${(
-                        100 -
-                        (meta.montoActual / meta.montoMeta) * 100
-                      ).toFixed(2)}%`
-                    : "Meta no definida"}
-                </p>
-
-                <div className="flex gap-2 justify-center items-center">
-                  <Button
-                    onClick={() => {
-                      setOpenDepositos(true);
-                      setSelectedMeta(meta);
-                    }}
-                    variant={"outline"}
-                    className="w-full"
+          return (
+            <Card key={meta.id} className="overflow-hidden">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Banknote className="mr-2 h-5 w-5 text-primary" />
+                    <span className="font-semibold">{meta.tituloMeta}</span>
+                  </div>
+                  <Badge
+                    variant={
+                      percentageComplete >= 100 ? "default" : "destructive"
+                    }
                   >
-                    <p className="flex items-center">
-                      <Coins className="mr-2" /> Depósitos:{" "}
-                      {meta.DepositoCobro.length}
-                    </p>
-                  </Button>
+                    {percentageComplete.toFixed(1)}%
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Progress Bar */}
+                  <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full transition-all duration-300",
+                        percentageComplete >= 100
+                          ? "bg-green-500"
+                          : percentageComplete >= 75
+                          ? "bg-blue-500"
+                          : percentageComplete >= 50
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
+                      )}
+                      style={{ width: `${Math.min(percentageComplete, 100)}%` }}
+                    />
+                  </div>
 
-                  <Button
-                    onClick={() => handleOpenDialog(meta.id)}
-                    className="w-full"
-                  >
-                    Agregar Depósito
-                  </Button>
+                  {/* Main Info Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center text-sm">
+                        <User className="mr-2 h-4 w-4 text-gray-500" />
+                        <span className="font-medium">
+                          {meta.usuario.nombre}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center text-sm">
+                        <Calendar className="mr-2 h-4 w-4 text-gray-500" />
+                        <span>
+                          {formatearFecha(meta.fechaInicio)} -{" "}
+                          {formatearFecha(meta.fechaFin)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center text-sm">
+                        <Target className="mr-2 h-4 w-4 text-primary" />
+                        <span>Meta: {formatearMoneda(meta.montoMeta)}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center text-sm">
+                        <TrendingUp
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            percentageComplete >= 100
+                              ? "text-green-500"
+                              : percentageComplete >= 75
+                              ? "text-blue-500"
+                              : "text-gray-500"
+                          )}
+                        />
+                        <span>Actual: {formatearMoneda(meta.montoActual)}</span>
+                      </div>
+
+                      <div className="flex items-center text-sm">
+                        <BarChart2 className="mr-2 h-4 w-4 text-gray-500" />
+                        <span>
+                          Faltante:{" "}
+                          {formatearMoneda(meta.montoMeta - meta.montoActual)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center text-sm">
+                        {diferencia >= 0 ? (
+                          <TrendingUp className="mr-2 h-4 w-4 text-green-500" />
+                        ) : (
+                          <TrendingDown className="mr-2 h-4 w-4 text-red-500" />
+                        )}
+                        <span>
+                          Diferencia vs Referencia: {diferencia.toFixed(2)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-2 pt-4">
+                    <Button
+                      onClick={() => {
+                        setOpenDepositos(true);
+                        setSelectedMeta(meta);
+                      }}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <Coins className="mr-2 h-4 w-4" />
+                      Depósitos: {meta.DepositoCobro.length}
+                    </Button>
+
+                    <Button
+                      onClick={() => handleOpenDialog(meta.id)}
+                      className="flex-1"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Agregar Depósito
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
 
         {/* Metas de Tiendas */}
-        {metas?.metasTienda.map((meta) => (
-          <Card key={meta.id}>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <TrendingUp className="mr-2" />
-                {meta.tituloMeta}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <p className="flex items-center">
-                  <Calendar className="mr-2" />{" "}
-                  {formatearFecha(meta.fechaInicio)} -{" "}
-                  {formatearFecha(meta.fechaFin)}
-                </p>
-                <p className="flex items-center">
-                  <Target className="mr-2" /> Meta:{" "}
-                  {formatearMoneda(meta.montoMeta)}
-                </p>
-                <p className="flex items-center">
-                  <TrendingUp className="mr-2" /> Actual:{" "}
-                  {formatearMoneda(meta.montoActual)}
-                </p>
-                <p className="flex items-center">
-                  <User className="mr-2" /> {meta.usuario.nombre}
-                </p>
 
-                {/* Porcentaje */}
-                <p className="flex items-center">
-                  <Percent className="mr-2" /> Porcentaje:{" "}
-                  {meta.montoMeta > 0
-                    ? `${((meta.montoActual / meta.montoMeta) * 100).toFixed(
-                        2
-                      )}%`
-                    : "Meta no definida"}
-                </p>
+        {metas?.metasTienda.map((meta) => {
+          const percentageComplete =
+            meta.montoMeta > 0 ? (meta.montoActual / meta.montoMeta) * 100 : 0;
+          const referencia = calcularReferencia();
+          const diferencia = percentageComplete - referencia;
 
-                {/* Diferencia */}
-                <p className="flex items-center">
-                  <Percent className="mr-2" /> Diferencia:{" "}
-                  {meta.montoMeta > 0
-                    ? `${(
-                        100 -
-                        (meta.montoActual / meta.montoMeta) * 100
-                      ).toFixed(2)}%`
-                    : "Meta no definida"}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+          return (
+            <Card key={meta.id} className="overflow-hidden">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <TrendingUp className="mr-2 h-5 w-5 text-primary" />
+                    <span className="font-semibold">{meta.tituloMeta}</span>
+                  </div>
+                  <Badge
+                    variant={
+                      percentageComplete >= 100 ? "default" : "destructive"
+                    }
+                  >
+                    {percentageComplete.toFixed(1)}%
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Progress Bar */}
+                  <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full transition-all duration-300",
+                        percentageComplete >= 100
+                          ? "bg-green-500"
+                          : percentageComplete >= 75
+                          ? "bg-blue-500"
+                          : percentageComplete >= 50
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
+                      )}
+                      style={{ width: `${Math.min(percentageComplete, 100)}%` }}
+                    />
+                  </div>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Left Column */}
+                    <div className="space-y-3">
+                      <div className="flex items-center text-sm">
+                        <User className="mr-2 h-4 w-4 text-gray-500" />
+                        <span className="font-medium">
+                          {meta.usuario.nombre}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center text-sm">
+                        <Calendar className="mr-2 h-4 w-4 text-gray-500" />
+                        <span>
+                          {formatearFecha(meta.fechaInicio)} -{" "}
+                          {formatearFecha(meta.fechaFin)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center text-sm">
+                        <Target className="mr-2 h-4 w-4 text-primary" />
+                        <span>Meta: {formatearMoneda(meta.montoMeta)}</span>
+                      </div>
+                    </div>
+
+                    {/* Right Column */}
+                    <div className="space-y-3">
+                      <div className="flex items-center text-sm">
+                        <TrendingUp
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            percentageComplete >= 100
+                              ? "text-green-500"
+                              : percentageComplete >= 75
+                              ? "text-blue-500"
+                              : "text-gray-500"
+                          )}
+                        />
+                        <span>Actual: {formatearMoneda(meta.montoActual)}</span>
+                      </div>
+
+                      <div className="flex items-center text-sm gap-2">
+                        <div className="flex items-center">
+                          <ChartBar
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              referencia >= 75
+                                ? "text-green-500"
+                                : referencia >= 50
+                                ? "text-yellow-500"
+                                : "text-gray-500"
+                            )}
+                          />
+                          <span>Referencia: {referencia.toFixed(1)}%</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center text-sm">
+                        {diferencia >= 0 ? (
+                          <TrendingUp className="mr-2 h-4 w-4 text-green-500" />
+                        ) : (
+                          <TrendingDown className="mr-2 h-4 w-4 text-red-500" />
+                        )}
+                        <span
+                          className={cn(
+                            diferencia >= 0 ? "text-green-600" : "text-red-600"
+                          )}
+                        >
+                          Diferencia: {diferencia.toFixed(2)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Performance Indicators */}
+                  <div className="grid grid-cols-3 gap-2 pt-2">
+                    <div
+                      className={cn(
+                        "rounded-lg p-2 text-center",
+                        percentageComplete >= referencia
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      )}
+                    >
+                      <div className="text-xs font-medium">Progreso</div>
+                      <div className="text-sm font-bold">
+                        {percentageComplete.toFixed(2)}%
+                      </div>
+                    </div>
+                    <div className="rounded-lg bg-secondary p-2 text-center">
+                      <div className="text-xs font-medium">Referencia</div>
+                      <div className="text-sm font-bold">
+                        {referencia.toFixed(2)}%
+                      </div>
+                    </div>
+                    <div
+                      className={cn(
+                        "rounded-lg p-2 text-center",
+                        diferencia >= 0
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      )}
+                    >
+                      <div className="text-xs font-medium">Diferencia</div>
+                      <div className="text-sm font-bold">
+                        {diferencia >= 0 ? "+" : ""}
+                        {diferencia.toFixed(2)}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* DIALOG PARA PODER ELIMINAR UN REGISTRO DE DEPOSITO */}

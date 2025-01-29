@@ -30,11 +30,14 @@ import {
   AlertTriangle,
   Banknote,
   Calendar,
+  Check,
   CheckCircle,
   Clock,
   Coins,
   CreditCard,
+  Delete,
   FileText,
+  Lock,
   Percent,
   Search,
   Store,
@@ -42,6 +45,7 @@ import {
   Trash2,
   TrendingDown,
   TrendingUp,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -171,6 +175,7 @@ interface OptionSelected {
 }
 
 function Metas() {
+  const userId = useStore((state) => state.userId) ?? 0;
   const sucursalId = useStore((state) => state.sucursalId) ?? 0;
   const [metasCobros, setMetasCobros] = useState<MetaCobros[]>([]);
 
@@ -382,6 +387,77 @@ function Metas() {
 
   console.log("Las metas de tienda son: ", metasTienda);
 
+  const [openDeleteCobro, setOpenDeleteCobro] = useState(false);
+  const [CobroToDelete, setCobroToDelete] = useState(0);
+  const [passwordAdminCobro, setPasswordAdminCobro] = useState("");
+  //
+  const [openDeleteG, setOpenDeleteG] = useState(false);
+  const [goalToDelete, setGoalToDelete] = useState(0);
+  const [passwordAdmin, setPasswordAdmin] = useState("");
+
+  const handleDeleteMeta = async () => {
+    try {
+      if (!goalToDelete || !userId || !passwordAdmin || goalToDelete <= 0) {
+        toast.info("Faltan datos para completar la acción");
+        return;
+      }
+
+      const response = await axios.delete(
+        `${API_URL}/metas/delete-one-goal/${goalToDelete}/${userId}`,
+        {
+          data: {
+            passwordAdmin: passwordAdmin,
+          },
+        }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        toast.success("Registro de meta eliminado");
+        getMetasTienda();
+        setOpenDeleteG(false);
+        setPasswordAdmin("");
+        setGoalToDelete(0);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al eliminar el registro");
+    }
+  };
+
+  const handleDeleteCobro = async () => {
+    try {
+      if (
+        !CobroToDelete ||
+        !userId ||
+        !passwordAdminCobro ||
+        CobroToDelete <= 0
+      ) {
+        toast.info("Faltan datos para completar la acción");
+        return;
+      }
+
+      const response = await axios.delete(
+        `${API_URL}/metas/delete-one-cobro-goal/${CobroToDelete}/${userId}`,
+        {
+          data: {
+            passwordAdmin: passwordAdminCobro,
+          },
+        }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        toast.success("Registro de meta eliminado");
+        getMetasCobros();
+        setOpenDeleteCobro(false);
+        setPasswordAdminCobro("");
+        setCobroToDelete(0);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al eliminar el registro");
+    }
+  };
+
   return (
     <div className="container mx-auto p-4">
       <Tabs defaultValue="asignar" className="w-full">
@@ -544,6 +620,7 @@ function Metas() {
 
                       <TableHead>Diferencia</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead>Acción</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -639,6 +716,18 @@ function Metas() {
                               </div>
                             )}
                           </TableCell>
+
+                          <TableCell>
+                            <Button
+                              onClick={() => {
+                                setGoalToDelete(meta.id);
+                                setOpenDeleteG(true);
+                              }}
+                              variant={"ghost"}
+                            >
+                              <Delete />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       );
                     })}
@@ -686,7 +775,8 @@ function Metas() {
                       <TableHead>Diferencia</TableHead>
                       <TableHead>Depósitos</TableHead>
                       <TableHead>Estado</TableHead>
-                      <TableHead>Acciones</TableHead>
+                      <TableHead>Depósitos</TableHead>
+                      <TableHead>Acciónes</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -796,11 +886,22 @@ function Metas() {
                           <TableCell>
                             <Button
                               onClick={() => handleOpenDepositos(meta)}
-                              variant="outline"
-                              size="sm"
+                              variant="ghost"
+                              className="flex justify-center items-center"
                             >
-                              <Coins className="w-4 h-4 mr-2" />
-                              Ver
+                              <Coins />
+                            </Button>
+                          </TableCell>
+
+                          <TableCell>
+                            <Button
+                              onClick={() => {
+                                setCobroToDelete(meta.id);
+                                setOpenDeleteCobro(true);
+                              }}
+                              variant={"ghost"}
+                            >
+                              <Delete />
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -931,6 +1032,106 @@ function Metas() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* DIALOG PARA ELIMINACIONES DE METAS EN TIENDAS */}
+      <Dialog open={openDeleteG} onOpenChange={setOpenDeleteG}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-center">
+              <p className="text-center">Confirmación de eliminación de meta</p>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              ¿Estás seguro de eliminar este registro? Esta acción no se puede
+              deshacer.
+            </p>
+            <div className="mt-4 space-y-4">
+              <div className="relative">
+                <Input
+                  onChange={(e) => setPasswordAdmin(e.target.value)}
+                  value={passwordAdmin}
+                  placeholder="Introduzca su contraseña de administrador"
+                  type="password"
+                  className="pl-10 pr-4 py-2"
+                />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="sm:justify-end">
+            <div className="mt-6 flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-2 w-full">
+              <Button
+                variant="outline"
+                onClick={() => setOpenDeleteG(false)}
+                className="w-full "
+              >
+                <X className="mr-2 h-4 w-4" />
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleDeleteMeta}
+                variant="destructive"
+                className="w-full "
+              >
+                <Check className="mr-2 h-4 w-4" />
+                Sí, eliminar
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DIALOG PARA ELIMINACIONES DE METAS EN COBROS */}
+      <Dialog open={openDeleteCobro} onOpenChange={setOpenDeleteCobro}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-center">
+              <p className="text-center">
+                Confirmación de eliminación de meta en cobros
+              </p>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              ¿Estás seguro de eliminar este registro? Esta acción no se puede
+              deshacer.
+            </p>
+            <div className="mt-4 space-y-4">
+              <div className="relative">
+                <Input
+                  onChange={(e) => setPasswordAdminCobro(e.target.value)}
+                  value={passwordAdminCobro}
+                  placeholder="Introduzca su contraseña de administrador"
+                  type="password"
+                  className="pl-10 pr-4 py-2"
+                />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="sm:justify-end">
+            <div className="mt-6 flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-2 w-full">
+              <Button
+                variant="outline"
+                onClick={() => setOpenDeleteCobro(false)}
+                className="w-full "
+              >
+                <X className="mr-2 h-4 w-4" />
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleDeleteCobro}
+                variant="destructive"
+                className="w-full "
+              >
+                <Check className="mr-2 h-4 w-4" />
+                Sí, eliminar
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
