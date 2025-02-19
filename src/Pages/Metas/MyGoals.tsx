@@ -39,7 +39,7 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
+import currency from "currency.js";
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
 dayjs.locale("es");
@@ -50,10 +50,12 @@ const formatearFecha = (fecha: string) => {
 };
 
 const formatearMoneda = (monto: number) => {
-  return new Intl.NumberFormat("es", {
-    style: "currency",
-    currency: "GTQ",
-  }).format(monto);
+  return currency(monto, {
+    symbol: "Q",
+    separator: ",",
+    decimal: ".",
+    precision: 2,
+  }).format();
 };
 
 // Interfaces
@@ -584,9 +586,7 @@ function MyGoals() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <Coins className="w-4 h-4 text-muted-foreground" />
-                        <span>
-                          Q{formatearMoneda(deposito.montoDepositado)}
-                        </span>
+                        <span>{formatearMoneda(deposito.montoDepositado)}</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Calendar className="w-4 h-4 text-muted-foreground" />

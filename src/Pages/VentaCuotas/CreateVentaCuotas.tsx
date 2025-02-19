@@ -107,7 +107,7 @@ interface OptionTypeTS {
 }
 
 const API_URL = import.meta.env.VITE_API_URL;
-
+//VERIFICAR PORQUE LA FUNCION NO MUESTRA EL PRODUCTO EN EL PDF
 export default function CreateVentaCuotaForm() {
   const sucursalId = useStore((state) => state.sucursalId) ?? 0;
   const userId = useStore((state) => state.userId) ?? 0;
@@ -164,25 +164,62 @@ export default function CreateVentaCuotaForm() {
     e.preventDefault();
     setIsLoading(true);
 
-    console.log(
-      "LOS DATOS A ENVIAR: ",
+    // Validaciones antes de enviar la data
+    if (!formData.clienteId || Number(formData.clienteId) <= 0) {
+      toast.info("Debe seleccionar un cliente.");
+      setIsLoading(false);
+      return;
+    }
 
-      {
-        ...formData,
-        clienteId: Number(formData.clienteId),
-        usuarioId: Number(formData.usuarioId),
-        sucursalId: Number(formData.sucursalId),
-        // totalVenta: Number(totalVentaCrédito),
-        totalVenta: Number(formData.cuotaInicial), //INTENTANDO QUE LA VENTA, SEA EL TOTAL DE LA CUOTA INICIAL
+    if (!formData.cuotaInicial || Number(formData.cuotaInicial) <= 0) {
+      toast.info("La cuota inicial debe ser mayor a 0.");
+      setIsLoading(false);
+      return;
+    }
 
-        cuotaInicial: Number(formData.cuotaInicial),
-        cuotasTotales: Number(formData.cuotasTotales),
-        montoVenta: Number(totalVentaCrédito),
-        garantiaMeses: Number(formData.garantiaMeses),
-        fechaInicio: formData.fechaInicio.toISOString(),
-        fechaContrato: formData.fechaContrato.toISOString(),
-      }
-    );
+    if (!formData.cuotasTotales || Number(formData.cuotasTotales) <= 0) {
+      toast.info("Debe especificar la cantidad de cuotas totales.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.diasEntrePagos || Number(formData.diasEntrePagos) <= 0) {
+      toast.info("Debe especificar los días entre pagos.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.interes) {
+      toast.info("Debe especificar el interés del credito.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!totalVentaCrédito || Number(totalVentaCrédito) <= 0) {
+      toast.info("El monto total de la venta debe ser mayor a 0.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.productos || formData.productos.length === 0) {
+      toast.info("Debe agregar al menos un producto a la venta.");
+      setIsLoading(false);
+      return;
+    }
+
+    console.log("LOS DATOS A ENVIAR:", {
+      ...formData,
+      clienteId: Number(formData.clienteId),
+      usuarioId: Number(formData.usuarioId),
+      sucursalId: Number(formData.sucursalId),
+      totalVenta: Number(formData.cuotaInicial), // INTENTANDO QUE LA VENTA SEA EL TOTAL DE LA CUOTA INICIAL
+      cuotaInicial: Number(formData.cuotaInicial),
+      cuotasTotales: Number(formData.cuotasTotales),
+      montoVenta: Number(totalVentaCrédito),
+      garantiaMeses: Number(formData.garantiaMeses),
+      fechaInicio: formData.fechaInicio.toISOString(),
+      fechaContrato: formData.fechaContrato.toISOString(),
+    });
 
     try {
       const response = await axios.post(`${API_URL}/cuotas`, {
@@ -190,19 +227,17 @@ export default function CreateVentaCuotaForm() {
         clienteId: Number(formData.clienteId),
         usuarioId: Number(userId),
         sucursalId: Number(sucursalId),
-        // totalVenta: Number(totalVentaCrédito),
         totalVenta: Number(formData.cuotaInicial),
         montoTotalConInteres: montoTotalConInteres,
         cuotaInicial: Number(formData.cuotaInicial),
         cuotasTotales: Number(formData.cuotasTotales),
         montoVenta: Number(totalVentaCrédito),
         garantiaMeses: Number(formData.garantiaMeses),
-        // fechaInicio: formData.fechaInicio.toISOString(),
-        // fechaContrato: formData.fechaContrato.toISOString(),
       });
 
       if (response.status === 201) {
-        toast.success("Se ha registrado correctament el crédito.");
+        toast.success("Se ha registrado correctamente el crédito.");
+
         // Reset form
         setFormData({
           clienteId: 0,
@@ -222,6 +257,7 @@ export default function CreateVentaCuotaForm() {
           diasEntrePagos: 0,
           interes: 0,
         });
+
         setCustomerSelected(null);
         setOpenCreate(false);
         setTimeout(() => {
@@ -416,21 +452,35 @@ export default function CreateVentaCuotaForm() {
   const [openCreate, setOpenCreate] = useState(false);
   const [creditos, setCreditos] = useState<CreditoRegistro[]>([]);
 
+  // const getRegistCredits = async () => {
+  //   try {
+  //     const response = await axios.get(`${API_URL}/cuotas/get/credits`);
+  //     if (response.status === 200) {
+  //       setCreditos(response.data);
+  //     }
+  //     console.log("Actualizando la lista de creditos");
+  //   } catch (error) {
+  //     console.log(error);
+  //     toast.info("Error al conseguir los registros");
+  //   }
+  // };
+
+  // Simplifica la función sin useCallback
   const getRegistCredits = async () => {
     try {
       const response = await axios.get(`${API_URL}/cuotas/get/credits`);
-      if (response.status === 200) {
-        setCreditos(response.data);
-      }
+      setCreditos(response.data);
+      console.log("Lista de créditos actualizada");
     } catch (error) {
-      console.log(error);
-      toast.info("Error al conseguir los registros");
+      console.error(error);
+      toast.error("Error al obtener registros");
     }
   };
 
+  // Ejecutar solo al montar el componente
   useEffect(() => {
     getRegistCredits();
-  }, []);
+  }, []); // <-- Array de dependencias vacío
 
   const calcularCuotas = () => {
     if (
@@ -495,7 +545,12 @@ export default function CreateVentaCuotaForm() {
       </div>
       {/* MOSTRAR LOS DATOS DE LOS REGISTROS DE CREDITOS */}
       <TabsContent value="account">
-        <CreditRecordsTable records={creditos} />
+        <CreditRecordsTable
+          userId={userId}
+          sucursalId={sucursalId}
+          getCredits={getRegistCredits}
+          records={creditos}
+        />
       </TabsContent>
       {/* MOSTRAR LOS DATOS DE LOS REGISTROS DE CREDITOS */}
 
@@ -610,7 +665,12 @@ export default function CreateVentaCuotaForm() {
 
               {/* Botón para agregar el producto */}
               <div className="col-span-2">
-                <Button type="button" onClick={handleAddProduct}>
+                <Button
+                  className="w-full max-w-64"
+                  variant={"destructive"}
+                  type="button"
+                  onClick={handleAddProduct}
+                >
                   Agregar Producto
                 </Button>
               </div>

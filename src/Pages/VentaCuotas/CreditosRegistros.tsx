@@ -11,6 +11,8 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -39,6 +41,9 @@ import {
   MessageSquareText,
   ChevronLeft,
   ChevronRight,
+  DeleteIcon,
+  AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import { CreditoRegistro } from "./CreditosType";
 
@@ -70,7 +75,10 @@ dayjs.extend(localizedFormat);
 dayjs.locale("es");
 
 interface CreditRecordsTableProps {
+  getCredits: () => Promise<void>;
   records: CreditoRegistro[];
+  sucursalId: number;
+  userId: number;
 }
 
 interface Cuota {
@@ -108,7 +116,13 @@ const formatearMoneda = (cantidad: number) => {
   return nuevoFormato;
 };
 
-export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
+export function CreditRecordsTable({
+  records,
+  sucursalId,
+  userId,
+  getCredits,
+}: CreditRecordsTableProps) {
+  console.log("Registros actualizados en hijo:", records); // <-- Debe cambiar después de eliminar
   const [selectedRecord, setSelectedRecord] = useState<CreditoRegistro | null>(
     null
   );
@@ -173,6 +187,86 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
     return {
       montoTotalConInteres,
     };
+  };
+
+  const [passwordAdmin, setPasswordAdmin] = useState("");
+  const [creditId, setCreditId] = useState<number | null>(null);
+  const [openDeleteCredit, setOpenDeleteCredit] = useState(false);
+
+  // const handleDeleteCreditRegist = async () => {
+  //   if (passwordAdmin.length <= 0) {
+  //     toast.info("Ingrese su contraseña");
+  //     return;
+  //   }
+
+  //   if (!creditId) {
+  //     toast.info("Seleccione un registro a eliminar");
+  //     return;
+  //   }
+
+  //   try {
+  //     await toast.promise(
+  //       axios.delete(`${API_URL}/cuotas/delete-one-credit-regist`, {
+  //         data: {
+  //           passwordAdmin: passwordAdmin,
+  //           userId: userId,
+  //           sucursalId: sucursalId,
+  //           creditId: creditId,
+  //         },
+  //       }),
+  //       {
+  //         loading: "Eliminando registro de credito...",
+  //         success: "Registro eliminado correctamente",
+  //         error: "Error al eliminar registro",
+  //       }
+  //     );
+
+  //     // Aquí se puede hacer algo extra después de la eliminación exitosa
+  //     setOpenDeleteCredit(false);
+  //     setCreditId(null);
+  //     setPasswordAdmin("");
+  //     // await getCredits();
+
+  //     // Espera 500ms adicionales para dar tiempo al servidor
+  //     await new Promise((resolve) => setTimeout(resolve, 2000));
+  //     await getCredits(); // <-- Fuerza la actualización
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // };
+
+  const handleDeleteCreditRegist = async () => {
+    if (!passwordAdmin || !creditId) {
+      toast.info("Complete los datos requeridos");
+      return;
+    }
+
+    const toastId = toast.loading("Eliminando registro de crédito...");
+
+    try {
+      const response = await axios.delete(
+        `${API_URL}/cuotas/delete-one-credit-regist`,
+        {
+          data: { passwordAdmin, userId, sucursalId, creditId },
+        }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        toast.success("Registro eliminado correctamente", { id: toastId });
+
+        setOpenDeleteCredit(false);
+        setCreditId(null);
+        setPasswordAdmin("");
+
+        // await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        await getCredits();
+      }
+    } catch (error) {
+      // Actualiza el toast en caso de error
+      toast.error("Error al eliminar registro", { id: toastId });
+      console.error(error);
+    }
   };
 
   function CuotasCard({ cuotas }: CuotasCardProps) {
@@ -310,6 +404,7 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
               <TableHead>Status</TableHead>
               <TableHead>Ver Detalles</TableHead>
               <TableHead>Imprimir</TableHead>
+              <TableHead>Eliminar</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -387,6 +482,19 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
                           ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
+                  </TableCell>
+
+                  <TableCell>
+                    <Button
+                      className="flex justify-center items-center"
+                      variant={"outline"}
+                      onClick={() => {
+                        setCreditId(record.id);
+                        setOpenDeleteCredit(true);
+                      }}
+                    >
+                      <DeleteIcon className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -644,6 +752,57 @@ export function CreditRecordsTable({ records }: CreditRecordsTableProps) {
               </Card>
             </ScrollArea>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog onOpenChange={setOpenDeleteCredit} open={openDeleteCredit}>
+        <DialogContent className="sm:max-w-[425px] md:max-w-[500px] lg:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-center justify-center">
+              <AlertTriangle className="h-6 w-6" />
+              Eliminación de registro de crédito
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <DialogDescription className=" text-center">
+              ¿Estás seguro de que deseas eliminar este registro?
+            </DialogDescription>
+            <DialogDescription className=" font-semibold text-center">
+              Esta acción es irreversible y el saldo será descontado de la
+              sucursal.
+            </DialogDescription>
+            <div className="relative">
+              <Input
+                type="password"
+                placeholder="Ingrese su contraseña para confirmar"
+                value={passwordAdmin}
+                onChange={(e) => setPasswordAdmin(e.target.value)}
+                className="pr-12" // Espacio para el icono
+                aria-label="Contraseña de confirmación"
+                autoFocus
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 w-full">
+            <Button
+              variant="outline"
+              onClick={() => setOpenDeleteCredit(false)}
+              className="w-full sm:w-1/2 order-2 sm:order-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteCreditRegist}
+              disabled={!passwordAdmin.trim()}
+              className="w-full sm:w-1/2 order-1 sm:order-2 flex items-center justify-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Sí, eliminar registro
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

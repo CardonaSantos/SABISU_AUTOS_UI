@@ -11,6 +11,16 @@ import {
   Calendar,
   BarChart3,
 } from "lucide-react";
+import currency from "currency.js";
+
+const formatearMoneda = (monto: number) => {
+  return currency(monto, {
+    symbol: "Q",
+    separator: ",",
+    decimal: ".",
+    precision: 2,
+  }).format();
+};
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -126,10 +136,7 @@ function SucursalesSummary() {
                         </span>
                         <span className="font-semibold">
                           {suc.SucursalSaldo?.saldoAcumulado
-                            ? suc.SucursalSaldo.saldoAcumulado.toLocaleString(
-                                "es-GT",
-                                { style: "currency", currency: "GTQ" }
-                              )
+                            ? formatearMoneda(suc.SucursalSaldo.saldoAcumulado)
                             : "Q0"}
                         </span>
                       </div>
@@ -140,10 +147,7 @@ function SucursalesSummary() {
                         </span>
                         <span className="font-semibold">
                           {suc.SucursalSaldo?.totalIngresos
-                            ? suc.SucursalSaldo.totalIngresos.toLocaleString(
-                                "es-GT",
-                                { style: "currency", currency: "GTQ" }
-                              )
+                            ? formatearMoneda(suc.SucursalSaldo.totalIngresos)
                             : "Q0"}
                         </span>
                       </div>
@@ -154,10 +158,7 @@ function SucursalesSummary() {
                         </span>
                         <span className="font-semibold">
                           {suc.SucursalSaldo?.totalEgresos
-                            ? suc.SucursalSaldo.totalEgresos.toLocaleString(
-                                "es-GT",
-                                { style: "currency", currency: "GTQ" }
-                              )
+                            ? formatearMoneda(suc.SucursalSaldo.totalEgresos)
                             : "Q0"}
                         </span>
                       </div>
@@ -173,10 +174,7 @@ function SucursalesSummary() {
                         </span>
                         <span className="font-semibold">
                           {suc.ventasMes
-                            ? suc.ventasMes.toLocaleString("es-GT", {
-                                style: "currency",
-                                currency: "GTQ",
-                              })
+                            ? formatearMoneda(suc.ventasMes)
                             : "Q0"}
                         </span>
                       </div>
@@ -187,10 +185,7 @@ function SucursalesSummary() {
                         </span>
                         <span className="font-semibold">
                           {suc.ventasSemana
-                            ? suc.ventasSemana.toLocaleString("es-GT", {
-                                style: "currency",
-                                currency: "GTQ",
-                              })
+                            ? formatearMoneda(suc.ventasSemana)
                             : "Q0"}
                         </span>
                       </div>
@@ -201,10 +196,7 @@ function SucursalesSummary() {
                         </span>
                         <span className="font-semibold">
                           {suc.ventasDia?.totalDeHoy
-                            ? suc.ventasDia.totalDeHoy.toLocaleString("es-GT", {
-                                style: "currency",
-                                currency: "GTQ",
-                              })
+                            ? formatearMoneda(suc.ventasDia.totalDeHoy)
                             : "Q0"}
                         </span>
                       </div>

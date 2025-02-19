@@ -16,8 +16,10 @@ import { Input } from "@/components/ui/input";
 import {
   Calendar as CalendarIcon,
   Coins,
+  CreditCard,
   Download,
-  ShoppingBag,
+  FileText,
+  // ShoppingBag,
 } from "lucide-react";
 
 // Registrar el idioma para el DatePicker
@@ -31,33 +33,31 @@ interface DateRange {
 }
 
 function VentasReport() {
-  const [dateRange, setDateRange] = useState<DateRange>({
+  const [dateRangeVenta, setDateRangeVenta] = useState<DateRange>({
     startDate: undefined,
     endDate: undefined,
   });
 
-  const [salesMinTotal, setSalesMinTotal] = useState<number | null>(null);
-  const [salesMaxTotal, setSalesMaxTotal] = useState<number | null>(null);
-
-  // Manejador para cambiar fechas
-  const handleDateChange = (
-    field: "startDate" | "endDate",
-    date: Date | null
-  ) => {
-    setDateRange((prev) => ({ ...prev, [field]: date }));
-  };
-
+  const [salesMinTotal, setSalesMinTotal] = useState<string>("");
+  const [salesMaxTotal, setSalesMaxTotal] = useState<string>(""); // Nuevo estado
   // Manejador para descargar reporte
-  const handleDownload = async () => {
+
+  const handleDownload = async (
+    type: string,
+    dateRange: DateRange,
+    additionalParams = {}
+  ) => {
     try {
       const params = {
-        from: dateRange.startDate?.toISOString(),
-        to: dateRange.endDate?.toISOString(),
-        minTotal: salesMinTotal,
-        maxTotal: salesMaxTotal,
+        from: dateRange?.startDate?.toISOString(),
+        to: dateRange?.endDate?.toISOString(),
+        // useDiscounted: useDiscounted,
+        ...additionalParams,
       };
 
-      const response = await axios.get(`${API_URL}/reports/ventas/excel`, {
+      console.log("Los datos de los params es: ", params);
+
+      const response = await axios.get(`${API_URL}/reports/${type}/excel`, {
         params,
         responseType: "blob", // Necesario para descargar archivos
       });
@@ -66,130 +66,204 @@ function VentasReport() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `ventas-reporte.xlsx`);
+      link.setAttribute("download", `${type}-reporte.xlsx`);
       document.body.appendChild(link);
       link.click();
 
-      toast.success("El reporte de ventas ha sido descargado exitosamente.");
+      toast.success(`El reporte de ${type} ha sido descargado exitosamente.`);
     } catch (error) {
-      console.error("Error al descargar el reporte:", error);
+      console.error(`Error al descargar el reporte de ${type}:`, error);
       toast.error("Error al descargar el reporte.");
     }
   };
+
+  const [creditosDateRange, setCreditosDateRange] = useState<DateRange>({
+    startDate: undefined,
+    endDate: undefined,
+  });
+
+  const handleDateChange = (
+    reportType: string,
+    field: "startDate" | "endDate",
+    date: Date | null
+  ) => {
+    switch (reportType) {
+      case "ventas":
+        setDateRangeVenta((prev) => ({ ...prev, [field]: date }));
+        break;
+
+      case "credito":
+        setCreditosDateRange((prev) => ({ ...prev, [field]: date }));
+        break;
+    }
+  };
+
+  interface ReportCardProps {
+    title: string;
+    icon: React.ReactNode;
+    description: string;
+    dateRange: DateRange;
+    onDateChange: (field: "startDate" | "endDate", date: Date | null) => void;
+    onDownload: () => void;
+    children?: React.ReactNode;
+    startDatePlaceholder?: string; // Placeholder para la fecha de inicio
+    endDatePlaceholder?: string; // Placeholder para la fecha de fin
+  }
+
+  function ReportCard({
+    title,
+    icon,
+    description,
+    dateRange,
+    onDateChange,
+    onDownload,
+    children,
+    startDatePlaceholder = "Seleccionar fecha de inicio", // Valor por defecto
+    endDatePlaceholder = "Seleccionar fecha de fin", // Valor por defecto
+  }: ReportCardProps) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            {icon}
+            <span>{title}</span>
+          </CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Fecha de Inicio */}
+            <div className="space-y-2">
+              <label
+                htmlFor={`start-date-${title}`}
+                className="text-sm font-medium"
+              >
+                Fecha
+              </label>
+              <div className="relative">
+                <DatePicker
+                  id={`start-date-${title}`}
+                  selected={dateRange.startDate}
+                  onChange={(date) => onDateChange("startDate", date)}
+                  selectsStart
+                  isClearable={true}
+                  startDate={dateRange.startDate}
+                  endDate={dateRange.endDate}
+                  locale={es}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText={startDatePlaceholder} // Usar la prop
+                  className="text-sm w-full px-4 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+                />
+                <CalendarIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              </div>
+            </div>
+            {/* Fecha de Fin */}
+            <div className="space-y-2">
+              <label
+                htmlFor={`end-date-${title}`}
+                className="text-sm font-medium"
+              >
+                Fecha
+              </label>
+              <div className="relative">
+                <DatePicker
+                  id={`end-date-${title}`}
+                  selected={dateRange.endDate}
+                  onChange={(date) => onDateChange("endDate", date)}
+                  selectsEnd
+                  isClearable={true}
+                  startDate={dateRange.startDate}
+                  endDate={dateRange.endDate}
+                  minDate={dateRange.startDate}
+                  locale={es}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText={endDatePlaceholder} // Usar la prop
+                  className="text-sm w-full px-4 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+                />
+                <CalendarIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 " />
+              </div>
+            </div>
+          </div>
+          {children}
+          <Button onClick={onDownload} className="w-full">
+            <Download className="mr-2 h-4 w-4" /> Descargar Reporte
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
-          <ShoppingBag className="h-6 w-6" />
-          <span>Ventas</span>
+          <FileText className="h-6 w-6" />
+          <span>Conseguir Reportes</span>
         </CardTitle>
         <CardDescription>
-          Reporte de ventas con filtro por rango de fechas y montos.
+          Reportes con filtros por rango de fechas y montos.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Rango de Fechas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {/* Fecha de Inicio */}
+        {/* CONSEGUIR REPORTES DE LAS VENTAS */}
+        <ReportCard
+          title="Ventas"
+          icon={<Coins className="h-6 w-6" />}
+          description="Reporte de ventas con filtro por rango de fechas y montos"
+          dateRange={dateRangeVenta}
+          onDateChange={(field, date) =>
+            handleDateChange("ventas", field, date)
+          }
+          onDownload={() =>
+            handleDownload("ventas", dateRangeVenta, {
+              minTotal: salesMinTotal,
+              maxTotal: salesMaxTotal,
+            })
+          }
+        >
           <div className="space-y-2">
-            <label htmlFor="start-date" className="text-sm font-medium">
-              Fecha de Inicio
+            <label htmlFor="sales-min-total" className="text-sm font-medium">
+              Costo Total Mínimo
             </label>
-            <div className="relative">
-              <DatePicker
-                id="start-date"
-                selected={dateRange.startDate}
-                onChange={(date) => handleDateChange("startDate", date)}
-                selectsStart
-                isClearable={true}
-                startDate={dateRange.startDate}
-                endDate={dateRange.endDate}
-                locale={es}
-                dateFormat="dd/MM/yyyy"
-                placeholderText="Seleccionar fecha de inicio"
-                className="w-full px-4 py-2 pl-10 text-sm border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none"
-              />
-              <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            </div>
-          </div>
-
-          {/* Fecha de Fin */}
-          <div className="space-y-2">
-            <label htmlFor="end-date" className="text-sm font-medium">
-              Fecha de Fin
-            </label>
-            <div className="relative">
-              <DatePicker
-                id="end-date"
-                selected={dateRange.endDate}
-                onChange={(date) => handleDateChange("endDate", date)}
-                selectsEnd
-                isClearable={true}
-                startDate={dateRange.startDate}
-                endDate={dateRange.endDate}
-                minDate={dateRange.startDate}
-                locale={es}
-                dateFormat="dd/MM/yyyy"
-                placeholderText="Seleccionar fecha de fin"
-                className="w-full px-4 py-2 pl-10 text-sm border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none"
-              />
-              <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            </div>
-          </div>
-        </div>
-
-        {/* Costo Total Mínimo */}
-        <div className="space-y-2">
-          <label htmlFor="sales-min-total" className="text-sm font-medium">
-            Costo Total Mínimo
-          </label>
-          <div className="relative">
-            <Coins className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <Input
               id="sales-min-total"
               type="number"
-              placeholder="Ingrese el costo mínimo"
-              value={salesMinTotal !== null ? salesMinTotal : ""}
-              onChange={(e) =>
-                setSalesMinTotal(
-                  e.target.value === "" ? null : parseFloat(e.target.value)
-                )
-              }
-              className="pl-10"
+              placeholder="Ingrese el costo total mínimo"
+              value={salesMinTotal}
+              onChange={(e) => setSalesMinTotal(e.target.value)}
             />
-          </div>
-        </div>
-
-        {/* Costo Total Máximo */}
-        <div className="space-y-2">
-          <label htmlFor="sales-max-total" className="text-sm font-medium">
-            Costo Total Máximo
-          </label>
-          <div className="relative">
-            <Coins className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <label htmlFor="sales-max-total" className="text-sm font-medium">
+              Costo Total Máximo
+            </label>
             <Input
               id="sales-max-total"
               type="number"
-              placeholder="Ingrese el costo máximo"
-              value={salesMaxTotal !== null ? salesMaxTotal : ""}
-              onChange={(e) =>
-                setSalesMaxTotal(
-                  e.target.value === "" ? null : parseFloat(e.target.value)
-                )
-              }
-              className="pl-10"
+              placeholder="Ingrese el costo total máximo"
+              value={salesMaxTotal}
+              onChange={(e) => setSalesMaxTotal(e.target.value)}
             />
           </div>
-        </div>
+        </ReportCard>
+        {/* CONSEGUIR REPORTES DE LAS VENTAS */}
 
-        {/* Botón de Descarga */}
-        <Button
-          onClick={handleDownload}
-          className="w-full flex items-center justify-center"
-        >
-          <Download className="mr-2 h-4 w-4" /> Descargar Reporte
-        </Button>
+        {/* CONSEGUIR REPORTES DE CREDITOS */}
+        <ReportCard
+          title="Creditos"
+          icon={<CreditCard className="h-6 w-6" />} // Icono ideal para entregas
+          description="Reporte de historial de Asistencias"
+          dateRange={creditosDateRange}
+          onDateChange={(field, date) =>
+            handleDateChange("creditos", field, date)
+          }
+          onDownload={() =>
+            handleDownload("creditos", creditosDateRange, {
+              // proveedor: selectedProveedor?.value, // Filtro de proveedor
+            })
+          }
+          startDatePlaceholder="Inicio del rango de creación"
+          endDatePlaceholder="Fin del rango de creación"
+        ></ReportCard>
+        {/* CONSEGUIR REPORTES DE CREDITOS */}
       </CardContent>
     </Card>
   );

@@ -4,6 +4,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  // CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -28,6 +29,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import axios from "axios";
 import {
   AlertTriangle,
+  ArrowDownIcon,
+  ArrowUpIcon,
   Banknote,
   Calendar,
   Check,
@@ -42,6 +45,7 @@ import {
   Search,
   Store,
   Target,
+  TargetIcon,
   Trash2,
   TrendingDown,
   TrendingUp,
@@ -64,6 +68,9 @@ import dayjs from "dayjs";
 import dayOfYear from "dayjs/plugin/dayOfYear";
 import isLeapYear from "dayjs/plugin/isLeapYear"; // ES 2015
 import advancedFormat from "dayjs/plugin/advancedFormat"; // ES 2015
+import currency from "currency.js";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 dayjs.extend(advancedFormat);
 dayjs.extend(dayOfYear);
@@ -349,10 +356,12 @@ function Metas() {
   };
 
   const formatearMoneda = (monto: number) => {
-    return new Intl.NumberFormat("es", {
-      style: "currency",
-      currency: "GTQ",
-    }).format(monto);
+    return currency(monto, {
+      symbol: "Q",
+      separator: ",",
+      decimal: ".",
+      precision: 2,
+    }).format();
   };
 
   const [openDeletDepo, setOpenDeletDepo] = useState(false);
@@ -458,10 +467,63 @@ function Metas() {
     }
   };
 
+  //METAS DE COBROS
+  const getMetasCobroTotal = () => {
+    return metasCobros.reduce((acc, meta) => acc + meta.montoMeta, 0);
+  };
+
+  const getMetasCobroAvance = () => {
+    return metasCobros.reduce((acc, meta) => acc + meta.montoActual, 0);
+  };
+
+  const getMetasCobroRestante = () => {
+    return getMetasCobroTotal() - getMetasCobroAvance();
+  };
+
+  const getPercentMetaCobro = () => {
+    let montoMeta = metasCobros.reduce((acc, meta) => acc + meta.montoMeta, 0);
+    let montoActual = metasCobros.reduce(
+      (acc, meta) => acc + meta.montoActual,
+      0
+    );
+    const porcentaje = montoActual >= 0 ? (montoActual / montoMeta) * 100 : 0;
+    console.log("El porcentaje de avance es: ", porcentaje.toFixed(1));
+
+    return porcentaje;
+  };
+
+  //METAS DE TIENDAS
+  const getMetasTiendaTotal = () => {
+    return metasTienda.reduce((acc, meta) => acc + meta.montoMeta, 0);
+  };
+
+  const getMetasTiendaAvance = () => {
+    return metasTienda.reduce((acc, meta) => acc + meta.montoActual, 0);
+  };
+
+  const getMetasTiendaRestante = () => {
+    return getMetasTiendaTotal() - getMetasTiendaAvance();
+  };
+
+  const getPercentTiendaCobro = () => {
+    let montoMeta = metasTienda.reduce((acc, meta) => acc + meta.montoMeta, 0);
+    let montoActual = metasTienda.reduce(
+      (acc, meta) => acc + meta.montoActual,
+      0
+    );
+    const porcentaje = montoActual >= 0 ? (montoActual / montoMeta) * 100 : 0;
+    console.log(
+      "El porcentaje de avance de metas tienda es: ",
+      porcentaje.toFixed(1)
+    );
+
+    return porcentaje;
+  };
+
   return (
     <div className="container mx-auto p-4">
       <Tabs defaultValue="asignar" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 md:grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 md:grid-cols-4">
           <TabsTrigger value="asignar">
             <Target className="w-4 h-4 mr-2" />
             Asignar Metas
@@ -473,6 +535,11 @@ function Metas() {
           <TabsTrigger value="cobros">
             <CreditCard className="w-4 h-4 mr-2" />
             Metas de Cobros
+          </TabsTrigger>
+
+          <TabsTrigger value="totales">
+            <CreditCard className="w-4 h-4 mr-2" />
+            Totales
           </TabsTrigger>
         </TabsList>
         <TabsContent value="asignar">
@@ -1028,6 +1095,141 @@ function Metas() {
                   </DialogContent>
                 )}
               </Dialog>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="totales">
+          <Card>
+            <CardHeader>
+              <CardTitle>Resumen de metas de cobros</CardTitle>
+              <CardDescription>
+                Visualiza el avance de todas las metas de cobro
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">
+                    Meta total
+                  </span>
+                  <div className="flex items-center">
+                    <TargetIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span className="text-2xl font-bold">
+                      {formatearMoneda(getMetasCobroTotal())}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">Avance</span>
+                  <div className="flex items-center">
+                    <ArrowUpIcon className="mr-2 h-4 w-4 text-green-500" />
+                    <span className="text-2xl font-bold">
+                      {formatearMoneda(getMetasCobroAvance())}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">
+                    Faltante
+                  </span>
+                  <div className="flex items-center">
+                    <ArrowDownIcon className="mr-2 h-4 w-4 text-red-500" />
+                    <span className="text-2xl font-bold">
+                      {formatearMoneda(getMetasCobroRestante())}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Progreso</span>
+                  <span className="text-sm font-medium">
+                    {getPercentMetaCobro().toFixed(2)}%
+                  </span>
+                </div>
+                <Progress
+                  value={getPercentMetaCobro()}
+                  className={cn(
+                    "w-full",
+                    getPercentMetaCobro() >= 100
+                      ? "[&>div]:bg-green-500"
+                      : getPercentMetaCobro() >= 75
+                      ? "[&>div]:bg-blue-500"
+                      : getPercentMetaCobro() >= 50
+                      ? "[&>div]:bg-yellow-500"
+                      : "[&>div]:bg-red-500"
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* RESUMEN DE METAS DE COBROS EN TIENDAS */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Resumen de metas de tiendas</CardTitle>
+              <CardDescription>
+                Visualiza el avance de todas las metas de tienda
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">
+                    Meta total
+                  </span>
+                  <div className="flex items-center">
+                    <TargetIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span className="text-2xl font-bold">
+                      {formatearMoneda(getMetasTiendaTotal())}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">Avance</span>
+                  <div className="flex items-center">
+                    <ArrowUpIcon className="mr-2 h-4 w-4 text-green-500" />
+                    <span className="text-2xl font-bold">
+                      {formatearMoneda(getMetasTiendaAvance())}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">
+                    Faltante
+                  </span>
+                  <div className="flex items-center">
+                    <ArrowDownIcon className="mr-2 h-4 w-4 text-red-500" />
+                    <span className="text-2xl font-bold">
+                      {formatearMoneda(getMetasTiendaRestante())}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Progreso</span>
+                  <span className="text-sm font-medium">
+                    {getPercentTiendaCobro().toFixed(2)}%
+                  </span>
+                </div>
+                <Progress
+                  value={getPercentTiendaCobro()}
+                  className={cn(
+                    "w-full",
+                    getPercentTiendaCobro() >= 100
+                      ? "[&>div]:bg-green-500"
+                      : getPercentTiendaCobro() >= 75
+                      ? "[&>div]:bg-blue-500"
+                      : getPercentTiendaCobro() >= 50
+                      ? "[&>div]:bg-yellow-500"
+                      : "[&>div]:bg-red-500"
+                  )}
+                />
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

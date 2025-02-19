@@ -540,6 +540,9 @@ export default function HistorialVentas() {
                         <Tooltip>
                           <TooltipTrigger>
                             <Button
+                              disabled={["CREDITO", "OTRO"].includes(
+                                venta.metodoPago.metodoPago
+                              )}
                               onClick={() => {
                                 setVentaEliminar((datosPrevios) => ({
                                   ...datosPrevios,

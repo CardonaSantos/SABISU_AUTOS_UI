@@ -55,9 +55,10 @@ import RepairOrderForm from "./Pages/Reparaciones/RepairOrder";
 import ReparacionPage1 from "./components/PDF/ReparacionesPDF/ReparacionPage1";
 import ReparacionPdfPageFinal from "./components/PDF/ReparacionesPDF/ReparacionPdfPageFinal";
 import SucursalesSumary from "./Pages/Sumary/SucursalesSumary";
-import VentasReport from "./Pages/Reports/Ventas/VentasReport";
+// import VentasReport from "./Pages/Reports/Ventas/VentasReport";
 import Metas from "./Pages/Metas/Metas";
 import MyGoals from "./Pages/Metas/MyGoals";
+import ReportesExcel from "./Pages/Reports/Ventas/ReportesExcel";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
@@ -177,7 +178,7 @@ function App() {
               path="/reportes"
               element={
                 <ProtectRouteAdmin>
-                  <VentasReport />
+                  <ReportesExcel />
                 </ProtectRouteAdmin>
               }
             />

@@ -79,6 +79,21 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Reparacion } from "../Reparaciones/RepairRegisType";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import currency from "currency.js";
+// import { motion } from "framer-motion";
+
+// const cardVariants = {
+//   hidden
+// }
+
+const formatearMoneda = (monto: number) => {
+  return currency(monto, {
+    symbol: "Q",
+    separator: ",",
+    decimal: ".",
+    precision: 2,
+  }).format();
+};
 
 interface Producto {
   id: number;
@@ -641,11 +656,20 @@ export default function Dashboard() {
 
     console.log("EL CREDITO ES: ", ventaCuota);
 
-    const formatearMoneda = (cantidad: number) => {
-      return new Intl.NumberFormat("es-GT", {
-        style: "currency",
-        currency: "GTQ",
-      }).format(cantidad);
+    // const formatearMoneda = (cantidad: number) => {
+    //   return new Intl.NumberFormat("es-GT", {
+    //     style: "currency",
+    //     currency: "GTQ",
+    //   }).format(cantidad);
+    // };
+
+    const formatearMoneda = (monto: number) => {
+      return currency(monto, {
+        symbol: "Q",
+        separator: ",",
+        decimal: ".",
+        precision: 2,
+      }).format();
     };
 
     const calcularDetallesCredito = () => {
@@ -655,9 +679,10 @@ export default function Dashboard() {
         (montoTotalConInteres - ventaCuota.cuotaInicial) /
         ventaCuota.cuotasTotales;
 
-      const cuotasPagadas = ventaCuota.cuotas.filter(
-        (cuota) => cuota.estado === "PAGADA"
-      ).length;
+      const cuotasPagadas = ventaCuota.cuotas.length;
+      // const cuotasPagadas = ventaCuota.cuotas.filter(
+      //   (cuota) => cuota.estado === "PAGADA"
+      // ).length;
 
       const cuotasRestantes =
         ventaCuota.cuotasTotales - cuotasPagadas > 0
@@ -782,7 +807,7 @@ export default function Dashboard() {
     );
   };
 
-  type EstadoPago = "PENDIENTE" | "PAGADA" | "ATRASADA";
+  type EstadoPago = "PAGADA" | "ATRASADA";
   type EstadoCierre = "CANCELADA" | "COMPLETADA";
 
   interface PaymentFormProps {
@@ -792,7 +817,7 @@ export default function Dashboard() {
   const PaymentForm: React.FC<PaymentFormProps> = ({ ventaCuotaId }) => {
     const usuarioId = useStore((state) => state.userId) ?? 0;
     const [monto, setMonto] = useState<string>("");
-    const [estado, setEstado] = useState<EstadoPago>("PENDIENTE");
+    const [estado, setEstado] = useState<EstadoPago>("PAGADA");
     const [error, setError] = useState<string | null>(null);
     const [comentario, setComentario] = useState<string>("");
     const [comentarioCierre, setComentarioCierre] = useState<string>("");
@@ -831,7 +856,7 @@ export default function Dashboard() {
 
         console.log("Pago registrado exitosamente");
         setMonto("");
-        setEstado("PENDIENTE");
+        setEstado("PAGADA");
       } catch (error) {
         console.error("Error:", error);
         setError("Error al registrar el pago. Por favor, intente nuevamente.");
@@ -919,7 +944,7 @@ export default function Dashboard() {
               <SelectValue placeholder="Seleccione el estado" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="PENDIENTE">Pendiente</SelectItem>
+              {/* <SelectItem value="PENDIENTE">Pendiente</SelectItem> */}
               <SelectItem value="PAGADA">Pagada</SelectItem>
               <SelectItem value="ATRASADA">Atrasada</SelectItem>
             </SelectContent>
@@ -1386,10 +1411,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Intl.NumberFormat("es-GT", {
-                style: "currency",
-                currency: "GTQ",
-              }).format(ventasMes)}
+              {formatearMoneda(ventasMes)}
             </div>
           </CardContent>
         </Card>
@@ -1402,10 +1424,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Intl.NumberFormat("es-GT", {
-                style: "currency",
-                currency: "GTQ",
-              }).format(ventasSemana)}
+              {formatearMoneda(ventasSemana)}
             </div>
           </CardContent>
         </Card>
@@ -1421,10 +1440,7 @@ export default function Dashboard() {
               {ventasDia &&
               typeof ventasDia.totalDeHoy === "number" &&
               !isNaN(ventasDia.totalDeHoy)
-                ? new Intl.NumberFormat("es-GT", {
-                    style: "currency",
-                    currency: "GTQ",
-                  }).format(ventasDia.totalDeHoy)
+                ? formatearMoneda(ventasDia.totalDeHoy)
                 : "Sin ventas aún"}
             </div>
           </CardContent>
