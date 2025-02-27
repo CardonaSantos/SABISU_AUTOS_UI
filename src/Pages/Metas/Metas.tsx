@@ -39,8 +39,10 @@ import {
   Coins,
   CreditCard,
   Delete,
+  Edit,
   FileText,
   Lock,
+  MoreVertical,
   Percent,
   Search,
   Store,
@@ -71,6 +73,12 @@ import advancedFormat from "dayjs/plugin/advancedFormat"; // ES 2015
 import currency from "currency.js";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { DropdownMenu } from "@radix-ui/react-dropdown-menu";
+import {
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 dayjs.extend(advancedFormat);
 dayjs.extend(dayOfYear);
@@ -133,6 +141,7 @@ interface MetaTienda {
   sucursalId: number; // ID de la sucursal asociada
   tituloMeta: string; // Título o descripción de la meta
   usuarioId: number; // ID del usuario asociado a la meta
+  estado: string;
   sucursal: SucursalMetaTiendas; // Detalles de la sucursal asociada
   usuario: UsuarioMetaTiendas; // Detalles del usuario asociado
 }
@@ -181,6 +190,13 @@ interface OptionSelected {
   label: string;
 }
 
+interface EditMetaTiendaDialogProps {
+  open: boolean;
+  onClose: () => void;
+  metaTienda: MetaTienda | null;
+  onUpdate: (updatedMeta: MetaTienda) => void; // Función para actualizar
+}
+
 function Metas() {
   const userId = useStore((state) => state.userId) ?? 0;
   const sucursalId = useStore((state) => state.sucursalId) ?? 0;
@@ -189,6 +205,14 @@ function Metas() {
   const [metasTienda, setMetasTienda] = useState<MetaTienda[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioSucursal[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const [openUpdateMetaTienda, setOpenUpdateMetaTienda] = useState(false);
+  // const [openUpdateMetaCobro, setOpenUpdateMetaCobro] = useState(false);
+
+  const [metaTiendaSelected, setMetaTiendaSelected] =
+    useState<MetaTienda | null>(null);
+
+  // const [formData, setFormData] = useState<MetaTienda | null>(null);
 
   const [metaDto, setMetaDto] = useState<MetaInterfaceDTO>({
     usuarioId: 0,
@@ -785,15 +809,38 @@ function Metas() {
                           </TableCell>
 
                           <TableCell>
-                            <Button
-                              onClick={() => {
-                                setGoalToDelete(meta.id);
-                                setOpenDeleteG(true);
-                              }}
-                              variant={"ghost"}
-                            >
-                              <Delete />
-                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="">
+                                {/* Opción para eliminar */}
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setGoalToDelete(meta.id);
+                                    setOpenDeleteG(true);
+                                  }}
+                                >
+                                  <span>Eliminar</span>{" "}
+                                  <Delete className="ml-2 h-4 w-4" />
+                                </DropdownMenuItem>
+
+                                {/* Opción para editar/actualizar */}
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    // Handle edit/update here
+                                    setOpenUpdateMetaTienda(true);
+                                    setMetaTiendaSelected(meta);
+                                    // setOpenUpdateMetaTienda(true);
+                                  }}
+                                >
+                                  <span>Actualizar</span>
+                                  <Edit className="ml-2 h-4 w-4" />
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       );
@@ -1334,7 +1381,119 @@ function Metas() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* DIALOG PARA ACTUALIZACION DE METAS DE TIENDAS*/}
+      <EditMetaTiendaDialog
+        open={openUpdateMetaTienda}
+        onClose={() => setOpenUpdateMetaTienda(false)}
+        metaTienda={metaTiendaSelected}
+        onUpdate={(updatedMeta) => {
+          // Aquí puedes llamar a la API para actualizar el registro
+          fetch(`/api/meta-tiendas/${updatedMeta.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedMeta),
+          })
+            .then(() => {
+              toast.success("Meta actualizada correctamente");
+              setOpenUpdateMetaTienda(false);
+            })
+            .catch(() => toast.error("Error al actualizar la meta"));
+        }}
+      />
     </div>
+  );
+}
+
+export function EditMetaTiendaDialog({
+  open,
+  onClose,
+  metaTienda,
+  onUpdate,
+}: EditMetaTiendaDialogProps) {
+  const [formData, setFormData] = useState<MetaTienda | null>(null);
+
+  useEffect(() => {
+    if (metaTienda) {
+      // Clonar el objeto para evitar modificar el estado original
+      setFormData({ ...metaTienda });
+    }
+  }, [metaTienda]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!formData) return;
+    const { name, value } = e.target;
+    setFormData((prev) => (prev ? { ...prev, [name]: value } : null));
+  };
+
+  const handleSave = () => {
+    if (formData) {
+      onUpdate(formData); // Enviar solo los datos editados al backend
+      onClose();
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
+            <Edit className="h-5 w-5 text-blue-500" />
+            Editar Meta de Tienda
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          <div>
+            <label className="text-sm font-medium">Título de la Meta</label>
+            <Input
+              name="tituloMeta"
+              value={formData?.tituloMeta || ""}
+              onChange={handleInputChange}
+              placeholder="Título de la meta"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Monto Meta</label>
+            <Input
+              name="montoMeta"
+              type="number"
+              value={formData?.montoMeta || ""}
+              onChange={handleInputChange}
+              placeholder="Monto objetivo"
+            />
+          </div>
+
+          <Select>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder={formData?.estado} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="light">Light</SelectItem>
+              <SelectItem value="dark">Dark</SelectItem>
+              <SelectItem value="system">System</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <DialogFooter className="sm:justify-end">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="w-full sm:w-auto"
+          >
+            <X className="mr-2 h-4 w-4" />
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSave}
+            variant="default"
+            className="w-full sm:w-auto"
+          >
+            <Check className="mr-2 h-4 w-4" />
+            Guardar Cambios
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
