@@ -24,11 +24,15 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import {
+  AlertCircle,
   Box,
   Calendar,
+  CalendarClock,
+  CalendarDays,
   ChevronDown,
   ChevronUp,
-  Coins,
+  Clock,
+  // Coins,
   CoinsIcon,
   FileText,
   IdCard,
@@ -66,7 +70,7 @@ import {
   TooltipTrigger,
   Tooltip as Tooltip2,
 } from "@/components/ui/tooltip";
-import { CreditoRegistro } from "../VentaCuotas/CreditosType";
+import { CreditoRegistro, Cuotas } from "../VentaCuotas/CreditosType";
 import {
   Select,
   SelectContent,
@@ -181,6 +185,11 @@ export default function Dashboard() {
   dayjs.locale("es");
   const formatearFecha = (fecha: string) => {
     let nueva_fecha = dayjs(fecha).format("DD MMMM YYYY, hh:mm A");
+    return nueva_fecha;
+  };
+
+  const formatearFechaSimple = (fecha: string) => {
+    let nueva_fecha = dayjs(fecha).format("DD MMMM YYYY");
     return nueva_fecha;
   };
 
@@ -653,15 +662,8 @@ export default function Dashboard() {
 
   const VentaCuotaCard: React.FC<VentaCuotaCardProps> = ({ ventaCuota }) => {
     const [isExpanded, setIsExpanded] = useState(false);
-
-    console.log("EL CREDITO ES: ", ventaCuota);
-
-    // const formatearMoneda = (cantidad: number) => {
-    //   return new Intl.NumberFormat("es-GT", {
-    //     style: "currency",
-    //     currency: "GTQ",
-    //   }).format(cantidad);
-    // };
+    const [cuotaPayment, setCuotaPayment] = useState<Cuotas>();
+    const [openPaymentCuota, setOpenPaymentCuota] = useState(false);
 
     const formatearMoneda = (monto: number) => {
       return currency(monto, {
@@ -680,10 +682,6 @@ export default function Dashboard() {
         ventaCuota.cuotasTotales;
 
       const cuotasPagadas = ventaCuota.cuotas.length;
-      // const cuotasPagadas = ventaCuota.cuotas.filter(
-      //   (cuota) => cuota.estado === "PAGADA"
-      // ).length;
-
       const cuotasRestantes =
         ventaCuota.cuotasTotales - cuotasPagadas > 0
           ? ventaCuota.cuotasTotales - cuotasPagadas
@@ -702,25 +700,79 @@ export default function Dashboard() {
       };
     };
 
-    const { saldoRestante, montoPorCuota, cuotasPagadas } =
-      calcularDetallesCredito();
-
-    const [openRegistCuota, setOpenRegistCuota] = useState(false);
+    const { saldoRestante, montoPorCuota } = calcularDetallesCredito();
 
     let diaInicio = dayjs(ventaCuota.fechaContrato);
     console.log("el dia de inicio es: ", diaInicio);
-    const cuotasFechas = [];
 
-    for (let index = 0; index < ventaCuota.cuotasTotales; index++) {
-      const fechaAPagar = diaInicio.add(ventaCuota.diasEntrePagos, "day");
-      // cuotasFechas.push(fechaAPagar.format("YYYY-MMMM-DD"));
-      cuotasFechas.push(fechaAPagar.format("D [de] MMMM [de] YYYY"));
+    const alertPayment = (fecha?: string) => {
+      if (!fecha || !dayjs(fecha).isValid()) {
+        console.error("Fecha inválida:", fecha);
+        return {
+          message: "Fecha inválida",
+          type: "error",
+          className: "text-red-500",
+          icon: <AlertCircle className="h-4 w-4 text-red-500" />,
+        };
+      }
 
-      diaInicio = fechaAPagar;
-    }
-    console.log("Las fechas a pagar cada x días son: ", cuotasFechas);
+      const today = dayjs().startOf("day");
+      const fechaPago = dayjs(fecha).startOf("day");
+      const diferencia = today.diff(fechaPago, "day");
+
+      console.log("Diferencia en días:", diferencia);
+
+      if (diferencia > 0) {
+        return {
+          message: "Pago vencido",
+          type: "danger",
+          className: "text-red-600",
+          icon: <AlertCircle className="h-4 w-4 text-red-600" />,
+        };
+      }
+      if (diferencia === 0) {
+        return {
+          message: "Pago vence hoy",
+          type: "warning",
+          className: "text-yellow-500",
+          icon: <CalendarClock className="h-4 w-4 text-yellow-500" />,
+        };
+      }
+      if (diferencia === -10) {
+        return {
+          message: "Pago en 10 días",
+          type: "info",
+          className: "text-blue-500",
+          icon: <Clock className="h-4 w-4 text-blue-500" />,
+        };
+      }
+      if (diferencia === -15) {
+        return {
+          message: "Pago en 15 días",
+          type: "info",
+          className: "text-blue-400",
+          icon: <CalendarDays className="h-4 w-4 text-blue-400" />,
+        };
+      }
+      if (diferencia === -7) {
+        return {
+          message: "Pago en 1 semana",
+          type: "info",
+          className: "text-indigo-500",
+          icon: <Clock className="h-4 w-4 text-indigo-500" />,
+        };
+      }
+
+      return {
+        message: `Faltan ${Math.abs(diferencia)} días`,
+        type: "default",
+        className: "text-gray-500",
+        icon: <CalendarDays className="h-4 w-4 text-gray-500" />,
+      };
+    };
+
     return (
-      <Card className="w-full max-w-xl">
+      <Card className="w-full max-w-xl shadow-xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             <span className="font-bold">Crédito #{ventaCuota.id}</span>
@@ -741,8 +793,16 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="text-xl font-bold text-green-600">
-            Saldo Restante: {formatearMoneda(saldoRestante)}
+            Saldo Restante:{" "}
+            {saldoRestante > 0
+              ? formatearMoneda(saldoRestante)
+              : saldoRestante === 0
+              ? "Completamente pagado"
+              : `Extra por interés: ${formatearMoneda(
+                  Math.abs(saldoRestante)
+                )}`}
           </div>
+
           <p className="text-sm">
             Cliente: <strong>{ventaCuota.cliente.nombre}</strong>
           </p>
@@ -752,8 +812,15 @@ export default function Dashboard() {
 
           <Link to={"/creditos"}>
             <p className="text-sm">
-              Cuotas Pagadas: <strong>{cuotasPagadas}</strong> /{" "}
-              {ventaCuota.cuotasTotales}
+              Cuotas Pagadas:{" "}
+              <strong>
+                {
+                  ventaCuota.cuotas.filter(
+                    (cuota) => cuota.fechaPago && cuota.monto > 0
+                  ).length
+                }
+              </strong>{" "}
+              / {ventaCuota.cuotasTotales}
             </p>
           </Link>
 
@@ -772,34 +839,96 @@ export default function Dashboard() {
                 {new Date(ventaCuota.fechaInicio).toLocaleDateString()}
               </p>
 
-              <ScrollArea className="h-32   p-2 text-sm">
-                {cuotasFechas.map((fecha, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span className="">{index + 1}.</span>
-                    <span>{fecha}</span>
-                  </div>
-                ))}
+              <ScrollArea className="h-40 p-2">
+                <Card className="border border-gray-200 rounded-lg shadow-sm">
+                  <CardContent className="p-3 space-y-2">
+                    {ventaCuota.cuotas
+                      .sort(
+                        (a, b) =>
+                          new Date(a.creadoEn).getTime() -
+                          new Date(b.creadoEn).getTime()
+                      )
+                      .map((cuota, index) => {
+                        if (cuota.monto > 0) {
+                          return (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-2 border-b last:border-none dark:text-white"
+                            >
+                              <div className="flex items-center space-x-3">
+                                {/* Número de cuota */}
+                                <span className="text-gray-700 dark:text-white hover:cursor-pointer text-sm">
+                                  Pago No. {index + 1}
+                                </span>
+
+                                {/* Divider */}
+                                <span className="text-gray-700 dark:text-white hover:cursor-pointer text-sm">
+                                  |
+                                </span>
+
+                                {/* Fecha de pago */}
+                                <Link to={`/cuota/comprobante/${cuota.id}`}>
+                                  <span className="text-gray-700 dark:text-white hover:cursor-pointer text-sm">
+                                    Pagado el día{" "}
+                                    {formatearFechaSimple(cuota.fechaPago)}
+                                  </span>
+                                </Link>
+
+                                <span className="text-gray-700 dark:text-white hover:cursor-pointer text-sm">
+                                  ({formatearMoneda(cuota.monto)})
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          const alerta = alertPayment(cuota.fechaVencimiento);
+                          return (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-2 border-b last:border-none text-sm dark:text-white"
+                            >
+                              <div className="flex items-center space-x-3">
+                                {alerta.icon}
+                                <span className="font-medium dark:text-white">
+                                  {index + 1}.
+                                </span>
+                                <span
+                                  className="text-gray-700 dark:text-white hover:cursor-pointer"
+                                  onClick={() => {
+                                    setOpenPaymentCuota(true);
+                                    setCuotaPayment(cuota);
+                                  }}
+                                >
+                                  {formatearFechaSimple(cuota.fechaVencimiento)}
+                                </span>
+                              </div>
+                              <span
+                                className={`text-sm font-medium ${alerta.className} dark:text-white`}
+                              >
+                                {alerta.message}
+                              </span>
+                            </div>
+                          );
+                        }
+                      })}
+                  </CardContent>
+                </Card>
               </ScrollArea>
             </div>
           )}
-          <Dialog onOpenChange={setOpenRegistCuota} open={openRegistCuota}>
-            <Button
-              onClick={() => {
-                setOpenRegistCuota(true);
-              }}
-              type="button"
-              className="w-full mt-4"
-              size="sm"
-            >
-              <Coins className="mr-2 h-4 w-4" />
-              Registrar Cuota
-            </Button>
+          <Dialog onOpenChange={setOpenPaymentCuota} open={openPaymentCuota}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Registrar Pago de Cuota</DialogTitle>
+                <DialogTitle className="text-center">
+                  Registrar Pago de Cuota{" "}
+                  {formatearFechaSimple(cuotaPayment?.fechaVencimiento ?? "")}
+                </DialogTitle>
               </DialogHeader>
-              <PaymentForm ventaCuotaId={ventaCuota.id} />
+              <PaymentForm
+                setOpenPaymentCuota={setOpenPaymentCuota}
+                cuota={cuotaPayment}
+                CreditoID={ventaCuota.id}
+              />
             </DialogContent>
           </Dialog>
         </CardContent>
@@ -811,10 +940,16 @@ export default function Dashboard() {
   type EstadoCierre = "CANCELADA" | "COMPLETADA";
 
   interface PaymentFormProps {
-    ventaCuotaId: number;
+    cuota: Cuotas | undefined;
+    CreditoID: number | undefined;
+    setOpenPaymentCuota: (value: boolean) => void;
   }
 
-  const PaymentForm: React.FC<PaymentFormProps> = ({ ventaCuotaId }) => {
+  const PaymentForm: React.FC<PaymentFormProps> = ({
+    cuota,
+    setOpenPaymentCuota,
+    CreditoID,
+  }) => {
     const usuarioId = useStore((state) => state.userId) ?? 0;
     const [monto, setMonto] = useState<string>("");
     const [estado, setEstado] = useState<EstadoPago>("PAGADA");
@@ -835,32 +970,38 @@ export default function Dashboard() {
       e.preventDefault();
       if (!validateForm()) return;
 
-      const data = {
-        monto: Number(monto),
-        ventaCuotaId: Number(ventaCuotaId),
-        estado: estado,
-        comentario,
-        usuarioId: Number(usuarioId),
-      };
+      if (cuota) {
+        const data = {
+          monto: Number(monto),
+          ventaCuotaId: Number(cuota.id),
+          estado: estado,
+          comentario,
+          usuarioId: Number(usuarioId),
+          CreditoID: CreditoID,
+        };
 
-      try {
-        const response = await axios.post(
-          `${API_URL}/cuotas/register-new-pay`,
-          data
-        );
+        try {
+          const response = await axios.post(
+            `${API_URL}/cuotas/register-new-pay`,
+            data
+          );
 
-        if (response.status === 201) {
-          toast.success("Registro de pago de cuota registrado");
-          getCredits();
+          if (response.status === 201) {
+            toast.success("Registro de pago de cuota registrado");
+            getCredits();
+            setOpenPaymentCuota(false); //cierro el dialog con el state que le estoy pasando
+          }
+
+          console.log("Pago registrado exitosamente");
+          setMonto("");
+          setEstado("PAGADA");
+        } catch (error) {
+          console.error("Error:", error);
+          setError(
+            "Error al registrar el pago. Por favor, intente nuevamente."
+          );
+          console.log("Error al registrar pago de crédito. Inténtelo de nuevo");
         }
-
-        console.log("Pago registrado exitosamente");
-        setMonto("");
-        setEstado("PAGADA");
-      } catch (error) {
-        console.error("Error:", error);
-        setError("Error al registrar el pago. Por favor, intente nuevamente.");
-        console.log("Error al registrar pago de crédito. Inténtelo de nuevo");
       }
     };
 
@@ -1027,7 +1168,7 @@ export default function Dashboard() {
                   variant="destructive"
                   disabled={isDeleting}
                   onClick={() => {
-                    handleCloseCredit(ventaCuotaId);
+                    handleCloseCredit(cuota?.id ?? 0);
                   }}
                 >
                   {isDeleting ? "Cerrando..." : "Cerrar Crédito"}
@@ -1395,6 +1536,7 @@ export default function Dashboard() {
       </Card>
     );
   };
+  console.log("LOS CREDITOS SON: ", creditos);
 
   return (
     <div className="p-4 space-y-4">

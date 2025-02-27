@@ -18,6 +18,7 @@ import {
   FileSpreadsheet,
   Target,
   Goal,
+  Wifi,
 } from "lucide-react";
 
 import {
@@ -49,7 +50,7 @@ import {
   FileStack,
 } from "lucide-react";
 import { useStore } from "../Context/ContextSucursal";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Tooltip,
   TooltipContent,
@@ -61,6 +62,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../ui/collapsible";
+import { useMemo } from "react";
 
 const menuVendedor = [
   // Sección de Ventas
@@ -300,9 +302,9 @@ const menuItemsAdmin = [
     label: "Sucursales",
     submenu: [{ icon: Building, label: "Mis Sucursales", href: "/sucursal" }],
   },
-
-  // Reportes y Notificaciones
-  { icon: BarChart2, label: "Reportes", href: "/reportes" },
+  //ESTO GENERA EL PROBLEMA
+  // // Reportes y Notificaciones
+  // { icon: BarChart2, label: "Reportes", href: "/reportes" },
 
   // Gestión de Garantías y Tickets
   {
@@ -370,19 +372,72 @@ const menuItemsAdmin = [
 
   { icon: Bolt, label: "Config", href: "/config/user" },
 ];
+//RUTAS CRM
+const routesCrm_Admin = [
+  { icon: Home, label: "CRM", href: "/crm" },
+  {
+    icon: Users,
+    label: "Gestión de Clientes",
+    submenu: [
+      {
+        icon: Users,
+        label: "Clientes",
+        href: "/crm-clientes",
+      },
+    ],
+  },
+  { icon: CreditCard, label: "Facturación", href: "/crm/facturacion" },
+  { icon: Ticket, label: "Tickets", href: "/crm/tickets" },
+];
+const routesCrm_Otro = [
+  { icon: Wifi, label: "CRM", href: "/crm" },
+  {
+    icon: ClipboardPen,
+    label: "Gestión de Ventas",
+    submenu: [
+      {
+        icon: ClipboardPen,
+        label: "Ventas Eliminaciones",
+        href: "/historial/ventas-eliminaciones",
+      },
+    ],
+  },
+];
 
 export function AppSidebar() {
+  const location = useLocation();
   const rolUser = useStore((state) => state.userRol);
-  // Función para retornar las rutas según el rol
-  function retornarRutas() {
-    if (rolUser === "ADMIN") {
-      return menuItemsAdmin;
-    } else if (rolUser === "SUPER_ADMIN") {
-      return menuItemsSuperAdmin;
-    } else {
-      return menuVendedor;
+
+  // Memoriza las rutas según el rol del usuario
+  const allRoutes = useMemo(() => {
+    if (rolUser === "ADMIN") return menuItemsAdmin;
+    if (rolUser === "SUPER_ADMIN") return menuItemsSuperAdmin;
+    return menuVendedor;
+  }, [rolUser]);
+
+  // Memoriza las rutas CRM según el rol del usuario
+  const crmRoutes = useMemo(() => {
+    return rolUser === "ADMIN" ? routesCrm_Admin : routesCrm_Otro;
+  }, [rolUser]);
+
+  // Extrae los href de todas las rutas CRM (para ocultarlas cuando se esté en CRM)
+  const hidenRoutes = useMemo(
+    () =>
+      routesCrm_Admin.flatMap((ruta) =>
+        ruta.href ? [ruta.href] : ruta.submenu?.map((sub) => sub.href) || []
+      ),
+    []
+  );
+
+  // Si la ruta actual es una de las rutas CRM, mostramos solo CRM
+  const displayedRoutes = useMemo(() => {
+    if (
+      hidenRoutes.some((ruta) => ruta && location.pathname.startsWith(ruta))
+    ) {
+      return crmRoutes;
     }
-  }
+    return allRoutes;
+  }, [location.pathname, allRoutes, crmRoutes, hidenRoutes]);
 
   return (
     <Sidebar variant="floating" collapsible="icon">
@@ -392,7 +447,7 @@ export function AppSidebar() {
             <SidebarGroupLabel>Secciones</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {retornarRutas().map((item) => {
+                {displayedRoutes.map((item) => {
                   // Si el item tiene submenú, lo mostramos como un SidebarMenuSub dentro de un Collapsible
                   if (item.submenu) {
                     return (

@@ -541,20 +541,21 @@ export default function HistorialVentas() {
                           <TooltipTrigger>
                             <Button
                               disabled={["CREDITO", "OTRO"].includes(
-                                venta.metodoPago.metodoPago
+                                venta?.metodoPago?.metodoPago ?? ""
                               )}
                               onClick={() => {
                                 setVentaEliminar((datosPrevios) => ({
                                   ...datosPrevios,
                                   usuarioId: userId,
-                                  ventaId: venta.id,
-                                  clienteId: Number(venta.cliente?.id),
-                                  productos: venta.productos.map((prod) => ({
-                                    cantidad: prod.cantidad,
-                                    precioVenta: prod.precioVenta,
-                                    productoId: prod.productoId, // Corrección aquí
-                                  })),
-                                  totalVenta: venta.totalVenta,
+                                  ventaId: venta?.id,
+                                  clienteId: Number(venta?.cliente?.id),
+                                  productos:
+                                    venta?.productos?.map((prod) => ({
+                                      cantidad: prod.cantidad,
+                                      precioVenta: prod.precioVenta,
+                                      productoId: prod.productoId,
+                                    })) || [],
+                                  totalVenta: venta?.totalVenta,
                                 }));
                                 setIsOpenDelete(true);
                               }}

@@ -59,6 +59,11 @@ import SucursalesSumary from "./Pages/Sumary/SucursalesSumary";
 import Metas from "./Pages/Metas/Metas";
 import MyGoals from "./Pages/Metas/MyGoals";
 import ReportesExcel from "./Pages/Reports/Ventas/ReportesExcel";
+import CrmDashboard from "./Crm/DashboardCRM/CrmDashboard";
+import CrmCustomers from "./Crm/CrmCustomers/CrmCustomers";
+import CrmCustomer from "./Crm/CrmCustomers/CrmCustomer";
+import Billing from "./Crm/CrmBilling/CrmBilling";
+import TicketDashboard from "./Crm/CrmTickets/CrmTicketDashboard";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
@@ -89,6 +94,7 @@ function App() {
 
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<RegisterView />} />
+
           <Route path="*" element={<NotFoundPage />} />
 
           {/* Rutas protegidas con Layout */}
@@ -494,6 +500,53 @@ function App() {
               element={
                 <ProtectRouteAdmin>
                   <MyGoals />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            {/* RUTAS PARA EL CRM */}
+
+            <Route
+              path="/crm"
+              element={
+                <ProtectRouteAdmin>
+                  <CrmDashboard />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/crm-clientes"
+              element={
+                <ProtectRouteAdmin>
+                  <CrmCustomers />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/crm/cliente/:id"
+              element={
+                <ProtectRouteAdmin>
+                  <CrmCustomer />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/crm/facturacion"
+              element={
+                <ProtectRouteAdmin>
+                  <Billing />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/crm/tickets"
+              element={
+                <ProtectRouteAdmin>
+                  <TicketDashboard />
                 </ProtectRouteAdmin>
               }
             />

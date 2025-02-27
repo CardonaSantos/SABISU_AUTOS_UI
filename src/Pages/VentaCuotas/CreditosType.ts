@@ -36,12 +36,14 @@ interface Usuario {
   id: number;
   nombre: string;
 }
-interface Cuotas {
+export interface Cuotas {
   id: number;
   creadoEn: string;
   estado: string;
   fechaPago: string;
+  fechaVencimiento: string;
   monto: number;
+  montoEsperado?: number;
   comentario: string;
   usuario: {
     id: number;

@@ -164,3 +164,12 @@ body {
 .custom-overlay::before {
   background-color: rgba(0, 0, 0, 0.4); /* Ajusta el valor de opacidad aquí */
 }
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

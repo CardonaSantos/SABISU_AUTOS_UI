@@ -196,18 +196,30 @@ export default function Layout2({ children }: LayoutProps) {
               {/* Sección izquierda: Logo y nombre de la sucursal */}
               <div className="flex items-center space-x-2">
                 <Link to={"/"}>
-                  <img className="h-16 w-28" src={nv2} alt="Logo" />
+                  <img
+                    className="h-12 w-12 md:h-16 md:w-28" // Mobile: 12x12, Medium+: 16x28
+                    src={nv2}
+                    alt="Logo"
+                  />
                 </Link>
                 <Link to={"/"}>
-                  <h2 className="text-lg font-semibold text-foreground">
+                  <p className="text-xs font-semibold text-foreground sm:text-sm md:text-base">
                     {sucursalInfo?.nombre}
-                  </h2>
+                  </p>
                 </Link>
               </div>
 
               {/* Sección derecha: Toggle de modo, notificaciones y menú de usuario */}
-              <div className="flex items-center space-x-4">
-                <div className="flex justify-center items-center p-4">
+              <div className="flex items-center space-x-2">
+                <div className="">
+                  <Link to={"/crm"}>
+                    <Button size={"icon"} variant={"link"}>
+                      CRM
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className=" ">
                   <ModeToggle />
                 </div>
                 <Dialog>
@@ -282,7 +294,7 @@ export default function Layout2({ children }: LayoutProps) {
                     </div>
                   </DialogContent>
                 </Dialog>
-                <div className="relative">
+                <div className="">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="icon">

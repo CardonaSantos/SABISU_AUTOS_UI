@@ -69,6 +69,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+import currency from "currency.js";
+import { useStore } from "@/components/Context/ContextSucursal";
+
+const formatearMoneda = (monto: number) => {
+  return currency(monto, {
+    symbol: "Q",
+    separator: ",",
+    decimal: ".",
+    precision: 2,
+  }).format();
+};
+
 const API_URL = import.meta.env.VITE_API_URL;
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -106,14 +119,6 @@ interface Plantillas {
 const FormatearFecha = (fecha: string) => {
   // Formateo en UTC sin conversión a local
   return dayjs(fecha).format("DD/MM/YYYY hh:mm A");
-};
-
-const formatearMoneda = (cantidad: number) => {
-  const nuevoFormato = new Intl.NumberFormat("es-GT", {
-    style: "currency",
-    currency: "GTQ",
-  }).format(cantidad);
-  return nuevoFormato;
 };
 
 export function CreditRecordsTable({
@@ -193,48 +198,6 @@ export function CreditRecordsTable({
   const [creditId, setCreditId] = useState<number | null>(null);
   const [openDeleteCredit, setOpenDeleteCredit] = useState(false);
 
-  // const handleDeleteCreditRegist = async () => {
-  //   if (passwordAdmin.length <= 0) {
-  //     toast.info("Ingrese su contraseña");
-  //     return;
-  //   }
-
-  //   if (!creditId) {
-  //     toast.info("Seleccione un registro a eliminar");
-  //     return;
-  //   }
-
-  //   try {
-  //     await toast.promise(
-  //       axios.delete(`${API_URL}/cuotas/delete-one-credit-regist`, {
-  //         data: {
-  //           passwordAdmin: passwordAdmin,
-  //           userId: userId,
-  //           sucursalId: sucursalId,
-  //           creditId: creditId,
-  //         },
-  //       }),
-  //       {
-  //         loading: "Eliminando registro de credito...",
-  //         success: "Registro eliminado correctamente",
-  //         error: "Error al eliminar registro",
-  //       }
-  //     );
-
-  //     // Aquí se puede hacer algo extra después de la eliminación exitosa
-  //     setOpenDeleteCredit(false);
-  //     setCreditId(null);
-  //     setPasswordAdmin("");
-  //     // await getCredits();
-
-  //     // Espera 500ms adicionales para dar tiempo al servidor
-  //     await new Promise((resolve) => setTimeout(resolve, 2000));
-  //     await getCredits(); // <-- Fuerza la actualización
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
-
   const handleDeleteCreditRegist = async () => {
     if (!passwordAdmin || !creditId) {
       toast.info("Complete los datos requeridos");
@@ -270,85 +233,217 @@ export function CreditRecordsTable({
   };
 
   function CuotasCard({ cuotas }: CuotasCardProps) {
-    return (
-      <Card className="w-full shadow-sm my-2">
-        <CardHeader>
-          <h2 className="font-bold text-center">Historial de pagos</h2>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-muted/50">
-              <TableRow>
-                <TableHead className="w-[100px]">No</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Fecha de Pago</TableHead>
-                <TableHead>Monto</TableHead>
-                <TableHead>Comentarios</TableHead>
-                <TableHead>Usuario</TableHead>
-                <TableHead>Comprobante</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {cuotas?.length > 0 ? (
-                cuotas.map((cuota) => (
-                  <TableRow key={cuota.id || "sin-id"}>
-                    <TableCell className="font-medium">
-                      #{cuota.id ?? "N/A"}
-                    </TableCell>
-                    <TableCell>{cuota.estado ?? "Desconocido"}</TableCell>
-                    <TableCell>
-                      {cuota.fechaPago
-                        ? FormatearFecha(cuota.fechaPago)
-                        : "Sin fecha"}
-                    </TableCell>
-                    <TableCell>
-                      {cuota.monto !== undefined
-                        ? formatearMoneda(cuota.monto)
-                        : "Sin monto"}
-                    </TableCell>
-                    <TableCell>
-                      {cuota.comentario ?? "Sin comentarios"}
-                    </TableCell>
-                    <TableCell>
-                      {cuota.usuario?.nombre ?? "Usuario no asignado"}
-                    </TableCell>
+    const [cuotaID, setCuotaID] = useState(0);
+    const sucursalID = sucursalId;
+    const userId = useStore((state) => state.userId) ?? 0;
+    // const sucursalId = useStore((state) => state.sucursalId) ?? 0;
 
-                    <TableCell className="flex justify-center">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Link to={`/cuota/comprobante/${cuota.id}`}>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                aria-label="Imprimir Comprobante"
-                              >
-                                <FileText className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Imprimir Comprobante</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+    const [openDeletePayment, setOpenDeletePayment] = useState(false);
+    const [password, setPassword] = useState("");
+
+    const handleDeletePaymentCuota = async () => {
+      try {
+        const response = await axios.delete(
+          `${API_URL}/cuotas/delete-one-payment-cuota`,
+          {
+            data: {
+              sucursalID: sucursalID,
+              password: password,
+              cuotaID: cuotaID,
+              userId: userId,
+            },
+          }
+        );
+
+        if (response.status === 200) {
+          setOpenDeletePayment(false);
+          setCuotaID(0);
+          setPassword("");
+          setSelectedRecord(null);
+          await getCredits();
+          toast.success("Registro de pago eliminado");
+        }
+      } catch (error) {
+        console.log(error);
+        toast.error("Error al eliminar registro de pago");
+      }
+    };
+
+    return (
+      <>
+        <Card className="w-full shadow-sm my-2">
+          <CardHeader>
+            <h2 className="font-bold text-center">Historial de pagos</h2>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead className="w-[100px]">No</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Fecha de Pago</TableHead>
+                  <TableHead>Monto</TableHead>
+                  <TableHead>Comentarios</TableHead>
+                  <TableHead>Usuario</TableHead>
+                  <TableHead>Comprobante</TableHead>
+                  <TableHead>Eliminar</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {cuotas?.length > 0 ? (
+                  cuotas
+                    .sort(
+                      (a, b) =>
+                        new Date(a.creadoEn).getTime() -
+                        new Date(b.creadoEn).getTime()
+                    )
+                    .map((cuota, index) => (
+                      <TableRow key={cuota.id || "sin-id"}>
+                        <TableCell className="font-medium">
+                          #{index + 1}
+                        </TableCell>
+                        <TableCell
+                          className={`font-bold text-sm ${
+                            cuota.estado === "PENDIENTE"
+                              ? "text-red-600" // Rojo oscuro para pagos pendientes
+                              : cuota.estado === "PAGADA"
+                              ? "text-green-600" // Verde para pagos completados
+                              : "text-blue-500" // Azul para otros estados
+                          }`}
+                        >
+                          {cuota.estado ?? "Desconocido"}
+                        </TableCell>
+                        <TableCell>
+                          {cuota.fechaPago
+                            ? FormatearFecha(cuota.fechaPago)
+                            : "Sin fecha"}
+                        </TableCell>
+                        <TableCell>
+                          {cuota.monto !== undefined
+                            ? formatearMoneda(cuota.monto)
+                            : "Sin monto"}
+                        </TableCell>
+                        <TableCell className="text-[0.8rem]">
+                          {cuota.comentario ?? "Sin comentarios"}
+                        </TableCell>
+                        <TableCell className="text-[0.8rem]">
+                          {cuota.usuario?.nombre ?? "Usuario no asignado"}
+                        </TableCell>
+
+                        <TableCell className="flex justify-center">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Link to={`/cuota/comprobante/${cuota.id}`}>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    aria-label="Imprimir Comprobante"
+                                  >
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                </Link>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Imprimir Comprobante</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </TableCell>
+
+                        <TableCell
+                          colSpan={5} // Esto asegura que la celda ocupe todas las columnas
+                          className=""
+                        >
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  onClick={() => {
+                                    setOpenDeletePayment(true);
+                                    setCuotaID(cuota.id);
+                                  }}
+                                  variant="outline"
+                                  size="icon"
+                                  aria-label="eliminar-pago"
+                                >
+                                  <DeleteIcon className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Eliminar registro de pago</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5} // Esto asegura que la celda ocupe todas las columnas
+                      className=""
+                    >
+                      <p>No hay cuotas pagadas disponibles</p>
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={5} // Esto asegura que la celda ocupe todas las columnas
-                    className=""
-                  >
-                    <p>No hay cuotas pagadas disponibles</p>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Dialog onOpenChange={setOpenDeletePayment} open={openDeletePayment}>
+          <DialogContent className="sm:max-w-[425px] md:max-w-[500px] lg:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-center justify-center">
+                <AlertTriangle className="h-6 w-6" />
+                Eliminación de registro de pago de cuota
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              <DialogDescription className=" text-center">
+                ¿Estás seguro de que deseas eliminar este registro?
+              </DialogDescription>
+              <DialogDescription className=" font-semibold text-center">
+                Esta acción es irreversible y el saldo será descontado de la
+                sucursal.
+              </DialogDescription>
+              <div className="relative">
+                <Input
+                  type="password"
+                  placeholder="Ingrese su contraseña para confirmar"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pr-12" // Espacio para el icono
+                  aria-label="Contraseña de confirmación"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 w-full">
+              <Button
+                variant="outline"
+                onClick={() => setOpenDeletePayment(false)}
+                className="w-full sm:w-1/2 order-2 sm:order-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeletePaymentCuota}
+                disabled={!password.trim()}
+                className="w-full sm:w-1/2 order-1 sm:order-2 flex items-center justify-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Sí, eliminar registro
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
@@ -413,12 +508,7 @@ export function CreditRecordsTable({
                 <TableRow key={record.id}>
                   <TableCell>#{record.id}</TableCell>
                   <TableCell>{record.cliente.nombre}</TableCell>
-                  <TableCell>
-                    {Intl.NumberFormat("es-GT", {
-                      style: "currency",
-                      currency: "GTQ",
-                    }).format(record.totalVenta)}
-                  </TableCell>
+                  <TableCell>{formatearMoneda(record.totalVenta)}</TableCell>
 
                   <TableCell>
                     {formatearMoneda(
@@ -427,12 +517,7 @@ export function CreditRecordsTable({
                     )}
                   </TableCell>
 
-                  <TableCell>
-                    {Intl.NumberFormat("es-GT", {
-                      style: "currency",
-                      currency: "GTQ",
-                    }).format(record.totalPagado)}
-                  </TableCell>
+                  <TableCell>{formatearMoneda(record.totalPagado)}</TableCell>
 
                   <TableCell>
                     {formatearMoneda(
