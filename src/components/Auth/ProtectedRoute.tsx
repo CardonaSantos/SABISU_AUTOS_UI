@@ -1,24 +1,17 @@
 // PROTECTOR PARA CUALQUIER USUARIO LOGUEADO
 import { Navigate } from "react-router-dom";
-import { ReactNode, useEffect, useState } from "react";
-import { useStore } from "../Context/ContextSucursal";
+import { ReactNode } from "react";
 import gif from "@/assets/loading.gif";
+import { useAuthStore } from "./AuthState";
 
 interface ProtectedRouteProps {
   children: ReactNode;
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const userRol = useStore((state) => state.userRol);
-  const [loading, setLoading] = useState(true);
+  const { userRol, isLoading } = useAuthStore();
 
-  useEffect(() => {
-    if (userRol !== undefined && userRol !== "") {
-      setLoading(false);
-    }
-  }, [userRol]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex flex-col justify-center items-center h-screen gap-2">
         <img src={gif} alt="Cargando..." className="w-16 h-16 object-contain" />
@@ -27,11 +20,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // If userRol is `null`, we know user is not logged in
-  if (userRol === null) {
+  if (!userRol) {
     return <Navigate to="/login" />;
   }
 
-  // Otherwise, userRol is set to something valid => show the route
   return children;
 }

@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import {
   Card,
   CardContent,
@@ -84,11 +85,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Reparacion } from "../Reparaciones/RepairRegisType";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import currency from "currency.js";
-// import { motion } from "framer-motion";
-
-// const cardVariants = {
-//   hidden
-// }
+import DesvanecerHaciaArriba from "@/Crm/Motion/DashboardAnimations";
+import SkeletonCard from "./Skeleton/SkeletonCardCredit";
 
 const formatearMoneda = (monto: number) => {
   return currency(monto, {
@@ -262,11 +260,6 @@ export default function Dashboard() {
         axios.get(`${API_URL}/analytics/get-ventas-recientes/`),
       ]);
 
-      // Accede a los datos de cada respuesta
-      console.log("Ventas del mes:", ventasMes.data);
-      console.log("Ventas del díaXXXXXXXXXXXXXXXXXXX:", ventasDia.data);
-      console.log("Ventas de la semana:", ventasSemana.data);
-
       // Si necesitas combinar la información de alguna manera, puedes hacerlo aquí
       setVentasMes(ventasMes.data);
       setVentasSemana(ventasSemana.data);
@@ -280,11 +273,6 @@ export default function Dashboard() {
       toast.error("Error al recuperar informacion de ventas del servidor");
     }
   };
-
-  console.log("LAS VENTAS DEL DÍA SON: ", ventasDia);
-
-  console.log("Las ventas semanales del chart son: ", ventasSemanalChart);
-  console.log("Mas vendidos: ", masVendidos);
 
   // Llamar a la función
   useEffect(() => {
@@ -306,9 +294,7 @@ export default function Dashboard() {
       toast.error("Error al conseguir solicitudes");
     }
   };
-
   //=======================================================>
-
   // SOLICITUDES DE TRANSFERENCIA PRODUCTO
   const getSolicitudesTransferencia = async () => {
     try {
@@ -413,9 +399,6 @@ export default function Dashboard() {
     }
   }, [socket]);
 
-  console.log("Las solicitudes son: ", solicitudes);
-  console.log("Las solicitudes de transferencia: ", solicitudesTransferencia);
-
   const [openAceptarTransferencia, setOpenAceptarTransferencia] =
     useState(false);
   const [openRechazarTransferencia, setOpenRechazarTransferencia] =
@@ -425,10 +408,6 @@ export default function Dashboard() {
   const handleAceptarTransferencia = async (
     idSolicitudTransferencia: number
   ) => {
-    console.log(
-      `Aceptada la solicitud de transferencia con ID: ${idSolicitudTransferencia} y User ID: ${userID}`
-    );
-
     try {
       // Realiza la llamada al backend usando axios
       const response = await axios.post(
@@ -455,10 +434,6 @@ export default function Dashboard() {
   const handleRejectTransferencia = async (
     idSolicitudTransferencia: number
   ) => {
-    console.log(
-      `Aceptada la solicitud de transferencia con ID: ${idSolicitudTransferencia} y User ID: ${userID}`
-    );
-
     try {
       // Realiza la llamada al backend usando axios
       const response = await axios.delete(
@@ -469,12 +444,9 @@ export default function Dashboard() {
         toast.warning("Solicitu de transferencia rechazada");
         getSolicitudesTransferencia();
       }
-
-      // Puedes mostrar una notificación de éxito aquí
     } catch (error) {
       console.error("Error al aceptar la transferencia:", error);
       toast.error("Error");
-      // Puedes mostrar una notificación de error aquí
     }
   };
 
@@ -495,7 +467,6 @@ export default function Dashboard() {
     getWarranties();
   }, []);
 
-  console.log("Las garantías son: ", warranties);
   enum EstadoGarantia {
     RECIBIDO = "RECIBIDO",
     // EN_PROCESO = "EN_PROCESO",
@@ -614,17 +585,21 @@ export default function Dashboard() {
   };
 
   const [creditos, setCreditos] = useState<CreditoRegistro[]>([]);
+  const [isLoadingCreditos, setIsLoadingCreditos] = useState(true);
   const getCredits = async () => {
+    setIsLoadingCreditos(true);
     try {
       const response = await axios.get(
         `${API_URL}/cuotas/get-credits-without-paying`
       );
       if (response.status === 200) {
         setCreditos(response.data);
+        setIsLoadingCreditos(false);
       }
     } catch (error) {
       console.log(error);
       toast.error("Error al cargar datos");
+      setIsLoadingCreditos(false);
     }
   };
 
@@ -1536,10 +1511,9 @@ export default function Dashboard() {
       </Card>
     );
   };
-  console.log("LOS CREDITOS SON: ", creditos);
 
   return (
-    <div className="p-4 space-y-4">
+    <motion.div {...DesvanecerHaciaArriba} className="container p-4 space-y-4">
       <h1 className="text-2xl font-bold">Dashboard de Administrador</h1>
 
       {/* Resumen de ventas */}
@@ -1591,13 +1565,22 @@ export default function Dashboard() {
 
       {/* MOSTRAR LOS CRÉDITOS ACTIVOS */}
       <div
+        {...DesvanecerHaciaArriba}
         className={
           creditos && creditos.length > 0
-            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4" // Usando grid de 2 columnas en sm y lg
-            : "w-full" // Para el caso cuando no hay créditos
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4"
+            : "w-full"
         }
       >
-        {creditos && creditos.length > 0 ? (
+        {isLoadingCreditos ? (
+          [...Array(4)].map((_) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <SkeletonCard key={index} />
+              ))}
+            </div>
+          )) // Usa SkeletonCard en lugar de solo un div
+        ) : creditos && creditos.length > 0 ? (
           creditos.map((ventacuota) => (
             <VentaCuotaCard key={ventacuota.id} ventaCuota={ventacuota} />
           ))
@@ -2280,6 +2263,6 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
 
       {/* Notificaciones y alertas */}
-    </div>
+    </motion.div>
   );
 }

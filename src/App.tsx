@@ -64,9 +64,17 @@ import CrmCustomers from "./Crm/CrmCustomers/CrmCustomers";
 import CrmCustomer from "./Crm/CrmCustomers/CrmCustomer";
 import Billing from "./Crm/CrmBilling/CrmBilling";
 import TicketDashboard from "./Crm/CrmTickets/CrmTicketDashboard";
+import { useAuthStore } from "./components/Auth/AuthState";
+import { useEffect } from "react";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
+  const { checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth(); // Carga el estado de autenticación al iniciar
+  }, []);
+
   return (
     <>
       <Router>

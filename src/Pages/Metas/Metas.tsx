@@ -127,6 +127,13 @@ interface Usuario {
   nombre: string; // Nombre del usuario
   rol: string; // Rol del usuario (por ejemplo, ADMIN, VENDEDOR, etc.)
 }
+
+enum EstadoMetaTienda {
+  CANCELADO = "CANCELADO",
+  ABIERTO = "ABIERTO",
+  FINALIZADO = "FINALIZADO",
+}
+
 //INTERFACES PARA METAS DE TIENDAS
 // Interfaz principal para la meta de ventas o tienda
 interface MetaTienda {
@@ -141,9 +148,10 @@ interface MetaTienda {
   sucursalId: number; // ID de la sucursal asociada
   tituloMeta: string; // Título o descripción de la meta
   usuarioId: number; // ID del usuario asociado a la meta
-  estado: string;
   sucursal: SucursalMetaTiendas; // Detalles de la sucursal asociada
   usuario: UsuarioMetaTiendas; // Detalles del usuario asociado
+
+  estado: EstadoMetaTienda;
 }
 
 // Interfaz para la sucursal
@@ -696,7 +704,7 @@ function Metas() {
                   </Button>
                 </div>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto ">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -714,7 +722,7 @@ function Metas() {
                       <TableHead>Acción</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="text-[0.8rem]">
                     {filteredMetasTienda.map((meta) => {
                       const porcentaje =
                         meta.montoMeta > 0
@@ -1433,11 +1441,24 @@ export function EditMetaTiendaDialog({
     }
   };
 
+  const handleChangeEstadoMetaTienda = (estado: EstadoMetaTienda) => {
+    setFormData((dataPrev) =>
+      dataPrev
+        ? {
+            ...dataPrev,
+            estado: estado,
+          }
+        : null
+    );
+  };
+
+  console.log("La data cambiando es: ", formData);
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
+          <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-center justify-center ">
             <Edit className="h-5 w-5 text-blue-500" />
             Editar Meta de Tienda
           </DialogTitle>
@@ -1463,14 +1484,18 @@ export function EditMetaTiendaDialog({
             />
           </div>
 
-          <Select>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={formData?.estado} />
+          <Select onValueChange={handleChangeEstadoMetaTienda}>
+            <SelectTrigger className="w-full">
+              <SelectValue
+                placeholder={formData?.estado ?? "Seleccione un estado"}
+              />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="light">Light</SelectItem>
-              <SelectItem value="dark">Dark</SelectItem>
-              <SelectItem value="system">System</SelectItem>
+              {Object.values(EstadoMetaTienda).map((estado) => (
+                <SelectItem key={estado} value={estado ?? ""}>
+                  {estado}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

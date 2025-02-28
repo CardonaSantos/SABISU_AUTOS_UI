@@ -147,8 +147,6 @@ export default function Layout2({ children }: LayoutProps) {
   }, [userID]);
   // authTokenPos
 
-  console.log("Mis notificaciones diponibles son: ", notificaciones);
-
   const deleteNoti = async (id: number) => {
     try {
       const response = await axios.delete(
@@ -213,7 +211,11 @@ export default function Layout2({ children }: LayoutProps) {
               <div className="flex items-center space-x-2">
                 <div className="">
                   <Link to={"/crm"}>
-                    <Button size={"icon"} variant={"link"}>
+                    <Button
+                      className="underline font-semibold"
+                      size={"icon"}
+                      variant={"link"}
+                    >
                       CRM
                     </Button>
                   </Link>
