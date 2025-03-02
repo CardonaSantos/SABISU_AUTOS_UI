@@ -52,6 +52,7 @@ import {
   TrendingDown,
   TrendingUp,
   X,
+  XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -101,6 +102,14 @@ interface MetaCobros {
   DepositoCobro: DepositoCobro[]; // Lista de depósitos asociados a la meta
   sucursal: Sucursal; // Información de la sucursal
   usuario: Usuario; // Información del usuario
+  estado: EstadoMetaCobro;
+}
+
+enum EstadoMetaCobro {
+  CANCELADO = "CANCELADO",
+  ABIERTO = "ABIERTO",
+  FINALIZADO = "FINALIZADO",
+  CERRADO = "CERRADO",
 }
 
 interface DepositoCobro {
@@ -132,6 +141,18 @@ enum EstadoMetaTienda {
   CANCELADO = "CANCELADO",
   ABIERTO = "ABIERTO",
   FINALIZADO = "FINALIZADO",
+  CERRADO = "CERRADO",
+}
+enum EstadoMetaSelect {
+  CANCELADO = "CANCELADO",
+  CERRADO = "CERRADO",
+  ABIERTO = "ABIERTO",
+  // FINALIZADO = "FINALIZADO",
+}
+
+enum EstadoMetaSelectCumplida {
+  CERRADO = "CERRADO",
+  CANCELADO = "CANCELADO",
 }
 
 //INTERFACES PARA METAS DE TIENDAS
@@ -200,9 +221,18 @@ interface OptionSelected {
 
 interface EditMetaTiendaDialogProps {
   open: boolean;
+  getMetasTienda: () => void;
+
   onClose: () => void;
   metaTienda: MetaTienda | null;
-  onUpdate: (updatedMeta: MetaTienda) => void; // Función para actualizar
+  // onUpdate: (updatedMeta: MetaTienda) => void; // Función para actualizar
+}
+
+interface EditMetaCobro {
+  open: boolean;
+  getMetasCobros: () => void;
+  onClose: () => void;
+  metaCobro: MetaCobros | null;
 }
 
 function Metas() {
@@ -215,10 +245,22 @@ function Metas() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const [openUpdateMetaTienda, setOpenUpdateMetaTienda] = useState(false);
-  // const [openUpdateMetaCobro, setOpenUpdateMetaCobro] = useState(false);
+  const [openUpdateMetaCobro, setOpenUpdateMetaCobro] = useState(false);
 
   const [metaTiendaSelected, setMetaTiendaSelected] =
     useState<MetaTienda | null>(null);
+
+  const [metaCobroSelected, setMetaCobroSelected] = useState<MetaCobros | null>(
+    null
+  );
+
+  const [metasCobrosSummary, setMetasCobrosSummary] = useState<MetaCobros[]>(
+    []
+  );
+
+  const [metasTiendaSummary, setMetasTiendaSummary] = useState<MetaTienda[]>(
+    []
+  );
 
   // const [formData, setFormData] = useState<MetaTienda | null>(null);
 
@@ -245,6 +287,7 @@ function Metas() {
       toast.error("Error al conseguir los registros de metas de cobros");
     }
   };
+  // console.log("Las metas de cobros son: ", metasCobros);
 
   const getMetasTienda = async () => {
     try {
@@ -253,6 +296,21 @@ function Metas() {
       );
       if (response.status === 200) {
         setMetasTienda(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al conseguir los registros de metas de tiendas");
+    }
+  };
+
+  const getMetasToSummary = async () => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/metas/get-all-metas-to-summary`
+      );
+      if (response.status === 200) {
+        setMetasTiendaSummary(response.data.metasTienda);
+        setMetasCobrosSummary(response.data.metasCobros);
       }
     } catch (error) {
       console.log(error);
@@ -277,6 +335,7 @@ function Metas() {
       getMetasCobros();
       getMetasTienda();
       getUsuarios();
+      getMetasToSummary();
     }
   }, []);
 
@@ -501,11 +560,11 @@ function Metas() {
 
   //METAS DE COBROS
   const getMetasCobroTotal = () => {
-    return metasCobros.reduce((acc, meta) => acc + meta.montoMeta, 0);
+    return metasCobrosSummary.reduce((acc, meta) => acc + meta.montoMeta, 0);
   };
 
   const getMetasCobroAvance = () => {
-    return metasCobros.reduce((acc, meta) => acc + meta.montoActual, 0);
+    return metasCobrosSummary.reduce((acc, meta) => acc + meta.montoActual, 0);
   };
 
   const getMetasCobroRestante = () => {
@@ -513,8 +572,11 @@ function Metas() {
   };
 
   const getPercentMetaCobro = () => {
-    let montoMeta = metasCobros.reduce((acc, meta) => acc + meta.montoMeta, 0);
-    let montoActual = metasCobros.reduce(
+    let montoMeta = metasCobrosSummary.reduce(
+      (acc, meta) => acc + meta.montoMeta,
+      0
+    );
+    let montoActual = metasCobrosSummary.reduce(
       (acc, meta) => acc + meta.montoActual,
       0
     );
@@ -526,11 +588,11 @@ function Metas() {
 
   //METAS DE TIENDAS
   const getMetasTiendaTotal = () => {
-    return metasTienda.reduce((acc, meta) => acc + meta.montoMeta, 0);
+    return metasTiendaSummary.reduce((acc, meta) => acc + meta.montoMeta, 0);
   };
 
   const getMetasTiendaAvance = () => {
-    return metasTienda.reduce((acc, meta) => acc + meta.montoActual, 0);
+    return metasTiendaSummary.reduce((acc, meta) => acc + meta.montoActual, 0);
   };
 
   const getMetasTiendaRestante = () => {
@@ -538,8 +600,11 @@ function Metas() {
   };
 
   const getPercentTiendaCobro = () => {
-    let montoMeta = metasTienda.reduce((acc, meta) => acc + meta.montoMeta, 0);
-    let montoActual = metasTienda.reduce(
+    let montoMeta = metasTiendaSummary.reduce(
+      (acc, meta) => acc + meta.montoMeta,
+      0
+    );
+    let montoActual = metasTiendaSummary.reduce(
       (acc, meta) => acc + meta.montoActual,
       0
     );
@@ -564,7 +629,7 @@ function Metas() {
             <Store className="w-4 h-4 mr-2" />
             Metas de Tiendas
           </TabsTrigger>
-          <TabsTrigger value="cobros">
+          <TabsTrigger value="cobros" className="truncate">
             <CreditCard className="w-4 h-4 mr-2" />
             Metas de Cobros
           </TabsTrigger>
@@ -803,10 +868,15 @@ function Metas() {
                           </TableCell>
 
                           <TableCell>
-                            {meta.cumplida ? (
+                            {meta.estado === EstadoMetaTienda.FINALIZADO ? (
                               <div className="flex items-center gap-2 text-green-500">
                                 <CheckCircle className="w-4 h-4" />
                                 Cumplida
+                              </div>
+                            ) : meta.estado === EstadoMetaTienda.CERRADO ? (
+                              <div className="flex items-center gap-2 text-violet-500">
+                                <XCircle className="w-4 h-4" />
+                                Cerrada
                               </div>
                             ) : (
                               <div className="flex items-center gap-2 text-yellow-500">
@@ -816,36 +886,43 @@ function Metas() {
                             )}
                           </TableCell>
 
-                          <TableCell>
+                          <TableCell className="text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">
-                                  <MoreVertical className="h-4 w-4" />
+                                  <MoreVertical className="h-5 w-5 text-gray-500 hover:text-gray-700" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="">
+
+                              <DropdownMenuContent
+                                align="end"
+                                className="w-40 shadow-lg rounded-md border border-gray-200 "
+                              >
+                                {/* Opción para actualizar */}
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setOpenUpdateMetaTienda(true);
+                                    setMetaTiendaSelected(meta);
+                                  }}
+                                  className="flex items-center gap-2 hover:bg-gray-100"
+                                >
+                                  <Edit className="h-4 w-4 text-blue-500" />
+                                  <span>Actualizar</span>
+                                </DropdownMenuItem>
+
+                                {/* Separador */}
+                                <div className="h-px bg-gray-200 my-1" />
+
                                 {/* Opción para eliminar */}
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setGoalToDelete(meta.id);
                                     setOpenDeleteG(true);
                                   }}
+                                  className="flex items-center gap-2 text-red-500 hover:bg-red-100"
                                 >
-                                  <span>Eliminar</span>{" "}
-                                  <Delete className="ml-2 h-4 w-4" />
-                                </DropdownMenuItem>
-
-                                {/* Opción para editar/actualizar */}
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    // Handle edit/update here
-                                    setOpenUpdateMetaTienda(true);
-                                    setMetaTiendaSelected(meta);
-                                    // setOpenUpdateMetaTienda(true);
-                                  }}
-                                >
-                                  <span>Actualizar</span>
-                                  <Edit className="ml-2 h-4 w-4" />
+                                  <Delete className="h-4 w-4" />
+                                  <span>Eliminar</span>
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -895,9 +972,7 @@ function Metas() {
                       <TableHead>Porcentaje</TableHead>
                       <TableHead>Referencia</TableHead>
                       <TableHead>Diferencia</TableHead>
-                      <TableHead>Depósitos</TableHead>
                       <TableHead>Estado</TableHead>
-                      <TableHead>Depósitos</TableHead>
                       <TableHead>Acciónes</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -986,15 +1061,17 @@ function Metas() {
                             </div>
                           </TableCell>
 
-                          {/* Número de depósitos */}
-                          <TableCell>{meta.DepositoCobro.length}</TableCell>
-
                           {/* Estado de la meta */}
-                          <TableCell>
-                            {meta.cumplida ? (
-                              <div className="flex items-center gap-2 text-green-500">
+                          <TableCell className="">
+                            {meta.estado === EstadoMetaCobro.FINALIZADO ? (
+                              <div className="flex items-center gap-2 text-green-500 ">
                                 <CheckCircle className="w-4 h-4" />
                                 Cumplida
+                              </div>
+                            ) : meta.estado === EstadoMetaCobro.CERRADO ? (
+                              <div className="flex items-center gap-2 text-violet-500">
+                                <XCircle className="w-4 h-4" />
+                                Cerrada
                               </div>
                             ) : (
                               <div className="flex items-center gap-2 text-yellow-500">
@@ -1005,26 +1082,58 @@ function Metas() {
                           </TableCell>
 
                           {/* Acciones */}
-                          <TableCell>
-                            <Button
-                              onClick={() => handleOpenDepositos(meta)}
-                              variant="ghost"
-                              className="flex justify-center items-center"
-                            >
-                              <Coins />
-                            </Button>
-                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreVertical className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                                </Button>
+                              </DropdownMenuTrigger>
 
-                          <TableCell>
-                            <Button
-                              onClick={() => {
-                                setCobroToDelete(meta.id);
-                                setOpenDeleteCobro(true);
-                              }}
-                              variant={"ghost"}
-                            >
-                              <Delete />
-                            </Button>
+                              <DropdownMenuContent
+                                align="end"
+                                className="w-44 shadow-lg rounded-md border border-gray-200 "
+                              >
+                                {/* Opción para ver depósitos */}
+                                <DropdownMenuItem
+                                  onClick={() => handleOpenDepositos(meta)}
+                                  className="flex items-center gap-2 hover:bg-gray-100"
+                                >
+                                  <Coins className="h-4 w-4 text-yellow-500" />
+                                  <span>Depósitos</span>
+                                </DropdownMenuItem>
+
+                                {/* Separador */}
+                                <div className="h-px bg-gray-200 my-1" />
+
+                                {/* Opción para actualizar */}
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setMetaCobroSelected(meta);
+                                    setOpenUpdateMetaCobro(true);
+                                  }}
+                                  className="flex items-center gap-2 hover:bg-gray-100"
+                                >
+                                  <Edit className="h-4 w-4 text-blue-500" />
+                                  <span>Actualizar</span>
+                                </DropdownMenuItem>
+
+                                {/* Separador */}
+                                <div className="h-px bg-gray-200 my-1" />
+
+                                {/* Opción para eliminar */}
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setCobroToDelete(meta.id);
+                                    setOpenDeleteCobro(true);
+                                  }}
+                                  className="flex items-center gap-2 text-red-500 hover:bg-red-100"
+                                >
+                                  <Delete className="h-4 w-4" />
+                                  <span>Eliminar</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       );
@@ -1155,7 +1264,7 @@ function Metas() {
         </TabsContent>
 
         <TabsContent value="totales">
-          <Card>
+          <Card className="my-6 shadow-md">
             <CardHeader>
               <CardTitle>Resumen de metas de cobros</CardTitle>
               <CardDescription>
@@ -1222,7 +1331,7 @@ function Metas() {
           </Card>
 
           {/* RESUMEN DE METAS DE COBROS EN TIENDAS */}
-          <Card>
+          <Card className="my-6 shadow-md">
             <CardHeader>
               <CardTitle>Resumen de metas de tiendas</CardTitle>
               <CardDescription>
@@ -1392,22 +1501,17 @@ function Metas() {
 
       {/* DIALOG PARA ACTUALIZACION DE METAS DE TIENDAS*/}
       <EditMetaTiendaDialog
+        getMetasTienda={getMetasTienda}
         open={openUpdateMetaTienda}
         onClose={() => setOpenUpdateMetaTienda(false)}
         metaTienda={metaTiendaSelected}
-        onUpdate={(updatedMeta) => {
-          // Aquí puedes llamar a la API para actualizar el registro
-          fetch(`/api/meta-tiendas/${updatedMeta.id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updatedMeta),
-          })
-            .then(() => {
-              toast.success("Meta actualizada correctamente");
-              setOpenUpdateMetaTienda(false);
-            })
-            .catch(() => toast.error("Error al actualizar la meta"));
-        }}
+      />
+
+      <EditMetaCobroDialog
+        getMetasCobros={getMetasCobros}
+        open={openUpdateMetaCobro}
+        onClose={() => setOpenUpdateMetaCobro(false)}
+        metaCobro={metaCobroSelected}
       />
     </div>
   );
@@ -1417,7 +1521,7 @@ export function EditMetaTiendaDialog({
   open,
   onClose,
   metaTienda,
-  onUpdate,
+  getMetasTienda,
 }: EditMetaTiendaDialogProps) {
   const [formData, setFormData] = useState<MetaTienda | null>(null);
 
@@ -1434,10 +1538,28 @@ export function EditMetaTiendaDialog({
     setFormData((prev) => (prev ? { ...prev, [name]: value } : null));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (formData) {
-      onUpdate(formData); // Enviar solo los datos editados al backend
-      onClose();
+      try {
+        const response = await axios.patch(
+          `${API_URL}/metas/update-one-meta/${formData.id}`,
+          {
+            tituloMeta: formData.tituloMeta,
+            EstadoMetaTienda: formData.estado,
+            montoMeta: formData.montoMeta,
+          }
+        );
+
+        if (response.status === 200) {
+          toast.success("Registro actualizado");
+          // onUpdate(formData); // Enviar solo los datos editados al backend
+          onClose();
+          await getMetasTienda();
+        }
+      } catch (error) {
+        console.log(error);
+        toast.error("Error al actualizar");
+      }
     }
   };
 
@@ -1491,11 +1613,17 @@ export function EditMetaTiendaDialog({
               />
             </SelectTrigger>
             <SelectContent>
-              {Object.values(EstadoMetaTienda).map((estado) => (
-                <SelectItem key={estado} value={estado ?? ""}>
-                  {estado}
-                </SelectItem>
-              ))}
+              {formData?.estado === EstadoMetaTienda.FINALIZADO
+                ? Object.values(EstadoMetaSelectCumplida).map((estado) => (
+                    <SelectItem key={estado} value={estado}>
+                      {estado}
+                    </SelectItem>
+                  ))
+                : Object.values(EstadoMetaSelect).map((estado) => (
+                    <SelectItem key={estado} value={estado}>
+                      {estado}
+                    </SelectItem>
+                  ))}
             </SelectContent>
           </Select>
         </div>
@@ -1513,6 +1641,127 @@ export function EditMetaTiendaDialog({
             variant="default"
             className="w-full sm:w-auto"
           >
+            <Check className="mr-2 h-4 w-4" />
+            Guardar Cambios
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function EditMetaCobroDialog({
+  open,
+  onClose,
+  metaCobro,
+  getMetasCobros,
+}: EditMetaCobro) {
+  const [formDataCobro, setFormDataCobro] = useState<MetaCobros | null>(null);
+
+  useEffect(() => {
+    if (metaCobro) {
+      // Clonar el objeto para evitar modificar el estado original
+      setFormDataCobro({ ...metaCobro });
+    }
+  }, [metaCobro]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!formDataCobro) return;
+    const { name, value } = e.target;
+    setFormDataCobro((prev) => (prev ? { ...prev, [name]: value } : null));
+  };
+
+  const handleSave = async () => {
+    if (formDataCobro) {
+      console.log("El id del registro de cobro: ", formDataCobro.id);
+
+      try {
+        const response = await axios.patch(
+          `${API_URL}/metas/update-one-meta-cobro/${formDataCobro.id}`,
+          {
+            tituloMeta: formDataCobro.tituloMeta,
+            EstadoMetaTienda: formDataCobro.estado,
+            montoMeta: formDataCobro.montoMeta,
+          }
+        );
+
+        if (response.status === 200) {
+          toast.success("Registro actualizado");
+          // onUpdate(formData); // Enviar solo los datos editados al backend
+          onClose();
+          await getMetasCobros();
+        }
+      } catch (error) {
+        console.log(error);
+        toast.error("Error al actualizar");
+      }
+    }
+  };
+
+  const handleChangeEstadoMetaTienda = (estado: EstadoMetaCobro) => {
+    setFormDataCobro((dataPrev) =>
+      dataPrev
+        ? {
+            ...dataPrev,
+            estado: estado,
+          }
+        : null
+    );
+  };
+
+  console.log("La data cambiando es: ", formDataCobro);
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-center justify-center ">
+            <Edit className="h-5 w-5 text-blue-500" />
+            Editar Meta de Cobros
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          <div>
+            <label className="text-sm font-medium">Título de la Meta</label>
+            <Input
+              name="tituloMeta"
+              value={formDataCobro?.tituloMeta || ""}
+              onChange={handleInputChange}
+              placeholder="Título de la meta"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Monto Meta</label>
+            <Input
+              name="montoMeta"
+              type="number"
+              value={formDataCobro?.montoMeta || ""}
+              onChange={handleInputChange}
+              placeholder="Monto objetivo"
+            />
+          </div>
+
+          <Select onValueChange={handleChangeEstadoMetaTienda}>
+            <SelectTrigger className="w-full">
+              <SelectValue
+                placeholder={formDataCobro?.estado ?? "Seleccione un estado"}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(EstadoMetaSelect).map((estado) => (
+                <SelectItem key={estado} value={estado ?? ""}>
+                  {estado}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <DialogFooter className="flex gap-2">
+          <Button variant="destructive" onClick={onClose} className="w-full ">
+            <X className="mr-2 h-4 w-4" />
+            Cancelar
+          </Button>
+          <Button onClick={handleSave} variant="default" className="w-full">
             <Check className="mr-2 h-4 w-4" />
             Guardar Cambios
           </Button>

@@ -181,6 +181,11 @@ function ReportesExcel() {
     endDate: undefined,
   });
 
+  const [metasDateRange, setMetasDateRange] = useState<DateRange>({
+    startDate: undefined,
+    endDate: undefined,
+  });
+
   const [salesMinTotal, setSalesMinTotal] = useState<string>("");
   const [salesMaxTotal, setSalesMaxTotal] = useState<string>(""); // Nuevo estado
 
@@ -222,6 +227,10 @@ function ReportesExcel() {
 
       case "usuarios":
         setUsuariosDateRange((prev) => ({ ...prev, [field]: date }));
+        break;
+
+      case "metas":
+        setMetasDateRange((prev) => ({ ...prev, [field]: date }));
         break;
     }
   };
@@ -1002,7 +1011,7 @@ function ReportesExcel() {
         <ReportCard
           title="Creditos"
           icon={<CreditCard className="h-6 w-6" />} // Icono ideal para entregas
-          description="Reporte de historial de Asistencias"
+          description="Reporte de historial de Creditos"
           dateRange={creditosDateRange}
           onDateChange={(field, date) =>
             handleDateChange("creditos", field, date)
@@ -1016,6 +1025,23 @@ function ReportesExcel() {
           endDatePlaceholder="Fin del rango de creación"
         ></ReportCard>
         {/* CONSEGUIR REPORTES DE CREDITOS */}
+
+        {/* CONSEGUIR REPORTES DE METAS */}
+        <ReportCard
+          title="Metas"
+          icon={<CreditCard className="h-6 w-6" />} // Icono ideal para entregas
+          description="Reporte de historial de Metas"
+          dateRange={metasDateRange}
+          onDateChange={(field, date) => handleDateChange("metas", field, date)}
+          onDownload={() =>
+            handleDownload("metas", creditosDateRange, {
+              // proveedor: selectedProveedor?.value, // Filtro de proveedor
+            })
+          }
+          startDatePlaceholder="Inicio del rango de creación"
+          endDatePlaceholder="Fin del rango de creación"
+        />
+        {/* CONSEGUIR REPORTES DE METAS */}
 
         {/* CONSEGUIR REPORTES DE LOS CLIENTES */}
         <ReportCard

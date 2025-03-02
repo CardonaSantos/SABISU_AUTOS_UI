@@ -40,6 +40,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import currency from "currency.js";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
 dayjs.locale("es");
@@ -128,8 +134,8 @@ interface MetasResponse {
 function MyGoals() {
   const userId = useStore((state) => state.userId) ?? 0;
   const [metas, setMetas] = useState<MetasResponse | null>(null); // Estado para guardar las metas
-  const [loading, setLoading] = useState<boolean>(true); // Estado de carga
-  const [error, setError] = useState<string | null>(null); // Estado de error
+  // const [loading, setLoading] = useState<boolean>(true); // Estado de carga
+  // const [error, setError] = useState<string | null>(null); // Estado de error
 
   //======================>
   const [selectedMetaId, setSelectedMetaId] = useState<number | null>(null);
@@ -144,17 +150,23 @@ function MyGoals() {
   const [openDeletDepo, setOpenDeletDepo] = useState(false);
   const [selectedDepo, setSelectedDepo] = useState<DepositoCobro>();
 
+  // const [loadingMetas, setLoadingMetas] = useState(true);
+
   const fetchGoals = async () => {
     try {
+      // setLoadingMetas(true);
+
       const response = await axios.get<MetasResponse>(
         `${API_URL}/metas/get-all-my-goals/${userId}`
       ); // Tipar la respuesta de Axios
       setMetas(response.data); // Guardar las metas en el estado
-      setLoading(false);
+      // setLoadingMetas(false);
+
+      // setLoading(false);
     } catch (err) {
       console.error("Error al obtener las metas:", err);
-      setError("Ocurrió un error al cargar las metas");
-      setLoading(false);
+      // setError("Ocurrió un error al cargar las metas");
+      // setLoading(false);
     }
   };
   useEffect(() => {
@@ -162,14 +174,6 @@ function MyGoals() {
       fetchGoals();
     }
   }, []);
-
-  if (loading) {
-    return <div>Cargando metas...</div>;
-  }
-
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
 
   console.log("Los registros de este usuario son: ", metas);
   const handleOpenDialog = (metaId: number) => {
@@ -255,295 +259,370 @@ function MyGoals() {
       <h1 className="text-2xl font-bold mb-6">Mis Metas</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {metas?.metasCobros.map((meta) => {
-          const percentageComplete =
-            meta.montoMeta > 0 ? (meta.montoActual / meta.montoMeta) * 100 : 0;
-          const referencia = calcularReferencia();
-          const diferencia = percentageComplete - referencia;
+        {metas?.metasCobros
+          .sort(
+            (a, b) =>
+              new Date(a.fechaCreado).getTime() -
+              new Date(b.fechaCreado).getTime()
+          )
+          .map((meta) => {
+            const percentageComplete =
+              meta.montoMeta > 0
+                ? (meta.montoActual / meta.montoMeta) * 100
+                : 0;
+            const referencia = calcularReferencia();
+            const diferencia = percentageComplete - referencia;
 
-          return (
-            <Card key={meta.id} className="overflow-hidden">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Banknote className="mr-2 h-5 w-5 text-primary" />
-                    <span className="font-semibold">{meta.tituloMeta}</span>
-                  </div>
-                  <Badge
-                    variant={
-                      percentageComplete >= 100 ? "default" : "destructive"
-                    }
-                  >
-                    {percentageComplete.toFixed(1)}%
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Progress Bar */}
-                  <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                    <div
-                      className={cn(
-                        "h-full transition-all duration-300",
-                        percentageComplete >= 100
-                          ? "bg-green-500"
-                          : percentageComplete >= 75
-                          ? "bg-blue-500"
-                          : percentageComplete >= 50
-                          ? "bg-yellow-500"
-                          : "bg-red-500"
-                      )}
-                      style={{ width: `${Math.min(percentageComplete, 100)}%` }}
-                    />
-                  </div>
-
-                  {/* Main Info Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center text-sm">
-                        <User className="mr-2 h-4 w-4 text-gray-500" />
-                        <span className="font-medium">
-                          {meta.usuario.nombre}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center text-sm">
-                        <Calendar className="mr-2 h-4 w-4 text-gray-500" />
-                        <span>
-                          {formatearFecha(meta.fechaInicio)} -{" "}
-                          {formatearFecha(meta.fechaFin)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center text-sm">
-                        <Target className="mr-2 h-4 w-4 text-primary" />
-                        <span>Meta: {formatearMoneda(meta.montoMeta)}</span>
-                      </div>
+            return (
+              <Card key={meta.id} className="overflow-hidden shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <TrendingUp className="mr-2 h-5 w-5 text-primary" />
+                      <span className="font-semibold">
+                        Meta de Cobro: {meta.tituloMeta}
+                      </span>
                     </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center text-sm">
-                        <TrendingUp
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            percentageComplete >= 100
-                              ? "text-green-500"
-                              : percentageComplete >= 75
-                              ? "text-blue-500"
-                              : "text-gray-500"
-                          )}
-                        />
-                        <span>Actual: {formatearMoneda(meta.montoActual)}</span>
-                      </div>
-
-                      <div className="flex items-center text-sm">
-                        <BarChart2 className="mr-2 h-4 w-4 text-gray-500" />
-                        <span>
-                          Faltante:{" "}
-                          {formatearMoneda(meta.montoMeta - meta.montoActual)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center text-sm">
-                        {diferencia >= 0 ? (
-                          <TrendingUp className="mr-2 h-4 w-4 text-green-500" />
-                        ) : (
-                          <TrendingDown className="mr-2 h-4 w-4 text-red-500" />
+                    <Badge
+                      variant={
+                        percentageComplete >= 100 ? "default" : "destructive"
+                      }
+                    >
+                      {percentageComplete.toFixed(1)}%
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Progress Bar */}
+                    <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                      <div
+                        className={cn(
+                          "h-full transition-all duration-300",
+                          percentageComplete >= 100
+                            ? "bg-green-500"
+                            : percentageComplete >= 75
+                            ? "bg-blue-500"
+                            : percentageComplete >= 50
+                            ? "bg-yellow-500"
+                            : "bg-red-500"
                         )}
-                        <span>
-                          Diferencia vs Referencia: {diferencia.toFixed(2)}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-2 pt-4">
-                    <Button
-                      onClick={() => {
-                        setOpenDepositos(true);
-                        setSelectedMeta(meta);
-                      }}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      <Coins className="mr-2 h-4 w-4" />
-                      Depósitos: {meta.DepositoCobro.length}
-                    </Button>
-
-                    <Button
-                      onClick={() => handleOpenDialog(meta.id)}
-                      className="flex-1"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Agregar Depósito
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-
-        {/* Metas de Tiendas */}
-
-        {metas?.metasTienda.map((meta) => {
-          const percentageComplete =
-            meta.montoMeta > 0 ? (meta.montoActual / meta.montoMeta) * 100 : 0;
-          const referencia = calcularReferencia();
-          const diferencia = percentageComplete - referencia;
-
-          return (
-            <Card key={meta.id} className="overflow-hidden">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <TrendingUp className="mr-2 h-5 w-5 text-primary" />
-                    <span className="font-semibold">{meta.tituloMeta}</span>
-                  </div>
-                  <Badge
-                    variant={
-                      percentageComplete >= 100 ? "default" : "destructive"
-                    }
-                  >
-                    {percentageComplete.toFixed(1)}%
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Progress Bar */}
-                  <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                    <div
-                      className={cn(
-                        "h-full transition-all duration-300",
-                        percentageComplete >= 100
-                          ? "bg-green-500"
-                          : percentageComplete >= 75
-                          ? "bg-blue-500"
-                          : percentageComplete >= 50
-                          ? "bg-yellow-500"
-                          : "bg-red-500"
-                      )}
-                      style={{ width: `${Math.min(percentageComplete, 100)}%` }}
-                    />
-                  </div>
-
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Left Column */}
-                    <div className="space-y-3">
-                      <div className="flex items-center text-sm">
-                        <User className="mr-2 h-4 w-4 text-gray-500" />
-                        <span className="font-medium">
-                          {meta.usuario.nombre}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center text-sm">
-                        <Calendar className="mr-2 h-4 w-4 text-gray-500" />
-                        <span>
-                          {formatearFecha(meta.fechaInicio)} -{" "}
-                          {formatearFecha(meta.fechaFin)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center text-sm">
-                        <Target className="mr-2 h-4 w-4 text-primary" />
-                        <span>Meta: {formatearMoneda(meta.montoMeta)}</span>
-                      </div>
+                        style={{
+                          width: `${Math.min(percentageComplete, 100)}%`,
+                        }}
+                      />
                     </div>
 
-                    {/* Right Column */}
-                    <div className="space-y-3">
-                      <div className="flex items-center text-sm">
-                        <TrendingUp
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            percentageComplete >= 100
-                              ? "text-green-500"
-                              : percentageComplete >= 75
-                              ? "text-blue-500"
-                              : "text-gray-500"
-                          )}
-                        />
-                        <span>Actual: {formatearMoneda(meta.montoActual)}</span>
-                      </div>
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Left Column */}
+                      <div className="space-y-3">
+                        <div className="flex items-center text-sm">
+                          <User className="mr-2 h-4 w-4 text-gray-500" />
+                          <span className="font-medium">
+                            {meta.usuario.nombre}
+                          </span>
+                        </div>
 
-                      <div className="flex items-center text-sm gap-2">
-                        <div className="flex items-center">
-                          <ChartBar
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              referencia >= 75
-                                ? "text-green-500"
-                                : referencia >= 50
-                                ? "text-yellow-500"
-                                : "text-gray-500"
-                            )}
-                          />
-                          <span>Referencia: {referencia.toFixed(1)}%</span>
+                        <div className="flex items-center text-sm">
+                          <Calendar className="mr-2 h-4 w-4 text-gray-500" />
+                          <span>
+                            {formatearFecha(meta.fechaInicio)} -{" "}
+                            {formatearFecha(meta.fechaFin)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center text-sm">
+                          <Target className="mr-2 h-4 w-4 text-primary" />
+                          <span>Meta: {formatearMoneda(meta.montoMeta)}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center text-sm">
-                        {diferencia >= 0 ? (
-                          <TrendingUp className="mr-2 h-4 w-4 text-green-500" />
-                        ) : (
-                          <TrendingDown className="mr-2 h-4 w-4 text-red-500" />
-                        )}
-                        <span
-                          className={cn(
-                            diferencia >= 0 ? "text-green-600" : "text-red-600"
-                          )}
-                        >
-                          Diferencia: {diferencia.toFixed(2)}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                      {/* Right Column */}
+                      <div className="space-y-3">
+                        <div className="flex items-center text-sm">
+                          <TrendingUp
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              percentageComplete >= 100
+                                ? "text-green-500"
+                                : percentageComplete >= 75
+                                ? "text-blue-500"
+                                : "text-gray-500"
+                            )}
+                          />
+                          <span>
+                            Actual: {formatearMoneda(meta.montoActual)}
+                          </span>
+                        </div>
 
-                  {/* Performance Indicators */}
-                  <div className="grid grid-cols-3 gap-2 pt-2">
-                    <div
-                      className={cn(
-                        "rounded-lg p-2 text-center",
-                        percentageComplete >= referencia
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      )}
-                    >
-                      <div className="text-xs font-medium">Progreso</div>
-                      <div className="text-sm font-bold">
-                        {percentageComplete.toFixed(2)}%
+                        <div className="flex items-center text-sm">
+                          <BarChart2 className="mr-2 h-4 w-4 text-gray-500" />
+                          <span>
+                            Faltante:{" "}
+                            {formatearMoneda(meta.montoMeta - meta.montoActual)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center text-sm">
+                          {diferencia >= 0 ? (
+                            <TrendingUp className="mr-2 h-4 w-4 text-green-500" />
+                          ) : (
+                            <TrendingDown className="mr-2 h-4 w-4 text-red-500" />
+                          )}
+                          <span
+                            className={cn(
+                              diferencia >= 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            )}
+                          >
+                            Diferencia: {diferencia.toFixed(2)}%
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="rounded-lg bg-secondary p-2 text-center">
-                      <div className="text-xs font-medium">Referencia</div>
-                      <div className="text-sm font-bold">
-                        {referencia.toFixed(2)}%
+
+                    {/* Performance Indicators */}
+                    <div className="grid grid-cols-3 gap-2 pt-2">
+                      <div
+                        className={cn(
+                          "rounded-lg p-2 text-center",
+                          percentageComplete >= referencia
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        )}
+                      >
+                        <div className="text-xs font-medium">Progreso</div>
+                        <div className="text-sm font-bold">
+                          {percentageComplete.toFixed(2)}%
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-secondary p-2 text-center">
+                        <div className="text-xs font-medium">Referencia</div>
+                        <div className="text-sm font-bold">
+                          {referencia.toFixed(2)}%
+                        </div>
+                      </div>
+                      <div
+                        className={cn(
+                          "rounded-lg p-2 text-center",
+                          diferencia >= 0
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        )}
+                      >
+                        <div className="text-xs font-medium">Diferencia</div>
+                        <div className="text-sm font-bold">
+                          {diferencia >= 0 ? "+" : ""}
+                          {diferencia.toFixed(2)}%
+                        </div>
                       </div>
                     </div>
-                    <div
-                      className={cn(
-                        "rounded-lg p-2 text-center",
-                        diferencia >= 0
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      )}
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-2 pt-4">
+                      <Button
+                        onClick={() => {
+                          setOpenDepositos(true);
+                          setSelectedMeta(meta);
+                        }}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        <Coins className="mr-2 h-4 w-4" />
+                        Depósitos: {meta.DepositoCobro.length}
+                      </Button>
+
+                      <Button
+                        onClick={() => handleOpenDialog(meta.id)}
+                        className="flex-1"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Agregar Depósito
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+
+        {/* Metas de Tiendas */}
+
+        {metas?.metasTienda
+          .sort(
+            (a, b) =>
+              new Date(a.fechaInicio).getTime() -
+              new Date(b.fechaInicio).getTime()
+          )
+          .map((meta) => {
+            const percentageComplete =
+              meta.montoMeta > 0
+                ? (meta.montoActual / meta.montoMeta) * 100
+                : 0;
+            const referencia = calcularReferencia();
+            const diferencia = percentageComplete - referencia;
+
+            return (
+              <Card key={meta.id} className="overflow-hidden shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <TrendingUp className="mr-2 h-5 w-5 text-primary" />
+                      <span className="font-semibold">
+                        Meta de Tienda: {meta.tituloMeta}
+                      </span>
+                    </div>
+                    <Badge
+                      variant={
+                        percentageComplete >= 100 ? "default" : "destructive"
+                      }
                     >
-                      <div className="text-xs font-medium">Diferencia</div>
-                      <div className="text-sm font-bold">
-                        {diferencia >= 0 ? "+" : ""}
-                        {diferencia.toFixed(2)}%
+                      {percentageComplete.toFixed(1)}%
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Progress Bar */}
+                    <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                      <div
+                        className={cn(
+                          "h-full transition-all duration-300",
+                          percentageComplete >= 100
+                            ? "bg-green-500"
+                            : percentageComplete >= 75
+                            ? "bg-blue-500"
+                            : percentageComplete >= 50
+                            ? "bg-yellow-500"
+                            : "bg-red-500"
+                        )}
+                        style={{
+                          width: `${Math.min(percentageComplete, 100)}%`,
+                        }}
+                      />
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Left Column */}
+                      <div className="space-y-3">
+                        <div className="flex items-center text-sm">
+                          <User className="mr-2 h-4 w-4 text-gray-500" />
+                          <span className="font-medium">
+                            {meta.usuario.nombre}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center text-sm">
+                          <Calendar className="mr-2 h-4 w-4 text-gray-500" />
+                          <span>
+                            {formatearFecha(meta.fechaInicio)} -{" "}
+                            {formatearFecha(meta.fechaFin)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center text-sm">
+                          <Target className="mr-2 h-4 w-4 text-primary" />
+                          <span>Meta: {formatearMoneda(meta.montoMeta)}</span>
+                        </div>
+                      </div>
+
+                      {/* Right Column */}
+                      <div className="space-y-3">
+                        <div className="flex items-center text-sm">
+                          <TrendingUp
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              percentageComplete >= 100
+                                ? "text-green-500"
+                                : percentageComplete >= 75
+                                ? "text-blue-500"
+                                : "text-gray-500"
+                            )}
+                          />
+                          <span>
+                            Actual: {formatearMoneda(meta.montoActual)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center text-sm gap-2">
+                          <div className="flex items-center">
+                            <ChartBar
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                referencia >= 75
+                                  ? "text-green-500"
+                                  : referencia >= 50
+                                  ? "text-yellow-500"
+                                  : "text-gray-500"
+                              )}
+                            />
+                            <span>Referencia: {referencia.toFixed(1)}%</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center text-sm">
+                          {diferencia >= 0 ? (
+                            <TrendingUp className="mr-2 h-4 w-4 text-green-500" />
+                          ) : (
+                            <TrendingDown className="mr-2 h-4 w-4 text-red-500" />
+                          )}
+                          <span
+                            className={cn(
+                              diferencia >= 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            )}
+                          >
+                            Diferencia: {diferencia.toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Performance Indicators */}
+                    <div className="grid grid-cols-3 gap-2 pt-2">
+                      <div
+                        className={cn(
+                          "rounded-lg p-2 text-center",
+                          percentageComplete >= referencia
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        )}
+                      >
+                        <div className="text-xs font-medium">Progreso</div>
+                        <div className="text-sm font-bold">
+                          {percentageComplete.toFixed(2)}%
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-secondary p-2 text-center">
+                        <div className="text-xs font-medium">Referencia</div>
+                        <div className="text-sm font-bold">
+                          {referencia.toFixed(2)}%
+                        </div>
+                      </div>
+                      <div
+                        className={cn(
+                          "rounded-lg p-2 text-center",
+                          diferencia >= 0
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        )}
+                      >
+                        <div className="text-xs font-medium">Diferencia</div>
+                        <div className="text-sm font-bold">
+                          {diferencia >= 0 ? "+" : ""}
+                          {diferencia.toFixed(2)}%
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                </CardContent>
+              </Card>
+            );
+          })}
       </div>
 
       {/* DIALOG PARA PODER ELIMINAR UN REGISTRO DE DEPOSITO */}
@@ -552,59 +631,114 @@ function MyGoals() {
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle className="text-center">
-                Depósitos de {selectedMeta.tituloMeta}
+                Depósitos de{" "}
+                {selectedMeta.tituloMeta ? selectedMeta.tituloMeta : "Meta"}
               </DialogTitle>
             </DialogHeader>
-            <ScrollArea className="max-h-[60vh] pr-4">
+            <ScrollArea
+              className="max-h-[60vh] pr-4"
+              aria-label="Lista de depósitos"
+            >
               {selectedMeta.DepositoCobro.length > 0 ? (
                 <div className="space-y-4">
                   {selectedMeta.DepositoCobro.map((deposito) => (
-                    <div
+                    <Card
                       key={deposito.id}
-                      className="bg-muted rounded-lg p-4 space-y-2"
+                      className="transition-all hover:shadow-md"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <Banknote className="w-5 h-5 text-primary" />
-                          <span className="font-semibold">
-                            Boleta: {deposito.numeroBoleta}
-                          </span>
+                      <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between space-y-0">
+                        <div className="flex items-center gap-2">
+                          <Banknote
+                            className="w-5 h-5 text-primary"
+                            aria-hidden="true"
+                          />
+                          <h3 className="font-medium text-base">
+                            Boleta:{" "}
+                            <span className="font-semibold">
+                              {deposito.numeroBoleta}
+                            </span>
+                          </h3>
+                          <Badge variant="outline" className="ml-2">
+                            {formatearMoneda(deposito.montoDepositado)}
+                          </Badge>
                         </div>
-                        <Button
-                          onClick={() => {
-                            // handleEliminarDeposito(deposito.id);
-                            setSelectedDepo(deposito);
-                            setOpenDeletDepo(true);
-                          }}
-                          variant="destructive"
-                          size="icon"
-                          className="h-8 w-8"
-                          aria-label={`Eliminar depósito ${deposito.numeroBoleta}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Coins className="w-4 h-4 text-muted-foreground" />
-                        <span>{formatearMoneda(deposito.montoDepositado)}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span>{formatearFecha(deposito.fechaRegistro)}</span>
-                      </div>
-                      {deposito.descripcion && (
-                        <div className="flex items-start space-x-2">
-                          <FileText className="w-4 h-4 text-muted-foreground mt-1" />
-                          <p className="text-sm">{deposito.descripcion}</p>
-                        </div>
-                      )}
-                    </div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                onClick={() => {
+                                  setSelectedDepo(deposito);
+                                  setOpenDeletDepo(true);
+                                }}
+                                variant="destructive"
+                                size="icon"
+                                className="h-8 w-8"
+                                aria-label={`Eliminar depósito ${deposito.numeroBoleta}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                <span className="sr-only">
+                                  Eliminar depósito
+                                </span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Eliminar depósito</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-2">
+                        <dl className="grid gap-2 text-sm">
+                          <div className="flex items-center gap-2">
+                            <dt className="sr-only">Monto depositado</dt>
+                            <Coins
+                              className="w-4 h-4 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                            <dd className="font-medium">
+                              {formatearMoneda(deposito.montoDepositado)}
+                            </dd>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <dt className="sr-only">Fecha de registro</dt>
+                            <Calendar
+                              className="w-4 h-4 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                            <dd>{formatearFecha(deposito.fechaRegistro)}</dd>
+                          </div>
+
+                          {deposito.descripcion ? (
+                            <div className="flex items-start gap-2">
+                              <dt className="sr-only">Descripción</dt>
+                              <FileText
+                                className="w-4 h-4 text-muted-foreground mt-1"
+                                aria-hidden="true"
+                              />
+                              <dd className="text-sm text-muted-foreground">
+                                {deposito.descripcion}
+                              </dd>
+                            </div>
+                          ) : null}
+                        </dl>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               ) : (
-                <p className="text-center text-muted-foreground py-4">
-                  No hay depósitos registrados.
-                </p>
+                <div className="flex flex-col items-center justify-center py-8 px-4 text-center border border-dashed rounded-lg">
+                  <Banknote
+                    className="w-12 h-12 text-muted-foreground/50 mb-3"
+                    aria-hidden="true"
+                  />
+                  <p className="text-muted-foreground font-medium">
+                    No hay depósitos registrados.
+                  </p>
+                  <p className="text-sm text-muted-foreground/70 mt-1">
+                    Los depósitos aparecerán aquí cuando sean registrados.
+                  </p>
+                </div>
               )}
             </ScrollArea>
             <DialogFooter>
