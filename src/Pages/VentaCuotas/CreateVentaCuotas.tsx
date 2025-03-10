@@ -872,23 +872,6 @@ export default function CreateVentaCuotaForm() {
 
                   <div className="space-y-2">
                     <Label
-                      htmlFor="fechaInicio"
-                      className="flex items-center gap-1"
-                    >
-                      Fecha de inicio
-                    </Label>
-                    <input
-                      type="date"
-                      id="fechaInicio"
-                      name="fechaInicio"
-                      value={formData.fechaInicio} // Asignamos la fecha directamente del estado
-                      onChange={(e) => handleChangeDate(e, "fechaInicio")} // Actualizamos la fecha
-                      className="w-full py-2 px-3 border rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label
                       htmlFor="cuotaInicial"
                       className="flex items-center gap-1"
                     >
