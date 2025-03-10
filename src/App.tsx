@@ -66,6 +66,9 @@ import Billing from "./Crm/CrmBilling/CrmBilling";
 import TicketDashboard from "./Crm/CrmTickets/CrmTicketDashboard";
 import { useAuthStore } from "./components/Auth/AuthState";
 import { useEffect } from "react";
+import CreateCustomers from "./Crm/CrmCreateCustomers/CreateCustomers";
+import EmpresaForm from "./Crm/CrmEmpresa/EmpresaForm";
+import CustomerDetails from "./Crm/CrmCustomer/CrmCustomerDetails";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
@@ -555,6 +558,33 @@ function App() {
               element={
                 <ProtectRouteAdmin>
                   <TicketDashboard />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/crm/crear-cliente-crm"
+              element={
+                <ProtectRouteAdmin>
+                  <CreateCustomers />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/crm/cliente-detalle"
+              element={
+                <ProtectRouteAdmin>
+                  <CustomerDetails />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/crm/empresa"
+              element={
+                <ProtectRouteAdmin>
+                  <EmpresaForm />
                 </ProtectRouteAdmin>
               }
             />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search } from "lucide-react";
+// import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,50 +19,46 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import CrmCreateTicket from "./CreateTickets/CrmCreateTicket";
 
 interface TicketFiltersProps {
   onFilterChange: (value: string) => void;
   onStatusChange: (value: string | null) => void;
+  //Para el modal
+  openCreatT: boolean;
+  setOpenCreateT: (value: boolean) => void;
+  getTickets: () => void;
 }
 
 export default function TicketFilters({
   onFilterChange,
   onStatusChange,
+  //Propiedades del create ticket
+  getTickets,
+  openCreatT,
+  setOpenCreateT,
 }: TicketFiltersProps) {
   const [date, setDate] = useState<Date | undefined>(undefined);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar"
-            className="pl-8"
+            className="pl-8 "
             onChange={(e) => onFilterChange(e.target.value)}
           />
         </div>
 
-        <Select onValueChange={(value) => console.log(value)}>
+        <Select onValueChange={onStatusChange}>
           <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Choose a tag" />
+            <SelectValue placeholder="Etiquetas" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="urgent">Urgente</SelectItem>
             <SelectItem value="maintenance">Mantenimiento</SelectItem>
             <SelectItem value="installation">Instalación</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select onValueChange={(value) => console.log(value)}>
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Usuario asignado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="floridalma">Floridalma Caño</SelectItem>
-            <SelectItem value="nicolasa">Nicolasa Dilia</SelectItem>
-            <SelectItem value="cindy">Cindy Dileny</SelectItem>
           </SelectContent>
         </Select>
 
@@ -75,7 +71,7 @@ export default function TicketFilters({
               <span>
                 {date
                   ? format(date, "PPP", { locale: es })
-                  : "Choose a date range"}
+                  : "Seleccionar fecha"}
               </span>
             </Button>
           </PopoverTrigger>
@@ -91,42 +87,51 @@ export default function TicketFilters({
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Select onValueChange={(value) => console.log(value)}>
-          <SelectTrigger className="w-[150px]">
+        <div className="flex gap-2">
+          <Button
+            onClick={() => {
+              setOpenCreateT(true);
+            }}
+            variant={"secondary"}
+            className="h-[32px]"
+          >
+            Crear Ticket
+          </Button>
+          <CrmCreateTicket
+            getTickets={getTickets}
+            openCreatT={openCreatT}
+            setOpenCreateT={setOpenCreateT}
+          />
+        </div>
+        <Select onValueChange={onStatusChange}>
+          <SelectTrigger className="w-[150px] h-[32px]">
             <SelectValue placeholder="Todos los tickets" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos los tickets</SelectItem>
+            <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="assigned">Asignados a mí</SelectItem>
             <SelectItem value="created">Creados por mí</SelectItem>
           </SelectContent>
         </Select>
 
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            className="bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700"
-            onClick={() => onStatusChange("nuevo")}
-          >
+          <Button className="h-[32px]" onClick={() => onStatusChange("nuevo")}>
             Nuevo
           </Button>
           <Button
-            variant="outline"
-            className="bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700"
+            className="h-[32px]"
             onClick={() => onStatusChange("abierto")}
           >
             Abiertos
           </Button>
           <Button
-            variant="outline"
-            className="bg-yellow-50 text-yellow-600 hover:bg-yellow-100 hover:text-yellow-700"
+            className="h-[32px]"
             onClick={() => onStatusChange("pendiente")}
           >
             Pendiente
           </Button>
           <Button
-            variant="outline"
-            className="bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-700"
+            className="h-[32px]"
             onClick={() => onStatusChange("solucionado")}
           >
             Solucionado

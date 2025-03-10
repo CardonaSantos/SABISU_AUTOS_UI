@@ -33,6 +33,16 @@ import {
 } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import currency from "currency.js";
+
+const formatearMoneda = (monto: number) => {
+  return currency(monto, {
+    symbol: "Q",
+    separator: ",",
+    decimal: ".",
+    precision: 2,
+  }).format();
+};
 
 dayjs.extend(localizedFormat);
 dayjs.extend(customParseFormat);
@@ -69,6 +79,8 @@ export default function CashRegisters() {
     };
     getCashRegists();
   }, [sucursalId]);
+
+  console.log("registros de caja: ", shift);
 
   //=============PAGINACION
   const [currentPage, setCurrentPage] = useState(1);
@@ -143,7 +155,9 @@ export default function CashRegisters() {
                       <strong>Diferencia:</strong>{" "}
                       {shift?.saldoInicial !== undefined &&
                       shift?.saldoFinal !== undefined
-                        ? formatCurrency(shift.saldoFinal - shift.saldoInicial)
+                        ? formatearMoneda(
+                            Math.abs(shift.saldoFinal - shift.saldoInicial)
+                          )
                         : "No disponible"}
                     </p>
                   </div>
@@ -153,7 +167,9 @@ export default function CashRegisters() {
 
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="depositos">
-                <AccordionTrigger>Depósitos</AccordionTrigger>
+                <AccordionTrigger>
+                  Depósitos ({shift.depositos.length})
+                </AccordionTrigger>
                 <AccordionContent>
                   <Table>
                     <TableHeader>
@@ -209,7 +225,9 @@ export default function CashRegisters() {
               </AccordionItem>
 
               <AccordionItem value="egresos">
-                <AccordionTrigger>Egresos</AccordionTrigger>
+                <AccordionTrigger>
+                  Egresos ({shift.egresos.length})
+                </AccordionTrigger>
                 <AccordionContent>
                   <Table>
                     <TableHeader>
@@ -251,7 +269,9 @@ export default function CashRegisters() {
               </AccordionItem>
 
               <AccordionItem value="ventas">
-                <AccordionTrigger>Ventas</AccordionTrigger>
+                <AccordionTrigger>
+                  Ventas ({shift.ventas.length})
+                </AccordionTrigger>
                 <AccordionContent>
                   <Table>
                     <TableHeader>
@@ -295,7 +315,9 @@ export default function CashRegisters() {
               </AccordionItem>
 
               <AccordionItem value="comentario">
-                <AccordionTrigger>Comentario</AccordionTrigger>
+                <AccordionTrigger>
+                  Comentario ({shift.comentario.length ? "Si" : "No"})
+                </AccordionTrigger>
                 <AccordionContent>
                   <p className="whitespace-pre-wrap">
                     {shift?.comentario || "Sin comentarios"}

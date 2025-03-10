@@ -2,17 +2,19 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import type { Ticket } from "./ticketTypes";
-import { cn } from "@/lib/utils";
+// import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+// import { Button } from "@/components/ui/button";
+// import CrmCreateTicket from "./CreateTickets/CrmCreateTicket";
 
 interface TicketListProps {
-  tickets: Ticket[];
-  selectedTicketId: number | undefined;
-  onSelectTicket: (ticket: Ticket) => void;
+  tickets: Ticket[]; // Lista de tickets
+  selectedTicketId: number | null; // ID del ticket seleccionado (debería ser un número, no un objeto Ticket)
+  onSelectTicket: (ticket: Ticket) => void; // Función para seleccionar un ticket
 }
 
 export default function TicketList({
@@ -20,18 +22,17 @@ export default function TicketList({
   selectedTicketId,
   onSelectTicket,
 }: TicketListProps) {
+  console.log("El id que me están pasando a la list es: ", selectedTicketId);
+
   return (
     <div className="h-[calc(100vh-220px)] flex flex-col">
       <Tabs defaultValue="inbox" className="w-full">
-        <div className="border-b px-4 py-2">
-          <TabsList className="grid w-full grid-cols-3 h-9">
-            <TabsTrigger value="inbox">Inbox</TabsTrigger>
-            <TabsTrigger value="lista">Lista</TabsTrigger>
-            <TabsTrigger value="archivados">Archivados</TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="inbox" className="m-0">
+        <TabsList className="grid w-full grid-cols-3 h-10">
+          <TabsTrigger value="inbox">Inbox</TabsTrigger>
+          <TabsTrigger value="lista">Lista</TabsTrigger>
+          <TabsTrigger value="archivados">Archivados</TabsTrigger>
+        </TabsList>
+        <TabsContent value="inbox" className="m-0 my-1">
           <div className="overflow-y-auto h-[calc(100vh-280px)]">
             <AnimatePresence>
               {tickets.map((ticket) => (
@@ -40,53 +41,49 @@ export default function TicketList({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  whileHover={{ backgroundColor: "rgba(0,0,0,0.02)" }}
-                  className={cn(
-                    "border-b p-4 cursor-pointer",
-                    selectedTicketId === ticket.id && "bg-muted"
-                  )}
-                  onClick={() => onSelectTicket(ticket)}
+                  className={`border-b p-4 cursor-pointer ${
+                    Number(selectedTicketId) === Number(ticket.id)
+                      ? "bg-gray-100 dark:bg-gray-900"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    onSelectTicket(ticket);
+                    console.log("El ticket seleccionado es: ", ticket.id);
+                  }}
                 >
                   <div className="flex items-start gap-3">
-                    <Avatar className="h-8 w-8 bg-primary">
-                      <span className="text-xs font-medium">
-                        {ticket.assignee.initials}
-                      </span>
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        {ticket.assignee.name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
-
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-[13px]">
                           #{ticket.id} · {ticket.assignee.name}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs ">
                           {format(new Date(ticket.date), "d MMM yyyy", {
                             locale: es,
                           })}
                         </div>
                       </div>
-
-                      <h3 className="font-medium text-base truncate">
+                      <h3 className="font-normal text-base truncate">
                         {ticket.title}
                       </h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
+                      <p className="text-[12px] line-clamp-2">
                         {ticket.description}
                       </p>
-
-                      {ticket.status === "nuevo" && (
-                        <div className="mt-2">
-                          <Badge
-                            variant="outline"
-                            className="bg-blue-50 text-blue-600 hover:bg-blue-100"
-                          >
-                            Nuevo
-                          </Badge>
-                        </div>
-                      )}
                     </div>
-
-                    {ticket.unread && (
-                      <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-2"></div>
+                    {ticket.status === "nuevo" && (
+                      <div className="mt-2">
+                        <Badge
+                          variant="outline"
+                          className="bg-blue-50 text-blue-600 hover:bg-blue-100"
+                        >
+                          Nuevo
+                        </Badge>
+                      </div>
                     )}
                   </div>
                 </motion.div>
@@ -94,18 +91,17 @@ export default function TicketList({
             </AnimatePresence>
           </div>
         </TabsContent>
-
+        {/* Similar for "lista" and "archivados" tabs */}
         <TabsContent value="lista" className="m-0">
           <div className="p-4 text-center text-muted-foreground">
             Vista de lista no implementada
           </div>
         </TabsContent>
-
         <TabsContent value="archivados" className="m-0">
           <div className="p-4 text-center text-muted-foreground">
             No hay tickets archivados
           </div>
-        </TabsContent>
+        </TabsContent>{" "}
       </Tabs>
     </div>
   );

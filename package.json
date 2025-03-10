@@ -47,6 +47,7 @@
     "handlebars": "^4.7.8",
     "html-to-pdfmake": "^2.5.17",
     "html2pdf.js": "^0.10.2",
+    "input-otp": "^1.4.2",
     "jspdf": "^2.5.2",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.447.0",

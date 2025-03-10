@@ -26,7 +26,44 @@ export const mockTickets: Ticket[] = [
           name: "CandyMar20",
           initials: "CM",
         },
-        text: "Un Tractor jaló el cable y la clienta quedó sin señal",
+        text: "Este es un comentario añadido al ticket",
+        date: "2025-02-26T16:02:00",
+      },
+
+      {
+        user: {
+          id: 2,
+          name: "Santos M.Cardona",
+          initials: "CM",
+        },
+        text: "Este es un modelo base de los tickets propuestos",
+        date: "2025-02-26T16:02:00",
+      },
+      {
+        user: {
+          id: 2,
+          name: "Santos M.Cardona",
+          initials: "CM",
+        },
+        text: "Este es un modelo base de los tickets propuestos",
+        date: "2025-02-26T16:02:00",
+      },
+      {
+        user: {
+          id: 2,
+          name: "Santos M.Cardona",
+          initials: "CM",
+        },
+        text: "Este es un modelo base de los tickets propuestos",
+        date: "2025-02-26T16:02:00",
+      },
+      {
+        user: {
+          id: 2,
+          name: "Santos M.Cardona",
+          initials: "CM",
+        },
+        text: "Este es un modelo base de los tickets propuestos",
         date: "2025-02-26T16:02:00",
       },
     ],

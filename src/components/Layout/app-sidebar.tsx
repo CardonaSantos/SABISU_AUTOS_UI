@@ -19,6 +19,7 @@ import {
   Target,
   Goal,
   Wifi,
+  UserPlus,
 } from "lucide-react";
 
 import {
@@ -384,10 +385,19 @@ const routesCrm_Admin = [
         label: "Clientes",
         href: "/crm-clientes",
       },
+      {
+        icon: UserPlus,
+        label: "Crear Cliente",
+        href: "/crm/crear-cliente-crm",
+      },
     ],
   },
+
   { icon: CreditCard, label: "Facturación", href: "/crm/facturacion" },
   { icon: Ticket, label: "Tickets", href: "/crm/tickets" },
+  { icon: Building, label: "Empresa", href: "/crm/empresa" },
+
+  { icon: Users, label: "Cliente Detalle", href: "/crm/cliente-detalle" },
 ];
 const routesCrm_Otro = [
   { icon: Wifi, label: "CRM", href: "/crm" },
