@@ -1,6 +1,4 @@
-"use client";
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ColumnDef,
   flexRender,
@@ -22,410 +20,64 @@ import {
 import { Link } from "react-router-dom";
 import { Edit } from "lucide-react";
 import { motion } from "framer-motion";
+import { ClienteDto } from "./CustomerTable";
+import axios from "axios";
+import { toast } from "sonner";
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import utc from "dayjs/plugin/utc";
+import localizedFormat from "dayjs/plugin/localizedFormat";
+// const API_URL = import.meta.env.VITE_API_URL;
 
-type Cliente = {
-  id: number;
-  nombre: string;
-  telefono?: string;
-  direccion?: string;
-  dpi?: string;
-  iPInternet?: string;
-  creadoEn: string;
-};
+dayjs.extend(utc);
+dayjs.extend(localizedFormat);
+dayjs.locale("es");
 
-// **Datos de Prueba**
-const clientesData: Cliente[] = [
-  {
-    id: 12,
-    nombre: "Mari Mileidy Camposeco Montejo Silvestre",
-    telefono: "4001-7273",
-    direccion:
-      "Cantón Parroquia salida a San Antonio Huista, en la entrada de un callejón al lado derecho al fondo, una casa de color azul",
-    dpi: "1234567890101",
-    iPInternet: "192.168.1.100",
-    creadoEn: "2025-02-25",
-  },
+// const formatearFecha = (fecha: string) => {
+//   // Formateo en UTC sin conversión a local
+//   return dayjs(fecha).format("DD/MM/YYYY hh:mm A");
+// };
 
-  {
-    id: 1,
-    nombre: "Juan Pérez",
-    telefono: "555-1234",
-    direccion: "Calle 1, Zona 2",
-    dpi: "1234567890101",
-    iPInternet: "192.168.1.1",
-    creadoEn: "2025-02-25",
-  },
-  {
-    id: 2,
-    nombre: "María López",
-    telefono: "555-5678",
-    direccion: "Avenida Central, Zona 5",
-    dpi: "9876543210101",
-    iPInternet: "192.168.1.2",
-    creadoEn: "2025-02-20",
-  },
-  {
-    id: 3,
-    nombre: "Carlos Gómez",
-    telefono: "555-8765",
-    direccion: "Colonia Jardines",
-    dpi: "4567891230101",
-    iPInternet: "192.168.1.3",
-    creadoEn: "2025-02-18",
-  },
-  {
-    id: 4,
-    nombre: "Ana Rodríguez",
-    telefono: "555-4321",
-    direccion: "Residenciales Las Flores",
-    dpi: "7412589630101",
-    iPInternet: "192.168.1.4",
-    creadoEn: "2025-02-15",
-  },
-  {
-    id: 5,
-    nombre: "Luis Méndez",
-    telefono: "555-7890",
-    direccion: "Centro Histórico",
-    dpi: "8523697410101",
-    iPInternet: "192.168.1.5",
-    creadoEn: "2025-02-10",
-  },
-  {
-    id: 1,
-    nombre: "Juan Pérez",
-    telefono: "555-1234",
-    direccion: "Calle 1, Zona 2",
-    dpi: "1234567890101",
-    iPInternet: "192.168.1.1",
-    creadoEn: "2025-02-25",
-  },
-  {
-    id: 2,
-    nombre: "María López",
-    telefono: "555-5678",
-    direccion: "Avenida Central, Zona 5",
-    dpi: "9876543210101",
-    iPInternet: "192.168.1.2",
-    creadoEn: "2025-02-20",
-  },
-  {
-    id: 3,
-    nombre: "Carlos Gómez",
-    telefono: "555-8765",
-    direccion: "Colonia Jardines",
-    dpi: "4567891230101",
-    iPInternet: "192.168.1.3",
-    creadoEn: "2025-02-18",
-  },
-  {
-    id: 4,
-    nombre: "Ana Rodríguez",
-    telefono: "555-4321",
-    direccion: "Residenciales Las Flores",
-    dpi: "7412589630101",
-    iPInternet: "192.168.1.4",
-    creadoEn: "2025-02-15",
-  },
-  {
-    id: 5,
-    nombre: "Luis Méndez",
-    telefono: "555-7890",
-    direccion: "Centro Histórico",
-    dpi: "8523697410101",
-    iPInternet: "192.168.1.5",
-    creadoEn: "2025-02-10",
-  },
-  {
-    id: 1,
-    nombre: "Juan Pérez",
-    telefono: "555-1234",
-    direccion: "Calle 1, Zona 2",
-    dpi: "1234567890101",
-    iPInternet: "192.168.1.1",
-    creadoEn: "2025-02-25",
-  },
-  {
-    id: 2,
-    nombre: "María López",
-    telefono: "555-5678",
-    direccion: "Avenida Central, Zona 5",
-    dpi: "9876543210101",
-    iPInternet: "192.168.1.2",
-    creadoEn: "2025-02-20",
-  },
-  {
-    id: 3,
-    nombre: "Carlos Gómez",
-    telefono: "555-8765",
-    direccion: "Colonia Jardines",
-    dpi: "4567891230101",
-    iPInternet: "192.168.1.3",
-    creadoEn: "2025-02-18",
-  },
-  {
-    id: 4,
-    nombre: "Ana Rodríguez",
-    telefono: "555-4321",
-    direccion: "Residenciales Las Flores",
-    dpi: "7412589630101",
-    iPInternet: "192.168.1.4",
-    creadoEn: "2025-02-15",
-  },
-  {
-    id: 5,
-    nombre: "Luis Méndez",
-    telefono: "555-7890",
-    direccion: "Centro Histórico",
-    dpi: "8523697410101",
-    iPInternet: "192.168.1.5",
-    creadoEn: "2025-02-10",
-  },
-  {
-    id: 1,
-    nombre: "Juan Pérez",
-    telefono: "555-1234",
-    direccion: "Calle 1, Zona 2",
-    dpi: "1234567890101",
-    iPInternet: "192.168.1.1",
-    creadoEn: "2025-02-25",
-  },
-  {
-    id: 2,
-    nombre: "María López",
-    telefono: "555-5678",
-    direccion: "Avenida Central, Zona 5",
-    dpi: "9876543210101",
-    iPInternet: "192.168.1.2",
-    creadoEn: "2025-02-20",
-  },
-  {
-    id: 3,
-    nombre: "Carlos Gómez",
-    telefono: "555-8765",
-    direccion: "Colonia Jardines",
-    dpi: "4567891230101",
-    iPInternet: "192.168.1.3",
-    creadoEn: "2025-02-18",
-  },
-  {
-    id: 4,
-    nombre: "Ana Rodríguez",
-    telefono: "555-4321",
-    direccion: "Residenciales Las Flores",
-    dpi: "7412589630101",
-    iPInternet: "192.168.1.4",
-    creadoEn: "2025-02-15",
-  },
-  {
-    id: 5,
-    nombre: "Luis Méndez",
-    telefono: "555-7890",
-    direccion: "Centro Histórico",
-    dpi: "8523697410101",
-    iPInternet: "192.168.1.5",
-    creadoEn: "2025-02-10",
-  },
-  {
-    id: 1,
-    nombre: "Juan Pérez",
-    telefono: "555-1234",
-    direccion: "Calle 1, Zona 2",
-    dpi: "1234567890101",
-    iPInternet: "192.168.1.1",
-    creadoEn: "2025-02-25",
-  },
-  {
-    id: 2,
-    nombre: "María López",
-    telefono: "555-5678",
-    direccion: "Avenida Central, Zona 5",
-    dpi: "9876543210101",
-    iPInternet: "192.168.1.2",
-    creadoEn: "2025-02-20",
-  },
-  {
-    id: 3,
-    nombre: "Carlos Gómez",
-    telefono: "555-8765",
-    direccion: "Colonia Jardines",
-    dpi: "4567891230101",
-    iPInternet: "192.168.1.3",
-    creadoEn: "2025-02-18",
-  },
-  {
-    id: 4,
-    nombre: "Ana Rodríguez",
-    telefono: "555-4321",
-    direccion: "Residenciales Las Flores",
-    dpi: "7412589630101",
-    iPInternet: "192.168.1.4",
-    creadoEn: "2025-02-15",
-  },
-  {
-    id: 5,
-    nombre: "Luis Méndez",
-    telefono: "555-7890",
-    direccion: "Centro Histórico",
-    dpi: "8523697410101",
-    iPInternet: "192.168.1.5",
-    creadoEn: "2025-02-10",
-  },
-  {
-    id: 1,
-    nombre: "Juan Pérez",
-    telefono: "555-1234",
-    direccion: "Calle 1, Zona 2",
-    dpi: "1234567890101",
-    iPInternet: "192.168.1.1",
-    creadoEn: "2025-02-25",
-  },
-  {
-    id: 2,
-    nombre: "María López",
-    telefono: "555-5678",
-    direccion: "Avenida Central, Zona 5",
-    dpi: "9876543210101",
-    iPInternet: "192.168.1.2",
-    creadoEn: "2025-02-20",
-  },
-  {
-    id: 3,
-    nombre: "Carlos Gómez",
-    telefono: "555-8765",
-    direccion: "Colonia Jardines",
-    dpi: "4567891230101",
-    iPInternet: "192.168.1.3",
-    creadoEn: "2025-02-18",
-  },
-  {
-    id: 4,
-    nombre: "Ana Rodríguez",
-    telefono: "555-4321",
-    direccion: "Residenciales Las Flores",
-    dpi: "7412589630101",
-    iPInternet: "192.168.1.4",
-    creadoEn: "2025-02-15",
-  },
-  {
-    id: 5,
-    nombre: "Luis Méndez",
-    telefono: "555-7890",
-    direccion: "Centro Histórico",
-    dpi: "8523697410101",
-    iPInternet: "192.168.1.5",
-    creadoEn: "2025-02-10",
-  },
-  {
-    id: 1,
-    nombre: "Juan Pérez",
-    telefono: "555-1234",
-    direccion: "Calle 1, Zona 2",
-    dpi: "1234567890101",
-    iPInternet: "192.168.1.1",
-    creadoEn: "2025-02-25",
-  },
-  {
-    id: 2,
-    nombre: "María López",
-    telefono: "555-5678",
-    direccion: "Avenida Central, Zona 5",
-    dpi: "9876543210101",
-    iPInternet: "192.168.1.2",
-    creadoEn: "2025-02-20",
-  },
-  {
-    id: 3,
-    nombre: "Carlos Gómez",
-    telefono: "555-8765",
-    direccion: "Colonia Jardines",
-    dpi: "4567891230101",
-    iPInternet: "192.168.1.3",
-    creadoEn: "2025-02-18",
-  },
-  {
-    id: 4,
-    nombre: "Ana Rodríguez",
-    telefono: "555-4321",
-    direccion: "Residenciales Las Flores",
-    dpi: "7412589630101",
-    iPInternet: "192.168.1.4",
-    creadoEn: "2025-02-15",
-  },
-  {
-    id: 5,
-    nombre: "Luis Méndez",
-    telefono: "555-7890",
-    direccion: "Centro Histórico",
-    dpi: "8523697410101",
-    iPInternet: "192.168.1.5",
-    creadoEn: "2025-02-10",
-  },
-  {
-    id: 1,
-    nombre: "Juan Pérez",
-    telefono: "555-1234",
-    direccion: "Calle 1, Zona 2",
-    dpi: "1234567890101",
-    iPInternet: "192.168.1.1",
-    creadoEn: "2025-02-25",
-  },
-  {
-    id: 2,
-    nombre: "María López",
-    telefono: "555-5678",
-    direccion: "Avenida Central, Zona 5",
-    dpi: "9876543210101",
-    iPInternet: "192.168.1.2",
-    creadoEn: "2025-02-20",
-  },
-  {
-    id: 3,
-    nombre: "Carlos Gómez",
-    telefono: "555-8765",
-    direccion: "Colonia Jardines",
-    dpi: "4567891230101",
-    iPInternet: "192.168.1.3",
-    creadoEn: "2025-02-18",
-  },
-  {
-    id: 4,
-    nombre: "Ana Rodríguez",
-    telefono: "555-4321",
-    direccion: "Residenciales Las Flores",
-    dpi: "7412589630101",
-    iPInternet: "192.168.1.4",
-    creadoEn: "2025-02-15",
-  },
-  {
-    id: 5,
-    nombre: "Luis Méndez",
-    telefono: "555-7890",
-    direccion: "Centro Histórico",
-    dpi: "8523697410101",
-    iPInternet: "192.168.1.5",
-    creadoEn: "2025-02-10",
-  },
-];
+const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 
 // **Definir columnas de la tabla**
-const columns: ColumnDef<Cliente>[] = [
+const columns: ColumnDef<ClienteDto>[] = [
   { accessorKey: "id", header: "ID" },
-  { accessorKey: "nombre", header: "Nombre" },
+  { accessorKey: "nombreCompleto", header: "Nombre" },
   { accessorKey: "telefono", header: "Teléfono" },
-  { accessorKey: "direccion", header: "Dirección" },
-  { accessorKey: "dpi", header: "DPI" },
-  { accessorKey: "iPInternet", header: "IP" },
-  { accessorKey: "creadoEn", header: "Fecha Creación" },
+  { accessorKey: "direccionIp", header: "IP" },
+  { accessorKey: "creadoEn", header: "Plan Internet" },
+  { accessorKey: "facturacionZona", header: "Zona Facturación" },
 ];
 
 export default function ClientesTable() {
   const [filter, setFilter] = useState("");
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 }); // 🔥 FIX: Agregamos pageIndex
 
+  const [clientes, setClientes] = useState<ClienteDto[]>([]);
+
+  const getClientes = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/internet-customer/customer-to-table`
+      );
+      if (response.status === 200) {
+        setClientes(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al conseguir datos de clientes");
+    }
+  };
+
+  useEffect(() => {
+    getClientes();
+  }, []);
+  console.log(clientes);
+
   // **Configuración de la tabla**
   const table = useReactTable({
-    data: clientesData,
+    data: clientes,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -436,9 +88,35 @@ export default function ClientesTable() {
     },
     onGlobalFilterChange: setFilter,
     onPaginationChange: setPagination, // 🔥 FIX: Ahora podemos cambiar la página y tamaño
-    globalFilterFn: (row, columnId, value) => {
-      const search = value.toLowerCase();
-      return String(row.getValue(columnId)).toLowerCase().includes(search);
+    globalFilterFn: (row, columId, value) => {
+      console.log(columId);
+
+      const search = value.trim().toLocaleLowerCase();
+      const cliente = row.original as ClienteDto;
+
+      return (
+        cliente.nombreCompleto
+          .toString()
+          .toLocaleLowerCase()
+          .trim()
+          .includes(search) ||
+        cliente.telefono
+          .toString()
+          .toLocaleLowerCase()
+          .trim()
+          .includes(search) ||
+        cliente.direccionIp
+          .toString()
+          .toLocaleLowerCase()
+          .trim()
+          .includes(search) ||
+        cliente.direccion
+          .toString()
+          .toLocaleLowerCase()
+          .trim()
+          .includes(search) ||
+        cliente.dpi.toString().toLocaleLowerCase().trim().includes(search)
+      );
     },
   });
 
@@ -477,14 +155,14 @@ export default function ClientesTable() {
 
         {/* **Tabla** */}
         <div className="overflow-x-auto">
-          <table className="w-full border ">
-            <thead className=" ">
+          <table className="w-full border border-gray-300 text-xs">
+            <thead className="bg-gray-100 dark:bg-gray-800">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="p-2 border font-semibold text-sm"
+                      className="px-2 py-1 border font-semibold"
                     >
                       {flexRender(
                         header.column.columnDef.header,
@@ -492,8 +170,7 @@ export default function ClientesTable() {
                       )}
                     </th>
                   ))}
-                  <th className="p-2 border font-semibold text-sm">Acciones</th>{" "}
-                  {/* Nueva columna de Acciones */}
+                  <th className="px-2 py-1 border font-semibold">Acciones</th>
                 </tr>
               ))}
             </thead>
@@ -501,37 +178,35 @@ export default function ClientesTable() {
               {table.getRowModel().rows.map((row) => (
                 <motion.tr
                   key={row.id}
-                  whileHover={{ scale: 1.01 }} // Apenas un 2% más grande al hacer hover
-                  whileTap={{ scale: 0.99 }} // Reduce un poco al hacer click para un efecto táctil
-                  transition={{ type: "spring", stiffness: 120, damping: 22 }} // Menos rigidez y rebote más controlado
-                  className="text-sm hover:bg-gray-200 dark:hover:bg-gray-700"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  transition={{ type: "spring", stiffness: 120, damping: 22 }}
+                  className="hover:bg-gray-200 dark:hover:bg-gray-700 border-b border-gray-300"
                 >
-                  {/* **Fila completa clickeable con el Link** */}
+                  <td className="px-2 py-1 text-center">{row.original.id}</td>
                   <Link
                     to={`/crm/cliente/${row.original.id}`}
                     className="contents"
                   >
-                    <td className="p-2 font-medium">{row.original.id}</td>
-                    <td className="p-2 truncate max-w-[150px]">
-                      {row.original.nombre}
+                    <td className="px-2 py-1 truncate max-w-[120px] hover:underline">
+                      {row.original.nombreCompleto}
                     </td>
-                    <td className="p-2 truncate max-w-[100px]">
-                      {row.original.telefono}
-                    </td>
-                    <td className="p-2 truncate max-w-[200px]">
-                      {row.original.direccion}
-                    </td>
-                    <td className="p-2 truncate max-w-[120px]">
-                      {row.original.dpi}
-                    </td>
-                    <td className="p-2 truncate max-w-[100px]">
-                      {row.original.iPInternet}
-                    </td>
-                    <td className="p-2">{row.original.creadoEn}</td>
                   </Link>
-
-                  {/* **Botón de Acción (Fuera del Link)** */}
-                  <td className="p-2 flex gap-2 justify-center items-center">
+                  <td className="px-2 py-1 truncate max-w-[90px] whitespace-nowrap">
+                    {row.original.telefono}
+                  </td>
+                  <td className="px-2 py-1 truncate max-w-[150px] whitespace-nowrap">
+                    {row.original.direccionIp}
+                  </td>
+                  <td className="px-2 py-1 truncate max-w-[120px] whitespace-nowrap">
+                    {row.original.servicios
+                      .map((s) => s.nombreServicio)
+                      .join(", ")}
+                  </td>
+                  <td className="px-2 py-1 truncate max-w-[100px] whitespace-nowrap">
+                    {row.original.facturacionZona}
+                  </td>
+                  <td className="px-2 py-1 flex justify-center items-center">
                     <Button
                       variant="outline"
                       size="icon"

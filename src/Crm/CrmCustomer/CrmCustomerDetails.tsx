@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   User,
@@ -8,7 +8,7 @@ import {
   MapPin,
   FileText,
   MessageSquare,
-  Users,
+  // Users,
   Wifi,
   Calendar,
   Building,
@@ -49,118 +49,211 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
+import axios from "axios";
+import { useParams } from "react-router-dom";
+import { toast } from "sonner";
+import { ClienteDetailsDto } from "./CustomerDetails";
+import currency from "currency.js";
 
-// Tipos
-// interface ClienteDetalleProps {
-//   clienteId: number;
-// }
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import utc from "dayjs/plugin/utc";
+import localizedFormat from "dayjs/plugin/localizedFormat";
+// const API_URL = import.meta.env.VITE_API_URL;
 
-// Datos simulados para el ejemplo
-const clienteEjemplo = {
-  id: 1,
-  nombre: "Juan",
-  apellidos: "Pérez González",
-  telefono: "+502 5555-1234",
-  direccion: "Zona 10, Ciudad de Guatemala",
-  dpi: "1234567890123",
-  observaciones: "Cliente preferente. Requiere atención prioritaria.",
-  contactoReferenciaNombre: "María López",
-  contactoReferenciaTelefono: "+502 5555-5678",
-  estadoCliente: "ACTIVO",
-  contrasenaWifi: "WiFi123456",
-  ssidRouter: "ROUTER-JUAN",
-  fechaInstalacion: "2023-05-15T10:30:00",
-  asesor: {
-    id: 1,
-    nombre: "Carlos Rodríguez",
-  },
-  servicio: {
-    id: 2,
-    nombre: "Plan Estándar 25Mbps",
-    precio: 299,
-    velocidad: "25Mbps",
-  },
-  municipio: {
-    id: 1,
-    nombre: "Guatemala",
-  },
-  departamento: {
-    id: 1,
-    nombre: "Guatemala",
-  },
-  empresa: {
-    id: 1,
-    nombre: "TelcoNet",
-  },
-  IP: {
-    id: 1,
-    direccion: "192.168.1.100",
-    mascara: "255.255.255.0",
-    gateway: "192.168.1.1",
-  },
+dayjs.extend(utc);
+dayjs.extend(localizedFormat);
+dayjs.locale("es");
 
-  ubicacion: {
-    id: 1,
-    latitud: 14.03974379354681,
-    longitud: -90.61328241041647,
-  },
-  saldoCliente: {
-    id: 1,
-    saldo: 0,
-    ultimoPago: "2023-10-15T14:30:00",
-  },
-  creadoEn: "2023-01-10T09:15:00",
-  actualizadoEn: "2023-10-15T14:30:00",
-  ticketSoporte: [
-    {
-      id: 101,
-      titulo: "Sin señal de internet",
-      estado: "CERRADA",
-      prioridad: "ALTA",
-      fechaCreacion: "2023-09-05T11:20:00",
-      fechaCierre: "2023-09-05T15:45:00",
-    },
-    {
-      id: 102,
-      titulo: "Velocidad lenta",
-      estado: "ABIERTA",
-      prioridad: "MEDIA",
-      fechaCreacion: "2023-10-12T09:30:00",
-      fechaCierre: null,
-    },
-  ],
-  facturaInternet: [
-    {
-      id: 1001,
-      monto: 299,
-      fechaEmision: "2023-10-01T00:00:00",
-      fechaVencimiento: "2023-10-15T00:00:00",
-      pagada: true,
-    },
-    {
-      id: 1002,
-      monto: 299,
-      fechaEmision: "2023-09-01T00:00:00",
-      fechaVencimiento: "2023-09-15T00:00:00",
-      pagada: true,
-    },
-  ],
-  clienteServicio: [
-    {
-      id: 1,
-      servicio: {
-        id: 101,
-        nombre: "IPTV Básico",
-        tipo: "IPTV",
-      },
-      fechaContratacion: "2023-05-15T10:30:00",
-    },
-  ],
+const formatearFecha = (fecha: string) => {
+  // Formateo en UTC sin conversión a local
+  return dayjs(fecha).format("DD/MM/YYYY");
 };
+
+const formatearMoneda = (monto: number) => {
+  return currency(monto, {
+    symbol: "Q",
+    separator: ",",
+    decimal: ".",
+    precision: 2,
+  }).format();
+};
+
+// const clienteEjemplo = {
+//   id: 1,
+//   nombre: "Juan",
+//   apellidos: "Pérez González",
+//   telefono: "+502 5555-1234",
+//   direccion: "Zona 10, Ciudad de Guatemala",
+//   dpi: "1234567890123",
+//   observaciones: "Cliente preferente. Requiere atención prioritaria.",
+//   contactoReferenciaNombre: "María López",
+//   contactoReferenciaTelefono: "+502 5555-5678",
+//   estadoCliente: "ACTIVO",
+//   contrasenaWifi: "WiFi123456",
+//   ssidRouter: "ROUTER-JUAN",
+//   fechaInstalacion: "2023-05-15T10:30:00",
+//   asesor: {
+//     id: 1,
+//     nombre: "Carlos Rodríguez",
+//   },
+//   servicio: {
+//     id: 2,
+//     nombre: "Plan Estándar 25Mbps",
+//     precio: 299,
+//     velocidad: "25Mbps",
+//   },
+//   municipio: {
+//     id: 1,
+//     nombre: "Guatemala",
+//   },
+//   departamento: {
+//     id: 1,
+//     nombre: "Guatemala",
+//   },
+//   empresa: {
+//     id: 1,
+//     nombre: "TelcoNet",
+//   },
+//   IP: {
+//     id: 1,
+//     direccion: "192.168.1.100",
+//     mascara: "255.255.255.0",
+//     gateway: "192.168.1.1",
+//   },
+
+//   ubicacion: {
+//     id: 1,
+//     latitud: 15.66637668322957,
+//     longitud: -91.70805410647728,
+//   },
+//   saldoCliente: {
+//     id: 1,
+//     saldo: 0,
+//     ultimoPago: "2023-10-15T14:30:00",
+//   },
+//   creadoEn: "2023-01-10T09:15:00",
+//   actualizadoEn: "2023-10-15T14:30:00",
+//   ticketSoporte: [
+//     {
+//       id: 101,
+//       titulo: "Sin señal de internet",
+//       estado: "CERRADA",
+//       prioridad: "ALTA",
+//       fechaCreacion: "2023-09-05T11:20:00",
+//       fechaCierre: "2023-09-05T15:45:00",
+//     },
+//     {
+//       id: 102,
+//       titulo: "Velocidad lenta",
+//       estado: "ABIERTA",
+//       prioridad: "MEDIA",
+//       fechaCreacion: "2023-10-12T09:30:00",
+//       fechaCierre: null,
+//     },
+//   ],
+//   facturaInternet: [
+//     {
+//       id: 1001,
+//       monto: 299,
+//       fechaEmision: "2023-10-01T00:00:00",
+//       fechaVencimiento: "2023-10-15T00:00:00",
+//       pagada: true,
+//     },
+//     {
+//       id: 1002,
+//       monto: 299,
+//       fechaEmision: "2023-09-01T00:00:00",
+//       fechaVencimiento: "2023-09-15T00:00:00",
+//       pagada: true,
+//     },
+//   ],
+//   clienteServicio: [
+//     {
+//       id: 1,
+//       servicio: {
+//         id: 101,
+//         nombre: "IPTV Básico",
+//         tipo: "IPTV",
+//       },
+//       fechaContratacion: "2023-05-15T10:30:00",
+//     },
+//   ],
+// };
 
 export default function CustomerDetails() {
   // En una aplicación real, aquí cargaríamos los datos del cliente desde una API
-  const cliente = clienteEjemplo;
+  // const cliente = clienteEjemplo;
+  const { id } = useParams();
+
+  const [cliente, setCliente] = useState<ClienteDetailsDto>({
+    id: 0,
+    nombre: "",
+    apellidos: "",
+    telefono: "",
+    direccion: "",
+    dpi: "",
+    observaciones: "",
+    contactoReferenciaNombre: "",
+    contactoReferenciaTelefono: "",
+    estadoCliente: "",
+    contrasenaWifi: "",
+    ssidRouter: "",
+    fechaInstalacion: "",
+    asesor: null,
+    servicio: [],
+    municipio: {
+      id: 1,
+      nombre: "",
+    },
+    departamento: {
+      id: 1,
+      nombre: "",
+    },
+    empresa: {
+      id: 1,
+      nombre: "",
+    },
+    IP: {
+      direccion: "192.168.100.1",
+      gateway: "",
+      id: 1,
+      mascara: "",
+    },
+    ubicacion: {
+      id: 1,
+      latitud: 15.667147636975496,
+      longitud: -91.71722598563508,
+    },
+    saldoCliente: null,
+    creadoEn: "",
+    actualizadoEn: "",
+    ticketSoporte: [],
+    facturaInternet: [],
+    clienteServicio: [],
+  });
+
+  const getClienteDetails = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/internet-customer/get-customer-details/${Number(
+          id
+        )}`
+      );
+
+      if (response.status === 200) {
+        setCliente(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.info("Error al conseguir información sobre el cliente");
+    }
+  };
+
+  useEffect(() => {
+    getClienteDetails();
+  }, []);
 
   // Estado para controlar la pestaña activa
   const [activeTab, setActiveTab] = useState("general");
@@ -249,6 +342,8 @@ export default function CustomerDetails() {
     }
   };
 
+  console.log("El cliente es: ", cliente);
+
   return (
     <div className="container mx-auto px-4 py-6">
       <motion.div
@@ -275,14 +370,6 @@ export default function CustomerDetails() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" className="h-8">
-              <Phone className="h-4 w-4 mr-1" />
-              Llamar
-            </Button>
-            <Button size="sm" variant="outline" className="h-8">
-              <MessageSquare className="h-4 w-4 mr-1" />
-              Mensaje
-            </Button>
             <Button size="sm" className="h-8">
               <Ticket className="h-4 w-4 mr-1" />
               Nuevo Ticket
@@ -294,111 +381,110 @@ export default function CustomerDetails() {
           defaultValue="general"
           value={activeTab}
           onValueChange={setActiveTab}
-          className="space-y-4"
+          className="lg:space-y-4"
         >
-          <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
-            <TabsTrigger value="general" className="text-xs md:text-sm">
-              <User className="h-4 w-4 mr-1 hidden sm:inline" />
-              General
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-7 ">
+            <TabsTrigger
+              value="general"
+              className="text-xs md:text-sm flex items-center justify-center"
+            >
+              <User className="h-4 w-4 mr-1 sm:inline" />
+              <span>General</span>
             </TabsTrigger>
-            <TabsTrigger value="servicio" className="text-xs md:text-sm">
-              <Wifi className="h-4 w-4 mr-1 hidden sm:inline" />
-              Servicio
+            <TabsTrigger
+              value="servicio"
+              className="text-xs md:text-sm flex items-center justify-center"
+            >
+              <Wifi className="h-4 w-4 mr-1 sm:inline" />
+              <span>Servicio</span>
             </TabsTrigger>
-            <TabsTrigger value="ubicacion" className="text-xs md:text-sm">
-              <Map className="h-4 w-4 mr-1 hidden sm:inline" />
-              Ubicación
+            <TabsTrigger
+              value="ubicacion"
+              className="text-xs md:text-sm flex items-center justify-center"
+            >
+              <Map className="h-4 w-4 mr-1 sm:inline" />
+              <span>Ubicación</span>
             </TabsTrigger>
-            <TabsTrigger value="tickets" className="text-xs md:text-sm">
-              <Ticket className="h-4 w-4 mr-1 hidden sm:inline" />
-              Tickets
+            <TabsTrigger
+              value="tickets"
+              className="text-xs md:text-sm flex items-center justify-center"
+            >
+              <Ticket className="h-4 w-4 mr-1 sm:inline" />
+              <span>Tickets</span>
             </TabsTrigger>
-            <TabsTrigger value="facturacion" className="text-xs md:text-sm">
-              <CreditCard className="h-4 w-4 mr-1 hidden sm:inline" />
-              Facturación
+            <TabsTrigger
+              value="facturacion"
+              className="text-xs md:text-sm flex items-center justify-center"
+            >
+              <CreditCard className="h-4 w-4 mr-1 sm:inline" />
+              <span>Facturación</span>
             </TabsTrigger>
           </TabsList>
 
           {/* Pestaña de Información General */}
-          <TabsContent value="general" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
-                    <User className="h-4 w-4 mr-2 text-primary" />
-                    Información Personal
+          <TabsContent value="general" className="space-y-2 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {/* Información Personal y Contacto de Referencia */}
+              <Card className="border border-gray-300">
+                <CardHeader className="pb-1">
+                  <CardTitle className="text-sm flex items-center">
+                    <User className="h-3.5 w-3.5 mr-2 text-primary" />
+                    Información Personal & Contacto de Referencia
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm">
-                  <dl className="grid grid-cols-1 gap-2">
-                    <div className="grid grid-cols-3 items-start">
+                <CardContent>
+                  <dl className="grid gap-1">
+                    <div className="grid grid-cols-3 items-center">
                       <dt className="font-medium text-muted-foreground flex items-center">
-                        <User className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                        <User className="h-3 w-3 mr-1 text-muted-foreground" />
                         Nombre:
                       </dt>
-                      <dd className="col-span-2">
+                      <dd className="col-span-2 truncate">
                         {cliente.nombre} {cliente.apellidos}
                       </dd>
                     </div>
-
-                    <div className="grid grid-cols-3 items-start">
+                    <div className="grid grid-cols-3 items-center">
                       <dt className="font-medium text-muted-foreground flex items-center">
-                        <Phone className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                        <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
                         Teléfono:
                       </dt>
-                      <dd className="col-span-2">
+                      <dd className="col-span-2 truncate">
                         {cliente.telefono || "No especificado"}
                       </dd>
                     </div>
-
-                    <div className="grid grid-cols-3 items-start">
+                    <div className="grid grid-cols-3 items-center">
                       <dt className="font-medium text-muted-foreground flex items-center">
-                        <MapPin className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                        <MapPin className="h-3 w-3 mr-1 text-muted-foreground" />
                         Dirección:
                       </dt>
-                      <dd className="col-span-2">
+                      <dd className="col-span-2 truncate">
                         {cliente.direccion || "No especificada"}
                       </dd>
                     </div>
-
-                    <div className="grid grid-cols-3 items-start">
+                    <div className="grid grid-cols-3 items-center">
                       <dt className="font-medium text-muted-foreground flex items-center">
-                        <FileText className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                        <FileText className="h-3 w-3 mr-1 text-muted-foreground" />
                         DPI:
                       </dt>
-                      <dd className="col-span-2">
+                      <dd className="col-span-2 truncate">
                         {cliente.dpi || "No especificado"}
                       </dd>
                     </div>
-                  </dl>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
-                    <Users className="h-4 w-4 mr-2 text-primary" />
-                    Contacto de Referencia
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm">
-                  <dl className="grid grid-cols-1 gap-2">
-                    <div className="grid grid-cols-3 items-start">
+                    <div className="grid grid-cols-3 items-center border-t pt-2">
                       <dt className="font-medium text-muted-foreground flex items-center">
-                        <User className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                        Nombre:
+                        <User className="h-3 w-3 mr-1 text-muted-foreground" />
+                        Contacto Referencia:
                       </dt>
-                      <dd className="col-span-2">
+                      <dd className="col-span-2 truncate">
                         {cliente.contactoReferenciaNombre || "No especificado"}
                       </dd>
                     </div>
-
-                    <div className="grid grid-cols-3 items-start">
+                    <div className="grid grid-cols-3 items-center">
                       <dt className="font-medium text-muted-foreground flex items-center">
-                        <Phone className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                        Teléfono:
+                        <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
+                        Teléfono Referencia:
                       </dt>
-                      <dd className="col-span-2">
+                      <dd className="col-span-2 truncate">
                         {cliente.contactoReferenciaTelefono ||
                           "No especificado"}
                       </dd>
@@ -407,36 +493,59 @@ export default function CustomerDetails() {
                 </CardContent>
               </Card>
 
-              <Card className="md:col-span-2">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
-                    <MessageSquare className="h-4 w-4 mr-2 text-primary" />
-                    Observaciones
+              {/* Empresa, Ubicación, Observaciones y Sistema */}
+              <Card className="border border-gray-300">
+                <CardHeader className="pb-1">
+                  <CardTitle className="text-sm flex items-center">
+                    <Building className="h-3.5 w-3.5 mr-2 text-primary" />
+                    Empresa, Ubicación & Sistema
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm">
-                  <p>
-                    {cliente.observaciones ||
-                      "No hay observaciones registradas."}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="md:col-span-2">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
-                    <Clock className="h-4 w-4 mr-2 text-primary" />
-                    Información del Sistema
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm">
-                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div className="grid grid-cols-3 items-start">
+                <CardContent>
+                  <dl className="grid gap-1">
+                    <div className="grid grid-cols-3 items-center">
                       <dt className="font-medium text-muted-foreground flex items-center">
-                        <Calendar className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                        <Building className="h-3 w-3 mr-1 text-muted-foreground" />
+                        Empresa:
+                      </dt>
+                      <dd className="col-span-2 truncate">
+                        {cliente.empresa?.nombre || "No especificada"}
+                      </dd>
+                    </div>
+                    <div className="grid grid-cols-3 items-center">
+                      <dt className="font-medium text-muted-foreground flex items-center">
+                        <MapPin className="h-3 w-3 mr-1 text-muted-foreground" />
+                        Municipio:
+                      </dt>
+                      <dd className="col-span-2 truncate">
+                        {cliente.municipio?.nombre || "No especificado"}
+                      </dd>
+                    </div>
+                    <div className="grid grid-cols-3 items-center">
+                      <dt className="font-medium text-muted-foreground flex items-center">
+                        <Map className="h-3 w-3 mr-1 text-muted-foreground" />
+                        Departamento:
+                      </dt>
+                      <dd className="col-span-2 truncate">
+                        {cliente.departamento?.nombre || "No especificado"}
+                      </dd>
+                    </div>
+                    <div className="grid grid-cols-3 items-center border-t pt-2">
+                      <dt className="font-medium text-muted-foreground flex items-center">
+                        <MessageSquare className="h-3 w-3 mr-1 text-muted-foreground" />
+                        Observaciones:
+                      </dt>
+                      <dd className="col-span-2 truncate">
+                        {cliente.observaciones ||
+                          "No hay observaciones registradas."}
+                      </dd>
+                    </div>
+                    <div className="grid grid-cols-3 items-center border-t pt-2">
+                      <dt className="font-medium text-muted-foreground flex items-center">
+                        <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
                         Creado:
                       </dt>
-                      <dd className="col-span-2">
+                      <dd className="col-span-2 truncate">
                         {cliente.creadoEn
                           ? format(new Date(cliente.creadoEn), "PPP", {
                               locale: es,
@@ -444,13 +553,12 @@ export default function CustomerDetails() {
                           : "No disponible"}
                       </dd>
                     </div>
-
-                    <div className="grid grid-cols-3 items-start">
+                    <div className="grid grid-cols-3 items-center">
                       <dt className="font-medium text-muted-foreground flex items-center">
-                        <Calendar className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                        <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
                         Actualizado:
                       </dt>
-                      <dd className="col-span-2">
+                      <dd className="col-span-2 truncate">
                         {cliente.actualizadoEn
                           ? format(new Date(cliente.actualizadoEn), "PPP", {
                               locale: es,
@@ -465,43 +573,46 @@ export default function CustomerDetails() {
           </TabsContent>
 
           {/* Pestaña de Servicio */}
-          <TabsContent value="servicio" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
-                    <Wifi className="h-4 w-4 mr-2 text-primary" />
-                    Servicio de Internet
+          <TabsContent value="servicio" className="space-y-2 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {/* Servicio de Internet & Configuración WiFi */}
+              <Card className="border border-gray-300">
+                <CardHeader className="pb-1">
+                  <CardTitle className="text-sm flex items-center">
+                    <Wifi className="h-3.5 w-3.5 mr-2 text-primary" />
+                    Servicio de Internet & Configuración WiFi
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm">
-                  <dl className="grid grid-cols-1 gap-2">
-                    <div className="grid grid-cols-3 items-start">
+                <CardContent>
+                  <dl className="grid gap-1">
+                    <div className="grid grid-cols-3 items-center">
                       <dt className="font-medium text-muted-foreground flex items-center">
-                        <Package className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                        <Package className="h-3 w-3 mr-1 text-muted-foreground" />
                         Plan:
                       </dt>
-                      <dd className="col-span-2">
-                        {cliente.servicio?.nombre || "No especificado"}
+                      <dd className="col-span-2 truncate">
+                        {cliente.servicio
+                          ?.map((servicio) => servicio.nombre)
+                          .join(", ") || "Sin servicios"}
                       </dd>
                     </div>
-
-                    <div className="grid grid-cols-3 items-start">
+                    <div className="grid grid-cols-3 items-center">
                       <dt className="font-medium text-muted-foreground flex items-center">
-                        <Wifi className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                        <Wifi className="h-3 w-3 mr-1 text-muted-foreground" />
                         Velocidad:
                       </dt>
-                      <dd className="col-span-2">
-                        {cliente.servicio?.velocidad || "No especificada"}
+                      <dd className="col-span-2 truncate">
+                        {cliente.servicio
+                          ?.map((servicio) => servicio.velocidad)
+                          .join(", ") || "No especificada"}
                       </dd>
                     </div>
-
-                    <div className="grid grid-cols-3 items-start">
+                    <div className="grid grid-cols-3 items-center">
                       <dt className="font-medium text-muted-foreground flex items-center">
-                        <Calendar className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                        <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
                         Instalación:
                       </dt>
-                      <dd className="col-span-2">
+                      <dd className="col-span-2 truncate">
                         {cliente.fechaInstalacion
                           ? format(new Date(cliente.fechaInstalacion), "PPP", {
                               locale: es,
@@ -509,45 +620,30 @@ export default function CustomerDetails() {
                           : "No especificada"}
                       </dd>
                     </div>
-
-                    <div className="grid grid-cols-3 items-start">
+                    <div className="grid grid-cols-3 items-center border-t pt-2">
                       <dt className="font-medium text-muted-foreground flex items-center">
-                        <User className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                        <User className="h-3 w-3 mr-1 text-muted-foreground" />
                         Asesor:
                       </dt>
-                      <dd className="col-span-2">
+                      <dd className="col-span-2 truncate">
                         {cliente.asesor?.nombre || "No asignado"}
                       </dd>
                     </div>
-                  </dl>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
-                    <Wifi className="h-4 w-4 mr-2 text-primary" />
-                    Configuración WiFi
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm">
-                  <dl className="grid grid-cols-1 gap-2">
-                    <div className="grid grid-cols-3 items-start">
+                    <div className="grid grid-cols-3 items-center border-t pt-2">
                       <dt className="font-medium text-muted-foreground flex items-center">
-                        <Tag className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                        <Tag className="h-3 w-3 mr-1 text-muted-foreground" />
                         SSID:
                       </dt>
-                      <dd className="col-span-2">
+                      <dd className="col-span-2 truncate">
                         {cliente.ssidRouter || "No especificado"}
                       </dd>
                     </div>
-
-                    <div className="grid grid-cols-3 items-start">
+                    <div className="grid grid-cols-3 items-center">
                       <dt className="font-medium text-muted-foreground flex items-center">
-                        <FileText className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                        <FileText className="h-3 w-3 mr-1 text-muted-foreground" />
                         Contraseña:
                       </dt>
-                      <dd className="col-span-2">
+                      <dd className="col-span-2 truncate">
                         {cliente.contrasenaWifi || "No especificada"}
                       </dd>
                     </div>
@@ -555,80 +651,43 @@ export default function CustomerDetails() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
-                    <Building className="h-4 w-4 mr-2 text-primary" />
-                    Empresa y Ubicación
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm">
-                  <dl className="grid grid-cols-1 gap-2">
-                    <div className="grid grid-cols-3 items-start">
-                      <dt className="font-medium text-muted-foreground flex items-center">
-                        <Building className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                        Empresa:
-                      </dt>
-                      <dd className="col-span-2">
-                        {cliente.empresa?.nombre || "No especificada"}
-                      </dd>
-                    </div>
-
-                    <div className="grid grid-cols-3 items-start">
-                      <dt className="font-medium text-muted-foreground flex items-center">
-                        <MapPin className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                        Municipio:
-                      </dt>
-                      <dd className="col-span-2">
-                        {cliente.municipio?.nombre || "No especificado"}
-                      </dd>
-                    </div>
-
-                    <div className="grid grid-cols-3 items-start">
-                      <dt className="font-medium text-muted-foreground flex items-center">
-                        <Map className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                        Departamento:
-                      </dt>
-                      <dd className="col-span-2">
-                        {cliente.departamento?.nombre || "No especificado"}
-                      </dd>
-                    </div>
-                  </dl>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-primary" />
+              {/* Configuración IP */}
+              <Card className="border border-gray-300">
+                <CardHeader className="pb-1">
+                  <CardTitle className="text-sm flex items-center">
+                    <FileText className="h-3.5 w-3.5 mr-2 text-primary" />
                     Configuración IP
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm">
+                <CardContent>
                   {cliente.IP ? (
-                    <dl className="grid grid-cols-1 gap-2">
-                      <div className="grid grid-cols-3 items-start">
+                    <dl className="grid gap-1">
+                      <div className="grid grid-cols-3 items-center">
                         <dt className="font-medium text-muted-foreground flex items-center">
-                          <FileText className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                          <FileText className="h-3 w-3 mr-1 text-muted-foreground" />
                           Dirección IP:
                         </dt>
-                        <dd className="col-span-2">{cliente.IP.direccion}</dd>
+                        <dd className="col-span-2 truncate">
+                          {cliente.IP.direccion}
+                        </dd>
                       </div>
-
-                      <div className="grid grid-cols-3 items-start">
+                      <div className="grid grid-cols-3 items-center">
                         <dt className="font-medium text-muted-foreground flex items-center">
-                          <FileText className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                          <FileText className="h-3 w-3 mr-1 text-muted-foreground" />
                           Máscara:
                         </dt>
-                        <dd className="col-span-2">{cliente.IP.mascara}</dd>
+                        <dd className="col-span-2 truncate">
+                          {cliente.IP.mascara}
+                        </dd>
                       </div>
-
-                      <div className="grid grid-cols-3 items-start">
+                      <div className="grid grid-cols-3 items-center">
                         <dt className="font-medium text-muted-foreground flex items-center">
-                          <FileText className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                          <FileText className="h-3 w-3 mr-1 text-muted-foreground" />
                           Gateway:
                         </dt>
-                        <dd className="col-span-2">{cliente.IP.gateway}</dd>
+                        <dd className="col-span-2 truncate">
+                          {cliente.IP.gateway}
+                        </dd>
                       </div>
                     </dl>
                   ) : (
@@ -637,29 +696,32 @@ export default function CustomerDetails() {
                 </CardContent>
               </Card>
 
-              <Card className="md:col-span-2">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
-                    <Package className="h-4 w-4 mr-2 text-primary" />
+              {/* Servicios Adicionales */}
+              <Card className="border border-gray-300 md:col-span-2">
+                <CardHeader className="pb-1">
+                  <CardTitle className="text-sm flex items-center">
+                    <Package className="h-3.5 w-3.5 mr-2 text-primary" />
                     Servicios Adicionales
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm">
+                <CardContent>
                   {cliente.clienteServicio &&
                   cliente.clienteServicio.length > 0 ? (
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Servicio</TableHead>
-                          <TableHead>Tipo</TableHead>
+                          <TableHead>Precio</TableHead>
                           <TableHead>Fecha Contratación</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {cliente.clienteServicio.map((servicio) => (
-                          <TableRow key={servicio.id}>
+                          <TableRow className="text-[12px]" key={servicio.id}>
                             <TableCell>{servicio.servicio.nombre}</TableCell>
-                            <TableCell>{servicio.servicio.tipo}</TableCell>
+                            <TableCell>
+                              {formatearMoneda(servicio.servicio.precio)}
+                            </TableCell>
                             <TableCell>
                               {format(
                                 new Date(servicio.fechaContratacion),
@@ -698,7 +760,7 @@ export default function CustomerDetails() {
                       {/* Aquí iría el componente de Google Maps */}
                       <div className="w-full h-full bg-muted flex items-center justify-center">
                         <iframe
-                          src={`https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=${cliente.ubicacion.latitud},${cliente.ubicacion.longitud}`}
+                          src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyD_hzrV-YS5EaHDm-UK3jL0ny6gsJoj_18&q=${cliente.ubicacion.latitud},${cliente.ubicacion.longitud}`}
                           width="100%"
                           height="100%"
                           style={{ border: 0 }}
@@ -764,10 +826,6 @@ export default function CustomerDetails() {
                     <Ticket className="h-4 w-4 mr-2 text-primary" />
                     Tickets de Soporte
                   </CardTitle>
-                  <Button size="sm" className="h-8">
-                    <Ticket className="h-4 w-4 mr-1" />
-                    Nuevo Ticket
-                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
@@ -914,7 +972,7 @@ export default function CustomerDetails() {
                         <TableRow>
                           <TableHead>ID</TableHead>
                           <TableHead>Fecha Emisión</TableHead>
-                          <TableHead>Vencimiento</TableHead>
+                          <TableHead>Fecha de Pago</TableHead>
                           <TableHead>Monto</TableHead>
                           <TableHead>Estado</TableHead>
                         </TableRow>
@@ -926,20 +984,14 @@ export default function CustomerDetails() {
                               #{factura.id}
                             </TableCell>
                             <TableCell>
-                              {format(
-                                new Date(factura.fechaEmision),
-                                "dd/MM/yyyy",
-                                { locale: es }
-                              )}
+                              {formatearFecha(factura.fechaEmision)}
                             </TableCell>
                             <TableCell>
-                              {format(
-                                new Date(factura.fechaVencimiento),
-                                "dd/MM/yyyy",
-                                { locale: es }
-                              )}
+                              {formatearFecha(factura.fechaVencimiento)}
                             </TableCell>
-                            <TableCell>Q{factura.monto.toFixed(2)}</TableCell>
+                            <TableCell>
+                              {formatearMoneda(factura.monto)}
+                            </TableCell>
                             <TableCell>
                               <Badge
                                 variant="outline"

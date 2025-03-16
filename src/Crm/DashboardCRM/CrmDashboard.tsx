@@ -14,8 +14,13 @@ import { motion } from "framer-motion";
 import LightCardMotion from "../Motion/CardMotion";
 import MyTickets from "./MyTickets";
 import MorososInvoices from "./MorososInvoices";
+import { useStoreCrm } from "../ZustandCrm/ZustandCrmContext";
+const tokencrm = localStorage.getItem("authTokenCRM");
 
 export default function CrmDashboard() {
+  console.log(tokencrm);
+  const nombre = useStoreCrm((state) => state.nombre);
+  console.log("nombre crm", nombre);
   return (
     <motion.div
       {...DesvanecerHaciaArriba}

@@ -42,7 +42,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 // import { cn } from "@/lib/utils";
 import SelectComponent, { MultiValue } from "react-select";
-
+import axios from "axios";
+import { toast } from "sonner";
+const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 // Tipos
 interface CreateTicketProps {
   openCreatT: boolean;
@@ -120,6 +122,39 @@ function CrmCreateTicket({
     { id: 4, nombre: "Facturación", color: "bg-yellow-100 text-yellow-800" },
     { id: 5, nombre: "Instalación", color: "bg-purple-100 text-purple-800" },
   ]);
+
+  const getClientes = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/internet-customer/get-customers-to-ticket`
+      );
+      if (response.status === 200) {
+        setClientes(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.info("No se pudieron conseguir los clientes");
+    }
+  };
+
+  const getTecs = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/user/get-users-to-create-tickets`
+      );
+      if (response.status === 200) {
+        setTecnicos(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.info("No se pudieron conseguir los clientes");
+    }
+  };
+
+  useEffect(() => {
+    getClientes();
+    getTecs();
+  }, []);
 
   console.log(empresas, setEmpresas, setClientes, setTecnicos, setEtiquetas);
 

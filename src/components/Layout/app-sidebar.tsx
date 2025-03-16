@@ -18,8 +18,14 @@ import {
   FileSpreadsheet,
   Target,
   Goal,
-  Wifi,
   UserPlus,
+  LogIn,
+  UserRoundPlus,
+  Waypoints,
+  Cpu,
+  Wifi,
+  Tags,
+  MonitorSmartphone,
 } from "lucide-react";
 
 import {
@@ -375,6 +381,73 @@ const menuItemsAdmin = [
 ];
 //RUTAS CRM
 const routesCrm_Admin = [
+  { icon: Home, label: "Inicio", href: "/crm" },
+
+  {
+    icon: Users,
+    label: "Clientes",
+    submenu: [
+      {
+        icon: Users,
+        label: "Listado de Clientes",
+        href: "/crm-clientes",
+      },
+      {
+        icon: UserPlus,
+        label: "Nuevo Cliente",
+        href: "/crm/crear-cliente-crm",
+      },
+    ],
+  },
+
+  { icon: CreditCard, label: "Facturación", href: "/crm/facturacion" },
+
+  {
+    icon: MonitorSmartphone,
+    label: "Soporte",
+    submenu: [
+      { icon: Ticket, label: "Tickets de Soporte", href: "/crm/tickets" },
+      {
+        icon: Tags,
+        label: "Categorías de Soporte",
+        href: "/crm/tags",
+      },
+    ],
+  },
+
+  { icon: Building, label: "Empresa", href: "/crm/empresa" },
+
+  { icon: Users, label: "Detalle del Cliente", href: "/crm/cliente-detalle" },
+
+  // SERVICIOS Y GESTIÓN DE SERVICIOS
+  {
+    icon: Waypoints,
+    label: "Servicios",
+    submenu: [
+      {
+        icon: Cpu,
+        label: "Gestión de Servicios",
+        href: "/crm-servicios",
+      },
+      {
+        icon: Wifi,
+        label: "Servicios de Internet",
+        href: "/crm-servicios-internet",
+      },
+    ],
+  },
+
+  {
+    icon: UserRoundPlus,
+    label: "Facturación por Zona",
+    href: "/crm-facturacion-zona",
+  },
+
+  { icon: UserRoundPlus, label: "Registro", href: "/crm/regist" },
+  { icon: LogIn, label: "Iniciar Sesión", href: "/crm/login" },
+];
+
+const routesCrm_Otro = [
   { icon: Home, label: "CRM", href: "/crm" },
   {
     icon: Users,
@@ -394,24 +467,49 @@ const routesCrm_Admin = [
   },
 
   { icon: CreditCard, label: "Facturación", href: "/crm/facturacion" },
-  { icon: Ticket, label: "Tickets", href: "/crm/tickets" },
-  { icon: Building, label: "Empresa", href: "/crm/empresa" },
 
-  { icon: Users, label: "Cliente Detalle", href: "/crm/cliente-detalle" },
-];
-const routesCrm_Otro = [
-  { icon: Wifi, label: "CRM", href: "/crm" },
   {
-    icon: ClipboardPen,
-    label: "Gestión de Ventas",
+    icon: MonitorSmartphone,
+    label: "Soporte",
     submenu: [
+      { icon: Ticket, label: "Tickets", href: "/crm/tickets" },
       {
-        icon: ClipboardPen,
-        label: "Ventas Eliminaciones",
-        href: "/historial/ventas-eliminaciones",
+        icon: Tags,
+        label: "Tags",
+        href: "/crm/tags",
       },
     ],
   },
+
+  { icon: Building, label: "Empresa", href: "/crm/empresa" },
+
+  { icon: Users, label: "Cliente Detalle", href: "/crm/cliente-detalle" },
+  //SERVICIOS Y AJUSTES DE LOS MISMO
+  {
+    icon: Waypoints,
+    label: "Servicios",
+    submenu: [
+      {
+        icon: Cpu,
+        label: "Servicios Manage",
+        href: "/crm-servicios",
+      },
+      {
+        icon: Wifi,
+        label: "Servicios Internet",
+        href: "/crm-servicios-internet",
+      },
+    ],
+  },
+
+  {
+    icon: UserRoundPlus,
+    label: "Facturacion Zona",
+    href: "/crm-facturacion-zona",
+  },
+
+  { icon: UserRoundPlus, label: "Registrarse", href: "/crm/regist" },
+  { icon: LogIn, label: "Login", href: "/crm/login" },
 ];
 
 export function AppSidebar() {

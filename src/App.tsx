@@ -61,7 +61,6 @@ import MyGoals from "./Pages/Metas/MyGoals";
 import ReportesExcel from "./Pages/Reports/Ventas/ReportesExcel";
 import CrmDashboard from "./Crm/DashboardCRM/CrmDashboard";
 import CrmCustomers from "./Crm/CrmCustomers/CrmCustomers";
-import CrmCustomer from "./Crm/CrmCustomers/CrmCustomer";
 import Billing from "./Crm/CrmBilling/CrmBilling";
 import TicketDashboard from "./Crm/CrmTickets/CrmTicketDashboard";
 import { useAuthStore } from "./components/Auth/AuthState";
@@ -69,13 +68,24 @@ import { useEffect } from "react";
 import CreateCustomers from "./Crm/CrmCreateCustomers/CreateCustomers";
 import EmpresaForm from "./Crm/CrmEmpresa/EmpresaForm";
 import CustomerDetails from "./Crm/CrmCustomer/CrmCustomerDetails";
+import { ProtectRouteCrmUser } from "./Crm/CrmAuthRoutes/ProtectRouteCrmUser";
+import { useAuthStoreCRM } from "./Crm/CrmAuthRoutes/AuthStateCRM";
+import CrmRegist from "./Crm/CrmAuth/CrmRegist";
+import CrmLogin from "./Crm/CrmAuth/CrmLogin";
+import CrmServiceManage from "./Crm/CrmServices/CrmServiceManage";
+import ServicioInternetManage from "./Crm/CrmServices/CrmServiciosWifi/CrmServicesWifi";
+import FacturacionZonaManage from "./Crm/CrmFacturacion/FacturacionZonaManage";
+import Samples1 from "./Samples/Samples1";
+import EtiquetaTicketManage from "./Crm/CrmTickets/CrmTagsTickets/EtiquetaTicketManage";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
   const { checkAuth } = useAuthStore();
+  const { checkAuthCRM } = useAuthStoreCRM();
 
   useEffect(() => {
     checkAuth(); // Carga el estado de autenticación al iniciar
+    checkAuthCRM();
   }, []);
 
   return (
@@ -105,6 +115,8 @@ function App() {
 
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<RegisterView />} />
+          <Route path="/crm/regist" element={<CrmRegist />} />
+          <Route path="/crm/login" element={<CrmLogin />} />
 
           <Route path="*" element={<NotFoundPage />} />
 
@@ -520,72 +532,118 @@ function App() {
             <Route
               path="/crm"
               element={
-                <ProtectRouteAdmin>
+                <ProtectRouteCrmUser>
                   <CrmDashboard />
-                </ProtectRouteAdmin>
+                </ProtectRouteCrmUser>
               }
             />
 
             <Route
               path="/crm-clientes"
               element={
-                <ProtectRouteAdmin>
+                <ProtectRouteCrmUser>
                   <CrmCustomers />
-                </ProtectRouteAdmin>
+                </ProtectRouteCrmUser>
               }
             />
 
             <Route
               path="/crm/cliente/:id"
               element={
-                <ProtectRouteAdmin>
-                  <CrmCustomer />
-                </ProtectRouteAdmin>
+                <ProtectRouteCrmUser>
+                  <CustomerDetails />
+                </ProtectRouteCrmUser>
               }
             />
 
             <Route
               path="/crm/facturacion"
               element={
-                <ProtectRouteAdmin>
+                <ProtectRouteCrmUser>
                   <Billing />
-                </ProtectRouteAdmin>
+                </ProtectRouteCrmUser>
               }
             />
 
             <Route
               path="/crm/tickets"
               element={
-                <ProtectRouteAdmin>
+                <ProtectRouteCrmUser>
                   <TicketDashboard />
-                </ProtectRouteAdmin>
+                </ProtectRouteCrmUser>
               }
             />
 
             <Route
               path="/crm/crear-cliente-crm"
               element={
-                <ProtectRouteAdmin>
+                <ProtectRouteCrmUser>
                   <CreateCustomers />
-                </ProtectRouteAdmin>
+                </ProtectRouteCrmUser>
               }
             />
 
             <Route
               path="/crm/cliente-detalle"
               element={
-                <ProtectRouteAdmin>
+                <ProtectRouteCrmUser>
                   <CustomerDetails />
-                </ProtectRouteAdmin>
+                </ProtectRouteCrmUser>
               }
             />
 
             <Route
               path="/crm/empresa"
               element={
-                <ProtectRouteAdmin>
+                <ProtectRouteCrmUser>
                   <EmpresaForm />
-                </ProtectRouteAdmin>
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            {/* seccion para servicios */}
+            <Route
+              path="/crm-servicios"
+              element={
+                <ProtectRouteCrmUser>
+                  <CrmServiceManage />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm-servicios-internet"
+              element={
+                <ProtectRouteCrmUser>
+                  <ServicioInternetManage />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm-facturacion-zona"
+              element={
+                <ProtectRouteCrmUser>
+                  <FacturacionZonaManage />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm/tags"
+              element={
+                <ProtectRouteCrmUser>
+                  <EtiquetaTicketManage />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm-samples"
+              element={
+                <ProtectRouteCrmUser>
+                  <Samples1 />
+                </ProtectRouteCrmUser>
               }
             />
           </Route>

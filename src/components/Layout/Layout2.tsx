@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
 //================================================================>
 import { useState, useEffect } from "react";
-import { X, Bell, User, MailIcon, LogOut } from "lucide-react";
+import { X, Bell, User, LogOut, AtSign } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { ModeToggle } from "../mode-toggle";
 import nv2 from "@/assets/LOGOPNG.png";
 import {
@@ -32,6 +32,9 @@ import { useSocket } from "../Context/SocketContext";
 import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { useStoreCrm } from "@/Crm/ZustandCrm/ZustandCrmContext";
+import { UserCrmToken } from "@/Crm/CrmAuth/UserCRMToken";
+import { Avatar, AvatarFallback } from "../ui/avatar";
 
 dayjs.extend(localizedFormat);
 dayjs.extend(customParseFormat);
@@ -64,25 +67,46 @@ interface Notificacion {
 }
 
 export default function Layout2({ children }: LayoutProps) {
-  const [tokenUser, setTokenUser] = useState<UserToken | null>(null);
+  // const [tokenUser, setTokenUser] = useState<UserToken | null>(null);
+  // const [tokenUserCrm, setTokenUserCrm] = useState<UserCrmToken | null>(null);
+
   const setUserNombre = useStore((state) => state.setUserNombre);
   const setUserCorreo = useStore((state) => state.setUserCorreo);
   const setUserId = useStore((state) => state.setUserId);
 
+  //PARA EL SISTEMA POS
   const setActivo = useStore((state) => state.setActivo);
   const setRol = useStore((state) => state.setRol);
   const setSucursalId = useStore((state) => state.setSucursalId);
   const sucursalId = useStore((state) => state.sucursalId);
   const socket = useSocket();
-
   const userID = useStore((state) => state.userId);
+  //PARA EL SISTEMA CRM
 
+  const setNombreCrm = useStoreCrm((state) => state.setNombre);
+  const setCorreoCrm = useStoreCrm((state) => state.setCorreo);
+  const setActivoCrm = useStoreCrm((state) => state.setActivo);
+  const setRolCrm = useStoreCrm((state) => state.setRol);
+  const setUserIdCrm = useStoreCrm((state) => state.setUserIdCrm);
+  const setEmpresaIdCrm = useStoreCrm((state) => state.setEmpresaId);
+
+  //POS
+  const nombrePos = useStore((state) => state.userNombre);
+  const correoPos = useStore((state) => state.userCorreo);
+
+  //CRM
+  const nombreCrm = useStoreCrm((state) => state.nombre);
+  const correoCrm = useStoreCrm((state) => state.correo);
+  const rol = useStoreCrm((state) => state.rol);
+  const empresaID = useStoreCrm((state) => state.empresaId);
   useEffect(() => {
     const storedToken = localStorage.getItem("authTokenPos");
+    const storedTokenCRM = localStorage.getItem("tokenAuthCRM");
+
     if (storedToken) {
       try {
         const decodedToken = jwtDecode<UserToken>(storedToken);
-        setTokenUser(decodedToken);
+        // setTokenUser(decodedToken);
         setUserNombre(decodedToken.nombre);
         setUserCorreo(decodedToken.correo);
         setActivo(decodedToken.activo);
@@ -93,13 +117,44 @@ export default function Layout2({ children }: LayoutProps) {
         console.error("Error decoding token:", error);
       }
     }
+    if (storedTokenCRM) {
+      try {
+        const decodedTokenCrm = jwtDecode<UserCrmToken>(storedTokenCRM);
+
+        setNombreCrm(decodedTokenCrm.nombre);
+        setActivoCrm(decodedTokenCrm.activo);
+        setCorreoCrm(decodedTokenCrm.correo);
+        setRolCrm(decodedTokenCrm.rol);
+        setUserIdCrm(decodedTokenCrm.id);
+        setEmpresaIdCrm(decodedTokenCrm.empresaId);
+      } catch (error) {
+        console.log("Error decodificando token: ", error);
+      }
+    }
   }, []);
+  console.log("mi nombre crm es: ", nombreCrm);
+  console.log("mi rol crm es: ", rol);
+  console.log("mi empresa id es: ", empresaID);
+
+  const storedTokenCRM = localStorage.getItem("tokenAuthCRM");
+
+  console.log("mi token crm es: ", storedTokenCRM);
+  const isCrmLocation = useLocation().pathname.startsWith("/crm");
+  // Determinar qué datos usar según la URL
+  const nombreUsuario = isCrmLocation ? nombreCrm : nombrePos;
+  const correoUsuario = isCrmLocation ? correoCrm : correoPos;
+  // const avatarUsuario = isCrmLocation ? avatarCrm : avatarPos;
 
   function handleDeletToken() {
-    localStorage.removeItem("authTokenPos");
+    if (isCrmLocation) {
+      localStorage.removeItem("tokenAuthCRM");
+      toast.info("Sesión en CRM cerrada");
+    } else {
+      localStorage.removeItem("authTokenPos");
+      toast.info("Sesión en POS cerrada");
+    }
     window.location.reload();
   }
-
   const [sucursalInfo, setSucursalInfo] = useState<Sucursal>();
 
   useEffect(() => {
@@ -145,7 +200,6 @@ export default function Layout2({ children }: LayoutProps) {
       getNotificaciones();
     }
   }, [userID]);
-  // authTokenPos
 
   const deleteNoti = async (id: number) => {
     try {
@@ -212,7 +266,7 @@ export default function Layout2({ children }: LayoutProps) {
                 <div className="">
                   <Link to={"/crm"}>
                     <Button
-                      className="underline font-semibold"
+                      className="underline font-semibold dark:text-white "
                       size={"icon"}
                       variant={"link"}
                     >
@@ -299,23 +353,28 @@ export default function Layout2({ children }: LayoutProps) {
                 <div className="">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="rounded-full"
+                      >
                         <User className="h-5 w-5" />
-                        {/* <span className="sr-only">User menu</span> */}
-                        {/* <Avatar>
-                        <AvatarImage src="https://github.com/shadcn.png" />
-                        <AvatarFallback>CN</AvatarFallback>
-                      </Avatar> */}
+                        <span className="sr-only">User menu</span>
+                        <Avatar className="bg-teal-500">
+                          <AvatarFallback className="bg-[#2fe0ab] text-white font-bold dark:bg-transparent">
+                            {nombreUsuario?.slice(0, 2).toUpperCase() || "??"}
+                          </AvatarFallback>
+                        </Avatar>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem>
                         <User className="mr-2 h-4 w-4" />
-                        <span>{tokenUser?.nombre}</span>
+                        <span>{nombreUsuario}</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem>
-                        <MailIcon className="mr-2 h-4 w-4" />
-                        <span>{tokenUser?.correo}</span>
+                        <AtSign className="mr-2 h-4 w-4" />
+                        <span>{correoUsuario}</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleDeletToken}>
                         <LogOut className="mr-2 h-4 w-4" />

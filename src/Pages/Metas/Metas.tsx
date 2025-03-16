@@ -1546,7 +1546,8 @@ export function EditMetaTiendaDialog({
           {
             tituloMeta: formData.tituloMeta,
             EstadoMetaTienda: formData.estado,
-            montoMeta: formData.montoMeta,
+            montoMeta: Number(formData.montoMeta),
+            montoActual: Number(formData.montoActual),
           }
         );
 
@@ -1601,6 +1602,17 @@ export function EditMetaTiendaDialog({
               name="montoMeta"
               type="number"
               value={formData?.montoMeta || ""}
+              onChange={handleInputChange}
+              placeholder="Monto objetivo"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Monto Actual</label>
+            <Input
+              name="montoActual"
+              type="number"
+              value={formData?.montoActual || ""}
               onChange={handleInputChange}
               placeholder="Monto objetivo"
             />

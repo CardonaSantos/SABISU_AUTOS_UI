@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ColumnDef,
   flexRender,
@@ -22,121 +22,32 @@ import {
 import { Link } from "react-router-dom";
 // import { Edit } from "lucide-react";
 import { motion } from "framer-motion";
+import axios from "axios";
+import { toast } from "sonner";
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import utc from "dayjs/plugin/utc";
+import localizedFormat from "dayjs/plugin/localizedFormat";
 
-// type Cliente = {
-//   id: number;
-//   nombre: string;
-//   telefono?: string;
-//   direccion?: string;
-//   dpi?: string;
-//   iPInternet?: string;
-//   creadoEn: string;
-// };
+dayjs.extend(utc);
+dayjs.extend(localizedFormat);
+dayjs.locale("es");
+
+const formatearFecha = (fecha: string) => {
+  // Formateo en UTC sin conversión a local
+  return dayjs(fecha).format("DD/MM/YYYY hh:mm A");
+};
 
 type Factura = {
   id: number;
   metodo: string;
   cliente: string;
+  direccionIp: string;
   cantidad: number;
   fechaCreado: string;
   por: string;
   telefono: number;
 };
-
-// **Datos de Prueba**
-// **Datos de Facturación**
-const clientesData: Factura[] = [
-  {
-    id: 101,
-    metodo: "Tarjeta",
-    cliente: "Mari Mileidy Camposeco",
-    cantidad: 250.75,
-    fechaCreado: "2025-02-25",
-    por: "Admin 1",
-    telefono: 40017273,
-  },
-  {
-    id: 102,
-    metodo: "Efectivo",
-    cliente: "Juan Pérez",
-    cantidad: 150.0,
-    fechaCreado: "2025-02-24",
-    por: "Cajero 2",
-    telefono: 40017209,
-  },
-  {
-    id: 103,
-    metodo: "Transferencia",
-    cliente: "María López",
-    cantidad: 320.5,
-    fechaCreado: "2025-02-23",
-    por: "Admin 1",
-    telefono: 400171233,
-  },
-  {
-    id: 104,
-    metodo: "Tarjeta",
-    cliente: "Carlos Gómez",
-    cantidad: 180.0,
-    fechaCreado: "2025-02-22",
-    por: "Cajero 3",
-    telefono: 4001727312,
-  },
-  {
-    id: 105,
-    metodo: "Efectivo",
-    cliente: "Ana Rodríguez",
-    cantidad: 90.75,
-    fechaCreado: "2025-02-21",
-    por: "Cajero 1",
-    telefono: 40345573,
-  },
-  {
-    id: 106,
-    metodo: "Transferencia",
-    cliente: "Luis Méndez",
-    cantidad: 400.0,
-    fechaCreado: "2025-02-20",
-    por: "Admin 2",
-    telefono: 40013453,
-  },
-  {
-    id: 107,
-    metodo: "Tarjeta",
-    cliente: "Pedro Ramírez",
-    cantidad: 220.3,
-    fechaCreado: "2025-02-19",
-    por: "Cajero 2",
-    telefono: 46517273,
-  },
-  {
-    id: 108,
-    metodo: "Efectivo",
-    cliente: "Diana Fernández",
-    cantidad: 135.25,
-    fechaCreado: "2025-02-18",
-    por: "Cajero 1",
-    telefono: 40234273,
-  },
-  {
-    id: 109,
-    metodo: "Transferencia",
-    cliente: "Roberto Castro",
-    cantidad: 510.9,
-    fechaCreado: "2025-02-17",
-    por: "Admin 1",
-    telefono: 40212273,
-  },
-  {
-    id: 110,
-    metodo: "Tarjeta",
-    cliente: "Gabriela Salazar",
-    cantidad: 275.4,
-    fechaCreado: "2025-02-16",
-    por: "Cajero 3",
-    telefono: 402345273,
-  },
-];
 
 // **Definir columnas de la tabla**
 const columns: ColumnDef<Factura>[] = [
@@ -147,18 +58,34 @@ const columns: ColumnDef<Factura>[] = [
   { accessorKey: "fechaCreado", header: "Fecha Creado" },
   { accessorKey: "por", header: "Por" },
 ];
-
-// interface ClienteSearch {
-
-// }
+const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 
 export default function BilingTable() {
   const [filter, setFilter] = useState("");
+  const [facturas, setFactuas] = useState<Factura[]>([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 }); // 🔥 FIX: Agregamos pageIndex
 
+  console.log("Las facturas son: ", facturas);
+
+  const getFacturas = async () => {
+    try {
+      const response = await axios.get(`${VITE_CRM_API_URL}/facturacion`);
+
+      if (response.status === 200) {
+        setFactuas(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al conseguir facturación");
+    }
+  };
+
+  useEffect(() => {
+    getFacturas();
+  }, []);
   // **Configuración de la tabla**
   const table = useReactTable({
-    data: clientesData,
+    data: facturas,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -168,37 +95,35 @@ export default function BilingTable() {
       pagination,
     },
     onGlobalFilterChange: setFilter,
-    onPaginationChange: setPagination, // 🔥 FIX: Ahora podemos cambiar la página y tamaño
+    onPaginationChange: setPagination,
     globalFilterFn: (row, columnId, value) => {
       console.log(columnId);
-
-      const search = value.toLowerCase().trim();
-
-      const cliente = row.original as Factura;
+      //tomar el row, la columnaId y el valor del input de la tabla
+      const search = value.toLowerCase().trim(); //input
+      const cliente = row.original as Factura; //tomamos de donde vamos a filtrar
 
       return (
         cliente.telefono.toString().toLocaleLowerCase().includes(search) ||
         cliente.id.toString().toLocaleLowerCase().includes(search) ||
         cliente.cliente.toString().toLocaleLowerCase().includes(search) ||
         cliente.metodo.toString().toLocaleLowerCase().includes(search) ||
+        cliente.direccionIp.toString().toLocaleLowerCase().includes(search) ||
         cliente.por.toString().toLocaleLowerCase().includes(search)
       );
-
-      // return String(row.getValue(columnId)).toLowerCase().includes(search);
     },
   });
 
   return (
-    <Card className=" max-w-full shadow-lg">
+    <Card className="max-w-full shadow-lg border border-gray-300 text-xs">
       <CardContent>
         <div className="flex justify-between items-center mb-4"></div>
         {/* **Campo de Búsqueda** */}
         <Input
           type="text"
-          placeholder="Buscar por Nombre, Teléfono, Dirección, DPI o IP..."
+          placeholder="Buscar por nombre, telefono o ip"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="mb-3"
+          className="mb-3 text-xs px-2 py-1"
         />
 
         {/* **Selector de Cantidad de Filas** */}
@@ -209,7 +134,7 @@ export default function BilingTable() {
             }
             defaultValue={String(pagination.pageSize)}
           >
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-32 text-xs">
               <SelectValue placeholder="Items por página" />
             </SelectTrigger>
             <SelectContent>
@@ -223,14 +148,14 @@ export default function BilingTable() {
 
         {/* **Tabla** */}
         <div className="overflow-x-auto">
-          <table className="w-full border ">
-            <thead className=" ">
+          <table className="w-full border border-gray-300 text-xs">
+            <thead className="bg-gray-100 dark:bg-gray-800">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="p-2 border font-semibold text-sm"
+                      className="px-2 py-1 border font-semibold"
                     >
                       {flexRender(
                         header.column.columnDef.header,
@@ -238,7 +163,6 @@ export default function BilingTable() {
                       )}
                     </th>
                   ))}
-                  {/* Nueva columna de Acciones */}
                 </tr>
               ))}
             </thead>
@@ -246,33 +170,32 @@ export default function BilingTable() {
               {table.getRowModel().rows.map((row) => (
                 <motion.tr
                   key={row.id}
-                  whileHover={{ scale: 1.01 }} // Apenas un 2% más grande al hacer hover
-                  whileTap={{ scale: 0.99 }} // Reduce un poco al hacer click para un efecto táctil
-                  transition={{ type: "spring", stiffness: 120, damping: 22 }} // Menos rigidez y rebote más controlado
-                  className="text-sm hover:bg-gray-200 dark:hover:bg-gray-700"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  transition={{ type: "spring", stiffness: 120, damping: 22 }}
+                  className="hover:bg-gray-200 dark:hover:bg-gray-700 border-b border-gray-300"
                 >
-                  {/* **Fila completa clickeable con el Link** */}
+                  <td className="px-2 py-1 text-center">{row.original.id}</td>
+                  <td className="px-2 py-1 truncate max-w-[120px] whitespace-nowrap">
+                    {row.original.metodo}
+                  </td>
                   <Link
                     to={`/crm/cliente/${row.original.id}`}
                     className="contents"
                   >
-                    <td className="p-2 font-medium">{row.original.id}</td>
-                    <td className="p-2 truncate max-w-[150px]">
-                      {row.original.metodo}
-                    </td>
-                    <td className="p-2 truncate max-w-[100px]">
+                    <td className="px-2 py-1 truncate max-w-[100px] hover:underline">
                       {row.original.cliente}
                     </td>
-                    <td className="p-2 truncate max-w-[200px]">
-                      {row.original.cantidad}
-                    </td>
-                    <td className="p-2 truncate max-w-[120px]">
-                      {row.original.fechaCreado}
-                    </td>
-                    <td className="p-2 truncate max-w-[100px]">
-                      {row.original.por}
-                    </td>
                   </Link>
+                  <td className="px-2 py-1 truncate max-w-[150px] whitespace-nowrap">
+                    {row.original.cantidad}
+                  </td>
+                  <td className="px-2 py-1 truncate max-w-[120px] whitespace-nowrap">
+                    {formatearFecha(row.original.fechaCreado)}
+                  </td>
+                  <td className="px-2 py-1 truncate max-w-[100px] whitespace-nowrap">
+                    {row.original.por ? row.original.por : "Sin cobrar"}
+                  </td>
                 </motion.tr>
               ))}
             </tbody>
@@ -280,11 +203,12 @@ export default function BilingTable() {
         </div>
 
         {/* **Controles de Paginación** */}
-        <div className="flex justify-between items-center mt-3">
+        <div className="flex justify-between items-center mt-3 text-xs">
           <Button
             variant="outline"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            className="px-2 py-1"
           >
             Anterior
           </Button>
@@ -297,6 +221,7 @@ export default function BilingTable() {
             variant="outline"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            className="px-2 py-1"
           >
             Siguiente
           </Button>
