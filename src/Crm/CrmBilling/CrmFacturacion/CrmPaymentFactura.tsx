@@ -57,7 +57,6 @@ import {
   Info,
   Coins,
   ReceiptText,
-  Check,
   X,
 } from "lucide-react";
 import { useParams } from "react-router-dom";
@@ -108,11 +107,11 @@ interface ServicioInternet {
   precio: number;
 }
 
-interface Usuario {
-  id: number;
-  nombre: string;
-  apellidos?: string;
-}
+// interface Usuario {
+//   id: number;
+//   nombre: string;
+//   apellidos?: string;
+// }
 
 interface ClienteInternet {
   id: number;
@@ -185,10 +184,14 @@ const CrmPaymentFactura: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [cobradores, setCobradores] = useState<Usuario[]>([]);
+  console.log(setSuccess);
+
+  // const [cobradores, setCobradores] = useState<Usuario[]>([]);
   const [facturasPendientes, setFacturasPendientes] = useState<
     FacturaInternet[]
   >([]);
+  console.log(setFacturasPendientes);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showHistorial, setShowHistorial] = useState(false);
 
@@ -252,6 +255,8 @@ const CrmPaymentFactura: React.FC = () => {
   // Función para cargar facturas pendientes del cliente
   const fetchFacturasPendientes = async (clienteId: number) => {
     try {
+      console.log(clienteId);
+
       // En un entorno real, esto sería una llamada a la API
       // const response = await axios.get(`/api/clientes/${clienteId}/facturas-pendientes`)
       // setFacturasPendientes(response.data)

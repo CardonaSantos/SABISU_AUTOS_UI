@@ -6,12 +6,12 @@ import TicketList from "./CrmTicketList";
 import TicketDetail from "./CrmTicketDetails";
 import TicketFilters from "./CrmTicketFilter";
 import type { Ticket } from "./ticketTypes";
-import { mockTickets } from "./mock-data";
+// import { mockTickets } from "./mock-data";
 import { toast } from "sonner";
 import axios from "axios";
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 export default function TicketDashboard() {
-  const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   console.log(setTickets);
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null); // Solo ID
   const [filterText, setFilterText] = useState("");

@@ -94,6 +94,7 @@ const EtiquetaTicketManage: React.FC = () => {
   const [selectedEtiqueta, setSelectedEtiqueta] =
     useState<EtiquetaTicket | null>(null);
   const [isTicketsDialogOpen, setIsTicketsDialogOpen] = useState(false);
+  console.log(selectedEtiqueta, isTicketsDialogOpen);
 
   // Cargar datos
   useEffect(() => {

@@ -28,7 +28,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import utc from "dayjs/plugin/utc";
 import localizedFormat from "dayjs/plugin/localizedFormat";
-import { CreditCard, File, FileCheck, FileStack } from "lucide-react";
+import { CreditCard, File, FileCheck } from "lucide-react";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
