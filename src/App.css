@@ -5,6 +5,43 @@
   text-align: center;
 } */
 
+.factura-container {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  max-width: 600px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+h1 {
+  text-align: center;
+  color: #2c3e50;
+}
+
+h2 {
+  color: #16a085;
+  margin-top: 10px;
+}
+
+p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+button {
+  background-color: #3498db;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #2980b9;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;

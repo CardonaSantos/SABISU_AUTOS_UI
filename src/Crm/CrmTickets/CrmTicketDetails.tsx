@@ -1,22 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-// import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Ellipsis, Send } from "lucide-react";
+import { Clock, Ellipsis, Flag, Send, Tag, UserIcon } from "lucide-react";
 import type { Ticket } from "./ticketTypes";
-// import { format } from "date-fns";
-// import { es } from "date-fns/locale";
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { useStoreCrm } from "../ZustandCrm/ZustandCrmContext";
+import axios from "axios";
+import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import SelectComponent, { MultiValue, SingleValue } from "react-select";
 
+const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 dayjs.extend(localizedFormat);
 dayjs.extend(customParseFormat);
 dayjs.locale("es");
@@ -24,12 +51,207 @@ const formatearFecha = (fecha: string) => {
   return dayjs(fecha).format("DD MMMM YYYY hh:mm A");
 };
 
-interface TicketDetailProps {
-  ticket: Ticket;
+interface OptionSelectedReactComponent {
+  value: string;
+  label: string;
 }
 
-export default function TicketDetail({ ticket }: TicketDetailProps) {
-  const [comment, setComment] = useState("");
+interface TicketDetailProps {
+  ticket: Ticket;
+  getTickets: () => void;
+  //para volver a poder seleccionar las labels
+  optionsLabels: OptionSelectedReactComponent[];
+  optionsTecs: OptionSelectedReactComponent[];
+}
+
+interface SeguimientoData {
+  ticketId: number | null;
+  usuarioId: number | null;
+  descripcion: string;
+}
+
+enum PrioridadTicketSoporte {
+  BAJA = "BAJA",
+  MEDIA = "MEDIA",
+  ALTA = "ALTA",
+  URGENTE = "URGENTE",
+}
+
+interface TagOption {
+  value: string;
+  label: string;
+}
+
+export default function TicketDetail({
+  ticket,
+  getTickets,
+  //LAS ETIQUETAS CON EL FORMATO QUE REACT SELECT COMPONENT PUEDE SOPORTAR
+  optionsLabels,
+  optionsTecs,
+}: TicketDetailProps) {
+  const userId = useStoreCrm((state) => state.userIdCRM) ?? 0;
+  const [openUpdateTicket, setOpenUpdateTicket] = useState(false);
+  const [ticketToEdit, setTicketToEdit] = useState<Ticket>(ticket);
+  const [formDataComent, setFormDataComent] = useState<SeguimientoData>({
+    descripcion: "".trim(),
+    ticketId: ticket.id,
+    usuarioId: userId,
+  });
+  console.log("El form para el seguimiento es: ", formDataComent);
+
+  const submitNewComentaryFollowUp = async (e: React.FormEvent) => {
+    console.log("EJECUTANDO FUNCION");
+    e.preventDefault();
+    try {
+      if (!formDataComent.descripcion) {
+        toast.info("No se pueden enviar mensajes vacíos");
+        return;
+      }
+
+      if (!formDataComent.ticketId) {
+        toast.info("Imposible conseguir ticket id");
+        return;
+      }
+
+      if (!formDataComent.usuarioId) {
+        toast.info("No se encontró el user id");
+        return;
+      }
+
+      const response = await axios.post(
+        `${VITE_CRM_API_URL}/ticket-seguimiento`,
+        formDataComent
+      );
+
+      if (response.status === 201) {
+        toast.success("Comentario añadido");
+        await getTickets();
+        setFormDataComent((previaData) => ({
+          ...previaData,
+          descripcion: "",
+        }));
+      }
+    } catch (error) {
+      toast.info("Error al añadir seguimiento");
+    }
+  };
+
+  useEffect(() => {
+    setFormDataComent((previaData) => ({
+      ...previaData,
+      ticketId: ticket.id,
+    }));
+  }, [ticket]);
+
+  const getBadgeProps = (priority: PrioridadTicketSoporte) => {
+    switch (priority) {
+      case PrioridadTicketSoporte.BAJA:
+        return {
+          text: "Baja prioridad",
+          bgColor: "bg-gray-50", // Color de fondo gris claro
+          textColor: "text-gray-600", // Color de texto gris oscuro
+        };
+      case PrioridadTicketSoporte.MEDIA:
+        return {
+          text: "Prioridad media",
+          bgColor: "bg-green-50", // Color de fondo verde suave
+          textColor: "text-green-600", // Color de texto verde
+        };
+      case PrioridadTicketSoporte.ALTA:
+        return {
+          text: "Alta prioridad",
+          bgColor: "bg-yellow-50", // Color de fondo amarillo suave
+          textColor: "text-yellow-600", // Color de amarillo verde
+        };
+      case PrioridadTicketSoporte.URGENTE:
+        return {
+          text: "Urgente",
+          bgColor: "bg-red-50", // Color de fondo rojo suave
+          textColor: "text-red-600", // Color de texto rojo
+        };
+      default:
+        return {
+          text: "Desconocido",
+          bgColor: "bg-gray-100", // Color de fondo gris muy claro
+          textColor: "text-gray-500", // Color de texto gris claro
+        };
+    }
+  };
+  const { bgColor, text, textColor } = getBadgeProps(ticket.priority);
+
+  const handleChangePropsTicket = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setTicketToEdit((previaData) => ({
+      ...previaData,
+      [name]: value,
+    }));
+  };
+
+  console.log("El value del ticket editando es: ", ticketToEdit);
+
+  const handleSelectChange = (name: string, value: string) => {
+    setTicketToEdit((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Actualiza las etiquetas, transformando el array de opciones a array de strings
+  const handleChangeLabels = (selectedOptions: MultiValue<TagOption>) => {
+    setTicketToEdit((prev) => ({
+      ...prev,
+      tags: [...selectedOptions], // Convertimos a array mutable
+    }));
+  };
+
+  useEffect(() => {
+    setTicketToEdit(ticket);
+  }, [ticket]);
+
+  // Actualiza el técnico asignado a partir de la opción seleccionada
+  const handleChangeTecSelect = (
+    selectedOption: SingleValue<{ value: string; label: string }>
+  ) => {
+    if (selectedOption) {
+      setTicketToEdit((prev) => ({
+        ...prev,
+        assignee: {
+          id: Number(selectedOption.value),
+          name: selectedOption.label,
+          initials: selectedOption.label
+            .split(" ")
+            .map((word) => word[0])
+            .join(""),
+          avatar: prev.assignee?.avatar || "",
+        },
+      }));
+    } else {
+      // Si se deselecciona el técnico, se limpia el valor
+      setTicketToEdit((prev) => ({
+        ...prev,
+        assignee: { id: 0, name: "", initials: "" },
+      }));
+    }
+  };
+
+  const handleSubmitTicketEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await axios.patch(
+        `${VITE_CRM_API_URL}/tickets-soporte/update-ticket-soporte/${ticketToEdit.id}`,
+        ticketToEdit
+      );
+      if (response.status === 200 || response.status === 201) {
+        toast.success("Ticket actualizado correctamente");
+        getTickets();
+        setOpenUpdateTicket(false);
+      } else {
+        toast.error("Error al actualizar el ticket");
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al actualizar el ticket");
+    }
+  };
 
   return (
     <div className="h-[calc(100vh-220px)] flex flex-col">
@@ -38,24 +260,60 @@ export default function TicketDetail({ ticket }: TicketDetailProps) {
           <div className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
               <AvatarFallback>
-                {ticket.assignee.name.slice(0, 2).toUpperCase()}
+                {ticket.customer
+                  ? ticket.customer.name.slice(0, 2).toUpperCase()
+                  : "NA"}{" "}
               </AvatarFallback>
             </Avatar>
             <div>
-              <div className="text-sm text-muted-foreground">
-                #{ticket.id} · {ticket.assignee.name} ·{" "}
-                {formatearFecha(new Date(ticket.date).toISOString())}
+              <div className="text-[12px]  text-blue-500">
+                <Link to={`/crm/cliente/${ticket.customer.id}`}>
+                  #{ticket.id} ·{" "}
+                  {ticket.assignee ? ticket.customer.name : "No asignado"} ·{" "}
+                  {formatearFecha(new Date(ticket.date).toISOString())}
+                </Link>
               </div>
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              {ticket.creator.name} para{" "}
+              {ticket.assignee ? ticket.assignee.name : "No asignado"}{" "}
+              {/* Si hay técnico, mostramos su nombre, sino "No asignado" */}
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-blue-50 text-blue-600">
-              NUEVO
+            <Badge
+              variant="outline"
+              className={`${bgColor} ${text} ${textColor}`}
+            >
+              {ticket.priority}
             </Badge>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <Ellipsis />
-            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Ellipsis />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuLabel>Actualizar Ticket</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem>
+                  Archivar Ticket
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem>
+                  Iniciar Ticket
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  onClick={() => {
+                    setOpenUpdateTicket(true);
+                    setTicketToEdit(ticket);
+                  }}
+                >
+                  Actualizar Ticket
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -64,16 +322,6 @@ export default function TicketDetail({ ticket }: TicketDetailProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        {/* <div className="bg-muted/30 rounded-lg p-4 mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="font-medium">{ticket.creator.name}</span>
-            <span className="text-sm text-muted-foreground">
-              {formatearFecha(new Date(ticket.date).toISOString())}
-            </span>
-          </div>
-          <p>{ticket.description}</p>
-        </div> */}
-
         {ticket.comments &&
           ticket.comments.map((comment, index) => (
             <motion.div
@@ -85,33 +333,271 @@ export default function TicketDetail({ ticket }: TicketDetailProps) {
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="font-medium text-sm">{comment.user.name}</span>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-[11px] text-muted-foreground">
                   {formatearFecha(new Date(comment.date).toISOString())}
                 </span>
               </div>
-              <p className="text-sm ">{comment.text}</p>
+              <p className="text-[12px]">{comment.text}</p>
             </motion.div>
           ))}
       </div>
 
       <div className="border-t p-4">
-        <div className="relative flex items-center gap-3">
-          <Textarea
-            placeholder="Escriba un comentario"
-            className="min-h-[50px] resize-none pr-12 flex-1"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-
-          <Button
-            className="bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center p-2"
-            onClick={() => console.log("Enviar")}
-          >
-            <Send className="h-4 w-4 mr-2" />
-            ENVIAR
-          </Button>
-        </div>
+        <form onSubmit={submitNewComentaryFollowUp}>
+          <div className="relative flex items-center gap-3">
+            <Textarea
+              placeholder="Escriba un comentario"
+              className="min-h-[50px] resize-none pr-12 flex-1"
+              value={formDataComent.descripcion}
+              onChange={(e) =>
+                setFormDataComent((previaData) => ({
+                  ...previaData,
+                  descripcion: e.target.value,
+                }))
+              }
+            />
+            <button
+              type="submit"
+              className="bg-[#27bd65] hover:bg-[#3cc575] text-white flex items-center justify-center p-2 rounded-lg transition-colors duration-300"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              ENVIAR
+            </button>
+          </div>
+        </form>
       </div>
+
+      {/* DIALOG PARA LA EDICION DEL TICKET Y CIERRE POSTERIOR */}
+      <Dialog open={openUpdateTicket} onOpenChange={setOpenUpdateTicket}>
+        <DialogContent className="sm:max-w-[500px] md:max-w-[600px] p-0 overflow-hidden">
+          <form onSubmit={handleSubmitTicketEdit} className="space-y-0">
+            <DialogHeader className="px-6 pt-6 pb-2 bg-muted/30">
+              <DialogTitle className="text-xl font-semibold">
+                Editar Ticket
+              </DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">
+                Modifica los campos del ticket según sea necesario.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="px-6 py-4 max-h-[70vh] overflow-y-auto space-y-5">
+              {/* Título */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="title"
+                  className="flex items-center gap-2 text-sm font-medium"
+                >
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10">
+                    <span className="text-primary text-xs font-bold">T</span>
+                  </span>
+                  Título
+                </Label>
+                <Input
+                  name="title"
+                  id="title"
+                  value={ticketToEdit.title}
+                  onChange={handleChangePropsTicket}
+                  className="w-full"
+                  placeholder="Título del ticket"
+                />
+              </div>
+
+              {/* Descripción */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="description"
+                  className="flex items-center gap-2 text-sm font-medium"
+                >
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10">
+                    <span className="text-primary text-xs font-bold">D</span>
+                  </span>
+                  Descripción
+                </Label>
+                <Textarea
+                  name="description"
+                  id="description"
+                  value={ticketToEdit.description}
+                  onChange={handleChangePropsTicket}
+                  className="w-full min-h-[100px] resize-y"
+                  placeholder="Descripción detallada del problema"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Prioridad */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="priority"
+                    className="flex items-center gap-2 text-sm font-medium"
+                  >
+                    <Flag className="h-4 w-4 text-red-500" />
+                    Prioridad
+                  </Label>
+                  <Select
+                    value={ticketToEdit.priority}
+                    onValueChange={(value) =>
+                      handleSelectChange("priority", value)
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Seleccionar prioridad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BAJA" className="flex items-center">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-gray-500"></span>
+                          <span>Baja</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="MEDIA">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                          <span>Media</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="ALTA">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
+                          <span>Alta</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="URGENTE">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                          <span>Urgente</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Estado */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="status"
+                    className="flex items-center gap-2 text-sm font-medium"
+                  >
+                    <Clock className="h-4 w-4 text-blue-500" />
+                    Estado
+                  </Label>
+                  <Select
+                    value={ticketToEdit.status}
+                    onValueChange={(value) =>
+                      handleSelectChange("status", value)
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Seleccionar estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NUEVO">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                          <span>Nuevo</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="ABIERTA">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
+                          <span>Abierta</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="EN_PROCESO">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                          <span>En Proceso</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="PENDIENTE">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-gray-500"></span>
+                          <span>Pendiente</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="PENDIENTE_CLIENTE">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-pink-500"></span>
+                          <span>Pendiente Cliente</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="PENDIENTE_TECNICO">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-teal-500"></span>
+                          <span>Pendiente Técnico</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Etiquetas */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                  <Tag className="h-4 w-4 text-purple-500" />
+                  Etiquetas
+                </Label>
+                <div className="relative z-30">
+                  <SelectComponent
+                    placeholder="Seleccione etiquetas (opcional)"
+                    options={optionsLabels}
+                    isMulti
+                    value={ticketToEdit.tags}
+                    onChange={handleChangeLabels}
+                    menuPlacement="top"
+                    className=" text-black text-[12px]"
+                  />
+                </div>
+              </div>
+
+              {/* Técnico Asignado */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="assignee"
+                  className="flex items-center gap-2 text-sm font-medium"
+                >
+                  <UserIcon className="h-4 w-4 text-teal-500" />
+                  Técnico Asignado
+                </Label>
+                <SelectComponent
+                  placeholder="Seleccione un técnico"
+                  isClearable
+                  options={optionsTecs}
+                  value={
+                    ticketToEdit.assignee
+                      ? optionsTecs.find(
+                          (tec) =>
+                            tec.value === ticketToEdit.assignee.id.toString()
+                        )
+                      : null
+                  }
+                  onChange={handleChangeTecSelect}
+                  className="text-black text-[13px]"
+                  menuPlacement="bottom"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="px-6 py-4 bg-muted/30 border-t flex flex-col sm:flex-row gap-2 sm:gap-0">
+              <Button
+                variant="outline"
+                onClick={() => setOpenUpdateTicket(false)}
+                type="button"
+                className="w-full sm:w-auto order-2 sm:order-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSubmitTicketEdit}
+                type="submit"
+                className="w-full sm:w-auto order-1 sm:order-2"
+              >
+                Guardar Cambios
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

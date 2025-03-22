@@ -44,6 +44,7 @@ import { Separator } from "@/components/ui/separator";
 import SelectComponent, { MultiValue } from "react-select";
 import axios from "axios";
 import { toast } from "sonner";
+import { useStoreCrm } from "@/Crm/ZustandCrm/ZustandCrmContext";
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 // Tipos
 interface CreateTicketProps {
@@ -78,21 +79,34 @@ function CrmCreateTicket({
   setOpenCreateT,
   getTickets,
 }: CreateTicketProps) {
+  const userId = useStoreCrm((state) => state.userIdCRM) ?? 0;
+  const empresaId = useStoreCrm((state) => state.empresaId) ?? 0;
+
+  const [labelsSelecteds, setLabelsSelecteds] = useState<number[]>([]);
+  interface FormData {
+    clienteId: number | null;
+    tecnicoId: number | null;
+    titulo: "";
+    descripcion: "";
+    estado: "NUEVO";
+    prioridad: "MEDIA";
+    etiquetas: number[];
+    userId: number;
+    empresaId: number;
+  }
+
   // Estados para los campos del formulario
-  const [formData, setFormData] = useState({
-    clienteId: "",
-    empresaId: "",
-    tecnicoId: "",
+  const [formData, setFormData] = useState<FormData>({
+    clienteId: 0,
+    tecnicoId: 0,
     titulo: "",
     descripcion: "",
-    estado: "ABIERTA",
+    estado: "NUEVO",
     prioridad: "MEDIA",
     etiquetas: [] as number[],
+    userId: userId,
+    empresaId: empresaId,
   });
-
-  // Estado para búsqueda de cliente
-  // const [clienteSearch, setClienteSearch] = useState("");
-  // const [clientePopoverOpen, setClientePopoverOpen] = useState(false);
 
   // Datos simulados
   const [clientes, setClientes] = useState<Cliente[]>([
@@ -115,13 +129,7 @@ function CrmCreateTicket({
     { id: 3, nombre: "Técnico 3" },
   ]);
 
-  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([
-    { id: 1, nombre: "Hardware", color: "bg-red-100 text-red-800" },
-    { id: 2, nombre: "Software", color: "bg-blue-100 text-blue-800" },
-    { id: 3, nombre: "Conectividad", color: "bg-green-100 text-green-800" },
-    { id: 4, nombre: "Facturación", color: "bg-yellow-100 text-yellow-800" },
-    { id: 5, nombre: "Instalación", color: "bg-purple-100 text-purple-800" },
-  ]);
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
 
   const getClientes = async () => {
     try {
@@ -137,6 +145,8 @@ function CrmCreateTicket({
     }
   };
 
+  console.log("El form data es: ", formData);
+
   const getTecs = async () => {
     try {
       const response = await axios.get(
@@ -151,9 +161,24 @@ function CrmCreateTicket({
     }
   };
 
+  const getEtiquetas = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/tags-ticket/get-tags-to-ticket`
+      );
+      if (response.status === 200) {
+        setEtiquetas(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.info("No se pudieron conseguir tags");
+    }
+  };
+
   useEffect(() => {
     getClientes();
     getTecs();
+    getEtiquetas();
   }, []);
 
   console.log(empresas, setEmpresas, setClientes, setTecnicos, setEtiquetas);
@@ -168,37 +193,28 @@ function CrmCreateTicket({
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+  console.log("El form data es: ", formData);
 
-  // Manejador para enviar el formulario
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     console.log("Datos del ticket:", formData);
+
+    try {
+      const response = await axios.post(
+        `${VITE_CRM_API_URL}/tickets-soporte`,
+        formData
+      );
+
+      if (response.status === 201) {
+        toast.success("Ticket Creado");
+      }
+    } catch (error) {
+      console.log(error);
+      toast.info("Error al crear ticket");
+    }
+
     getTickets();
     setOpenCreateT(false);
   };
-
-  // Efecto para resetear el formulario cuando se abre
-  useEffect(() => {
-    if (openCreatT) {
-      setFormData({
-        clienteId: "",
-        empresaId: "",
-        tecnicoId: "",
-        titulo: "",
-        descripcion: "",
-        estado: "ABIERTA",
-        prioridad: "MEDIA",
-        etiquetas: [],
-      });
-    }
-  }, [openCreatT]);
-  const [customerSelectedID, setCustomerSelectedID] = useState<number | null>(
-    null
-  );
-
-  const [tecSelected, setTecSelected] = useState<number | null>(null);
-
-  // Estado para las etiquetas seleccionadas (solo IDs)
-  const [labelsSelecteds, setLabelsSelecteds] = useState<number[]>([]);
 
   interface OptionSelectedReactComponent {
     value: string;
@@ -208,33 +224,36 @@ function CrmCreateTicket({
   interface Etiqueta {
     id: number;
     nombre: string;
-    color: string;
   }
 
-  //OPCIONES DE SELECCIONADO PARA EL DIALOG
   const handleChangeCustomerSelect = (
-    selectedOption: { value: string; label: string } | null
+    selectedOption: OptionSelectedReactComponent | null
   ) => {
-    setCustomerSelectedID(
-      selectedOption ? parseInt(selectedOption.value, 10) : null
-    );
+    const newCustomerId = selectedOption
+      ? parseInt(selectedOption.value, 10)
+      : null;
+    setFormData((prev) => ({ ...prev, clienteId: newCustomerId }));
   };
 
   const handleChangeTecSelect = (
     optionSelected: OptionSelectedReactComponent | null
   ) => {
-    setTecSelected(optionSelected ? parseInt(optionSelected.value) : null);
+    const newTecId = optionSelected ? parseInt(optionSelected.value, 10) : null;
+    setFormData((prevData) => ({
+      ...prevData,
+      tecnicoId: newTecId,
+    }));
   };
 
   const handleChangeLabels = (
-    //MODIFICAR EL MULTI VALUE PARA QUE TOME UN GENERICO, EL CUAL LE TENGO QUE PASAR Y ESPECIFICAR
     selectedOptions: MultiValue<{ value: string; label: string }>
   ) => {
-    setLabelsSelecteds(
-      selectedOptions
-        ? selectedOptions.map((option) => parseInt(option.value))
-        : []
-    );
+    const selectedIds = selectedOptions.map((option) => parseInt(option.value));
+    setLabelsSelecteds(selectedIds);
+    setFormData((prev) => ({
+      ...prev,
+      etiquetas: selectedIds,
+    }));
   };
 
   const optionsCustomers = clientes.map((cliente) => ({
@@ -292,11 +311,12 @@ function CrmCreateTicket({
                 <SelectComponent
                   placeholder="Seleccione un cliente"
                   isClearable
+                  className="text-black text-sm"
                   options={optionsCustomers}
                   value={
                     optionsCustomers.find(
                       (option) =>
-                        option.value === customerSelectedID?.toString()
+                        option.value === formData.clienteId?.toString()
                     ) || null
                   }
                   onChange={handleChangeCustomerSelect}
@@ -312,9 +332,11 @@ function CrmCreateTicket({
                 <SelectComponent
                   placeholder="Seleccione un técnico"
                   isClearable
+                  className="text-black text-sm"
                   options={optionsTecs}
                   value={optionsTecs.find(
-                    (tec) => tec.value === tecSelected?.toString() || null
+                    (tec) =>
+                      tec.value === formData.tecnicoId?.toString() || null
                   )}
                   onChange={handleChangeTecSelect}
                 />
@@ -323,7 +345,7 @@ function CrmCreateTicket({
               {/* Estado */}
               <div className="space-y-2">
                 <Label htmlFor="estado" className="flex items-center gap-1">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <Clock className="h-4 w-4  text-blue-500" />
                   Estado
                 </Label>
                 <Select
@@ -334,10 +356,42 @@ function CrmCreateTicket({
                     <SelectValue placeholder="Seleccionar estado" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ABIERTA">Abierta</SelectItem>
-                    <SelectItem value="EN_PROCESO">En Proceso</SelectItem>
-                    <SelectItem value="PENDIENTE">Pendiente</SelectItem>
-                    <SelectItem value="CERRADA">Cerrada</SelectItem>
+                    <SelectItem value="NUEVO">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-blue-600"></span>
+                        <span>Nuevo</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="ABIERTA">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-yellow-600"></span>
+                        <span>Abierta</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="EN_PROCESO">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-green-600"></span>
+                        <span>En Proceso</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="PENDIENTE">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-gray-600"></span>
+                        <span>Pendiente</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="PENDIENTE_CLIENTE">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-pink-600"></span>
+                        <span>Pendiente Cliente</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="PENDIENTE_TECNICO">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-teal-600"></span>
+                        <span>Pendiente Técnico</span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -345,7 +399,7 @@ function CrmCreateTicket({
               {/* Prioridad */}
               <div className="space-y-2">
                 <Label htmlFor="prioridad" className="flex items-center gap-1">
-                  <Flag className="h-4 w-4 text-muted-foreground" />
+                  <Flag className="h-4 w-4 text-red-500" />
                   Prioridad
                 </Label>
                 <Select
@@ -358,10 +412,30 @@ function CrmCreateTicket({
                     <SelectValue placeholder="Seleccionar prioridad" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="BAJA">Baja</SelectItem>
-                    <SelectItem value="MEDIA">Media</SelectItem>
-                    <SelectItem value="ALTA">Alta</SelectItem>
-                    <SelectItem value="URGENTE">Urgente</SelectItem>
+                    <SelectItem value="BAJA" className="flex items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-gray-500"></span>
+                        <span>Baja</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="MEDIA">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                        <span>Media</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="ALTA">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
+                        <span>Alta</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="URGENTE">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                        <span>Urgente</span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -414,24 +488,11 @@ function CrmCreateTicket({
                     placeholder="Seleccione etiquetas (opcional)"
                     options={optionsLabels}
                     isMulti
+                    className="text-black text-sm"
                     onChange={handleChangeLabels}
                     value={optionsLabels.filter((option) =>
                       labelsSelecteds.includes(Number.parseInt(option.value))
                     )}
-                    className="z-30"
-                    styles={{
-                      menu: (provided) => ({
-                        ...provided,
-                        zIndex: 30,
-                        position: "absolute",
-                        maxHeight: "200px",
-                        overflow: "auto",
-                      }),
-                      menuList: (provided) => ({
-                        ...provided,
-                        maxHeight: "200px",
-                      }),
-                    }}
                     menuPlacement="top" // Esta propiedad hace que las opciones se desplieguen hacia arriba
                   />
                 </div>

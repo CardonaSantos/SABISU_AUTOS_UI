@@ -1524,6 +1524,7 @@ export function EditMetaTiendaDialog({
   getMetasTienda,
 }: EditMetaTiendaDialogProps) {
   const [formData, setFormData] = useState<MetaTienda | null>(null);
+  const userRol = useStore((state) => state.userRol);
 
   useEffect(() => {
     if (metaTienda) {
@@ -1607,16 +1608,18 @@ export function EditMetaTiendaDialog({
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium">Monto Actual</label>
-            <Input
-              name="montoActual"
-              type="number"
-              value={formData?.montoActual || ""}
-              onChange={handleInputChange}
-              placeholder="Monto objetivo"
-            />
-          </div>
+          {userRol == "SUPER_ADMIN" ? (
+            <div>
+              <label className="text-sm font-medium">Monto Actual</label>
+              <Input
+                name="montoActual"
+                type="number"
+                value={formData?.montoActual || ""}
+                onChange={handleInputChange}
+                placeholder="Monto objetivo"
+              />
+            </div>
+          ) : null}
 
           <Select onValueChange={handleChangeEstadoMetaTienda}>
             <SelectTrigger className="w-full">

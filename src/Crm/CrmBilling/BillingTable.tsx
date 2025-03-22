@@ -28,6 +28,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import utc from "dayjs/plugin/utc";
 import localizedFormat from "dayjs/plugin/localizedFormat";
+import { CreditCard, File, FileCheck, FileStack } from "lucide-react";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -35,19 +36,36 @@ dayjs.locale("es");
 
 const formatearFecha = (fecha: string) => {
   // Formateo en UTC sin conversión a local
-  return dayjs(fecha).format("DD/MM/YYYY hh:mm A");
+  return dayjs(fecha).format("DD/MM/YYYY");
 };
 
 type Factura = {
   id: number;
   metodo: string;
+  estado: EstadoFactura;
   cliente: string;
+  clienteId: number;
   direccionIp: string;
   cantidad: number;
   fechaCreado: string;
+  fechaPago: string;
   por: string;
   telefono: number;
 };
+
+enum EstadoFactura {
+  PENDIENTE = "PENDIENTE",
+  PAGADA = "PAGADA",
+  VENCIDA = "VENCIDA",
+  ANULADA = "ANULADA",
+  PARCIAL = "PARCIAL",
+}
+
+interface FacturacionData {
+  cobrados: number | null;
+  facturados: number | null;
+  porCobrar: number | null;
+}
 
 // **Definir columnas de la tabla**
 const columns: ColumnDef<Factura>[] = [
@@ -56,7 +74,8 @@ const columns: ColumnDef<Factura>[] = [
   { accessorKey: "cliente", header: "Cliente" },
   { accessorKey: "cantidad", header: "Cantidad" },
   { accessorKey: "fechaCreado", header: "Fecha Creado" },
-  { accessorKey: "por", header: "Por" },
+  { accessorKey: "fechaPago", header: "Fecha de Pago" },
+  { accessorKey: "estado", header: "Estado" },
 ];
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 
@@ -65,14 +84,27 @@ export default function BilingTable() {
   const [facturas, setFactuas] = useState<Factura[]>([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 }); // 🔥 FIX: Agregamos pageIndex
 
+  const [facutracionData, setFacturacionData] = useState<FacturacionData>({
+    cobrados: null,
+    facturados: null,
+    porCobrar: null,
+  });
+
   console.log("Las facturas son: ", facturas);
 
   const getFacturas = async () => {
     try {
-      const response = await axios.get(`${VITE_CRM_API_URL}/facturacion`);
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/facturacion/facturacion-to-table`
+      );
 
       if (response.status === 200) {
-        setFactuas(response.data);
+        setFactuas(response.data.facturasMapeadas);
+        setFacturacionData({
+          cobrados: response.data.cobrados,
+          facturados: response.data.facturados,
+          porCobrar: response.data.porCobrar,
+        });
       }
     } catch (error) {
       console.log(error);
@@ -113,6 +145,15 @@ export default function BilingTable() {
     },
   });
 
+  const cobrados = facturas.filter((fac) => {
+    return !["PENDIENTE", "PARCIAL", "VENCIDA", "ANULADA"].includes(fac.estado);
+  });
+
+  const facturados = facturas.filter((fac) => fac.estado !== "PAGADA");
+  console.log("Los facturados sin aun pagar son: ", facturados);
+
+  console.log("Los facturados son: ", cobrados);
+
   return (
     <Card className="max-w-full shadow-lg border border-gray-300 text-xs">
       <CardContent>
@@ -127,23 +168,36 @@ export default function BilingTable() {
         />
 
         {/* **Selector de Cantidad de Filas** */}
-        <div className="flex justify-end mb-3">
-          <Select
-            onValueChange={(value) =>
-              setPagination({ ...pagination, pageSize: Number(value) })
-            }
-            defaultValue={String(pagination.pageSize)}
-          >
-            <SelectTrigger className="w-32 text-xs">
-              <SelectValue placeholder="Items por página" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="5">5</SelectItem>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex justify-between">
+          <div className="flex justify-start mb-3 font-semibold">
+            <File className="h-5 w-5 mr-2 dark:text-white" />
+            <span>Facturados: {facutracionData.facturados}</span>
+
+            <CreditCard className="h-5 w-5 mr-2 ml-2 dark:text-white" />
+            <span>Cobrados: {facutracionData.cobrados}</span>
+
+            <FileCheck className="h-5 w-5 mr-2 ml-2 dark:text-white" />
+            <span>Por Cobrar: {facutracionData.porCobrar}</span>
+          </div>
+
+          <div className="flex justify-end mb-3">
+            <Select
+              onValueChange={(value) =>
+                setPagination({ ...pagination, pageSize: Number(value) })
+              }
+              defaultValue={String(pagination.pageSize)}
+            >
+              <SelectTrigger className="w-32 text-xs">
+                <SelectValue placeholder="Items por página" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* **Tabla** */}
@@ -193,8 +247,17 @@ export default function BilingTable() {
                   <td className="px-2 py-1 truncate max-w-[120px] whitespace-nowrap">
                     {formatearFecha(row.original.fechaCreado)}
                   </td>
+
+                  <Link
+                    to={`/crm/facturacion/pago-factura/${row.original.id}/${row.original.clienteId}`}
+                  >
+                    <td className="px-2 py-1 truncate max-w-[120px] whitespace-nowrap hover:underline">
+                      {formatearFecha(row.original.fechaPago)}
+                    </td>
+                  </Link>
+
                   <td className="px-2 py-1 truncate max-w-[100px] whitespace-nowrap">
-                    {row.original.por ? row.original.por : "Sin cobrar"}
+                    {row.original.por ? row.original.estado : "Sin cobrar"}
                   </td>
                 </motion.tr>
               ))}

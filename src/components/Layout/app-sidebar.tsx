@@ -19,13 +19,15 @@ import {
   Target,
   Goal,
   UserPlus,
-  LogIn,
   UserRoundPlus,
   Waypoints,
   Cpu,
   Wifi,
   Tags,
   MonitorSmartphone,
+  MapIcon,
+  MapPinned,
+  MapPin,
 } from "lucide-react";
 
 import {
@@ -415,9 +417,7 @@ const routesCrm_Admin = [
     ],
   },
 
-  { icon: Building, label: "Empresa", href: "/crm/empresa" },
-
-  { icon: Users, label: "Detalle del Cliente", href: "/crm/cliente-detalle" },
+  // { icon: Users, label: "Detalle del Cliente", href: "/crm/cliente-detalle" },
 
   // SERVICIOS Y GESTIÓN DE SERVICIOS
   {
@@ -438,13 +438,23 @@ const routesCrm_Admin = [
   },
 
   {
-    icon: UserRoundPlus,
+    icon: MapPinned,
     label: "Facturación por Zona",
     href: "/crm-facturacion-zona",
   },
 
-  { icon: UserRoundPlus, label: "Registro", href: "/crm/regist" },
-  { icon: LogIn, label: "Iniciar Sesión", href: "/crm/login" },
+  {
+    icon: MapIcon,
+    label: "Rutas Cobro",
+    submenu: [
+      {
+        icon: MapPin,
+        label: "Rutas Manage",
+        href: "/crm/ruta",
+      },
+    ],
+  },
+  { icon: Building, label: "Empresa", href: "/crm/empresa" },
 ];
 
 const routesCrm_Otro = [
@@ -481,9 +491,7 @@ const routesCrm_Otro = [
     ],
   },
 
-  { icon: Building, label: "Empresa", href: "/crm/empresa" },
-
-  { icon: Users, label: "Cliente Detalle", href: "/crm/cliente-detalle" },
+  // { icon: Users, label: "Cliente Detalle", href: "/crm/cliente-detalle" },
   //SERVICIOS Y AJUSTES DE LOS MISMO
   {
     icon: Waypoints,
@@ -507,9 +515,7 @@ const routesCrm_Otro = [
     label: "Facturacion Zona",
     href: "/crm-facturacion-zona",
   },
-
-  { icon: UserRoundPlus, label: "Registrarse", href: "/crm/regist" },
-  { icon: LogIn, label: "Login", href: "/crm/login" },
+  { icon: Building, label: "Empresa", href: "/crm/empresa" },
 ];
 
 export function AppSidebar() {
@@ -519,7 +525,7 @@ export function AppSidebar() {
   // Memoriza las rutas según el rol del usuario
   const allRoutes = useMemo(() => {
     if (rolUser === "ADMIN") return menuItemsAdmin;
-    if (rolUser === "SUPER_ADMIN") return menuItemsSuperAdmin;
+    if (rolUser === "SUPER_ADMIN") return menuItemsAdmin;
     return menuVendedor;
   }, [rolUser]);
 

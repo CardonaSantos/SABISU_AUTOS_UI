@@ -20,6 +20,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import CrmCreateTicket from "./CreateTickets/CrmCreateTicket";
+import { useStoreCrm } from "../ZustandCrm/ZustandCrmContext";
 
 interface TicketFiltersProps {
   onFilterChange: (value: string) => void;
@@ -28,6 +29,9 @@ interface TicketFiltersProps {
   openCreatT: boolean;
   setOpenCreateT: (value: boolean) => void;
   getTickets: () => void;
+  //filter de asignados
+  setSelectedAssignee: (value: string | null) => void;
+  setSelectedCreator: (value: string | null) => void;
 }
 
 export default function TicketFilters({
@@ -37,8 +41,25 @@ export default function TicketFilters({
   getTickets,
   openCreatT,
   setOpenCreateT,
+  //para filter select
+  setSelectedAssignee,
+  setSelectedCreator,
 }: TicketFiltersProps) {
   const [date, setDate] = useState<Date | undefined>(undefined);
+  const userId = useStoreCrm((state) => state.userIdCRM) ?? 0;
+
+  const handleFilterChange = (value: string) => {
+    if (value === "assignedToMe") {
+      setSelectedAssignee(String(userId)); // Establece el ID del usuario asignado a ti
+      setSelectedCreator(null); // Limpiar el filtro por creador
+    } else if (value === "createdByMe") {
+      setSelectedCreator(String(userId)); // Establece el ID del creador a ti
+      setSelectedAssignee(null); // Limpiar el filtro por asignado
+    } else {
+      setSelectedAssignee(null); // Limpiar el filtro por asignado
+      setSelectedCreator(null); // Limpiar el filtro por creador
+    }
+  };
 
   return (
     <div className="space-y-2">
@@ -92,8 +113,8 @@ export default function TicketFilters({
             onClick={() => {
               setOpenCreateT(true);
             }}
-            variant={"secondary"}
-            className="h-[32px]"
+            variant={"destructive"}
+            className="h-[32px] border-2"
           >
             Crear Ticket
           </Button>
@@ -103,18 +124,18 @@ export default function TicketFilters({
             setOpenCreateT={setOpenCreateT}
           />
         </div>
-        <Select onValueChange={onStatusChange}>
+        <Select onValueChange={handleFilterChange}>
           <SelectTrigger className="w-[150px] h-[32px]">
-            <SelectValue placeholder="Todos los tickets" />
+            <SelectValue placeholder="Filtrar tickets" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="assigned">Asignados a mí</SelectItem>
-            <SelectItem value="created">Creados por mí</SelectItem>
+            <SelectItem value="assignedToMe">{`Asignados a mí (${userId})`}</SelectItem>
+            <SelectItem value="createdByMe">{`Creados por mí (${userId})`}</SelectItem>
           </SelectContent>
         </Select>
 
-        <div className="flex flex-wrap gap-2">
+        {/* <div className="flex flex-wrap gap-2">
           <Button className="h-[32px]" onClick={() => onStatusChange("nuevo")}>
             Nuevo
           </Button>
@@ -136,7 +157,7 @@ export default function TicketFilters({
           >
             Solucionado
           </Button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

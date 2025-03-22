@@ -250,7 +250,6 @@ export default function RegistroCaja() {
   const [openConfirm, setOpenConfirm] = useState(false); // Controla el dialog para iniciar
   const [closeConfirm, setCloseConfirm] = useState(false); // Controla el dialog para cerrar
 
-  //CERRAR
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (truncateClose) return; // Evitar doble clic

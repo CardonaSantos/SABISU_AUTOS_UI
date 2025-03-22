@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   User,
@@ -25,6 +25,7 @@ import {
   CheckCircle,
   Clock3,
   Wallet,
+  Receipt,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,7 @@ import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 import axios from "axios";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ClienteDetailsDto } from "./CustomerDetails";
 import currency from "currency.js";
@@ -60,14 +61,18 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import utc from "dayjs/plugin/utc";
 import localizedFormat from "dayjs/plugin/localizedFormat";
-// const API_URL = import.meta.env.VITE_API_URL;
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
 dayjs.locale("es");
 
 const formatearFecha = (fecha: string) => {
-  // Formateo en UTC sin conversión a local
   return dayjs(fecha).format("DD/MM/YYYY");
 };
 
@@ -80,113 +85,8 @@ const formatearMoneda = (monto: number) => {
   }).format();
 };
 
-// const clienteEjemplo = {
-//   id: 1,
-//   nombre: "Juan",
-//   apellidos: "Pérez González",
-//   telefono: "+502 5555-1234",
-//   direccion: "Zona 10, Ciudad de Guatemala",
-//   dpi: "1234567890123",
-//   observaciones: "Cliente preferente. Requiere atención prioritaria.",
-//   contactoReferenciaNombre: "María López",
-//   contactoReferenciaTelefono: "+502 5555-5678",
-//   estadoCliente: "ACTIVO",
-//   contrasenaWifi: "WiFi123456",
-//   ssidRouter: "ROUTER-JUAN",
-//   fechaInstalacion: "2023-05-15T10:30:00",
-//   asesor: {
-//     id: 1,
-//     nombre: "Carlos Rodríguez",
-//   },
-//   servicio: {
-//     id: 2,
-//     nombre: "Plan Estándar 25Mbps",
-//     precio: 299,
-//     velocidad: "25Mbps",
-//   },
-//   municipio: {
-//     id: 1,
-//     nombre: "Guatemala",
-//   },
-//   departamento: {
-//     id: 1,
-//     nombre: "Guatemala",
-//   },
-//   empresa: {
-//     id: 1,
-//     nombre: "TelcoNet",
-//   },
-//   IP: {
-//     id: 1,
-//     direccion: "192.168.1.100",
-//     mascara: "255.255.255.0",
-//     gateway: "192.168.1.1",
-//   },
-
-//   ubicacion: {
-//     id: 1,
-//     latitud: 15.66637668322957,
-//     longitud: -91.70805410647728,
-//   },
-//   saldoCliente: {
-//     id: 1,
-//     saldo: 0,
-//     ultimoPago: "2023-10-15T14:30:00",
-//   },
-//   creadoEn: "2023-01-10T09:15:00",
-//   actualizadoEn: "2023-10-15T14:30:00",
-//   ticketSoporte: [
-//     {
-//       id: 101,
-//       titulo: "Sin señal de internet",
-//       estado: "CERRADA",
-//       prioridad: "ALTA",
-//       fechaCreacion: "2023-09-05T11:20:00",
-//       fechaCierre: "2023-09-05T15:45:00",
-//     },
-//     {
-//       id: 102,
-//       titulo: "Velocidad lenta",
-//       estado: "ABIERTA",
-//       prioridad: "MEDIA",
-//       fechaCreacion: "2023-10-12T09:30:00",
-//       fechaCierre: null,
-//     },
-//   ],
-//   facturaInternet: [
-//     {
-//       id: 1001,
-//       monto: 299,
-//       fechaEmision: "2023-10-01T00:00:00",
-//       fechaVencimiento: "2023-10-15T00:00:00",
-//       pagada: true,
-//     },
-//     {
-//       id: 1002,
-//       monto: 299,
-//       fechaEmision: "2023-09-01T00:00:00",
-//       fechaVencimiento: "2023-09-15T00:00:00",
-//       pagada: true,
-//     },
-//   ],
-//   clienteServicio: [
-//     {
-//       id: 1,
-//       servicio: {
-//         id: 101,
-//         nombre: "IPTV Básico",
-//         tipo: "IPTV",
-//       },
-//       fechaContratacion: "2023-05-15T10:30:00",
-//     },
-//   ],
-// };
-
 export default function CustomerDetails() {
-  // En una aplicación real, aquí cargaríamos los datos del cliente desde una API
-  // const cliente = clienteEjemplo;
   const { id } = useParams();
-
   const [cliente, setCliente] = useState<ClienteDetailsDto>({
     id: 0,
     nombre: "",
@@ -202,7 +102,7 @@ export default function CustomerDetails() {
     ssidRouter: "",
     fechaInstalacion: "",
     asesor: null,
-    servicio: [],
+    servicio: null, // Relación 1:1 con un solo servicio
     municipio: {
       id: 1,
       nombre: "",
@@ -345,7 +245,7 @@ export default function CustomerDetails() {
   console.log("El cliente es: ", cliente);
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto  py-6">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -370,10 +270,12 @@ export default function CustomerDetails() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" className="h-8">
-              <Ticket className="h-4 w-4 mr-1" />
-              Nuevo Ticket
-            </Button>
+            <Link to={`/crm/tickets`}>
+              <Button variant={"outline"} size="sm" className="h-8">
+                <Ticket className="h-4 w-4 mr-1" />
+                Nuevo Ticket
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -576,11 +478,12 @@ export default function CustomerDetails() {
           <TabsContent value="servicio" className="space-y-2 text-xs">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {/* Servicio de Internet & Configuración WiFi */}
+              {/* Mostrar el servicio de internet */}
               <Card className="border border-gray-300">
                 <CardHeader className="pb-1">
                   <CardTitle className="text-sm flex items-center">
                     <Wifi className="h-3.5 w-3.5 mr-2 text-primary" />
-                    Servicio de Internet & Configuración WiFi
+                    Servicio de Internet
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -591,9 +494,7 @@ export default function CustomerDetails() {
                         Plan:
                       </dt>
                       <dd className="col-span-2 truncate">
-                        {cliente.servicio
-                          ?.map((servicio) => servicio.nombre)
-                          .join(", ") || "Sin servicios"}
+                        {cliente.servicio?.nombre || "No asignado"}
                       </dd>
                     </div>
                     <div className="grid grid-cols-3 items-center">
@@ -602,49 +503,16 @@ export default function CustomerDetails() {
                         Velocidad:
                       </dt>
                       <dd className="col-span-2 truncate">
-                        {cliente.servicio
-                          ?.map((servicio) => servicio.velocidad)
-                          .join(", ") || "No especificada"}
+                        {cliente.servicio?.velocidad || "No especificada"}
                       </dd>
                     </div>
                     <div className="grid grid-cols-3 items-center">
-                      <dt className="font-medium text-muted-foreground flex items-center">
-                        <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
-                        Instalación:
-                      </dt>
-                      <dd className="col-span-2 truncate">
-                        {cliente.fechaInstalacion
-                          ? format(new Date(cliente.fechaInstalacion), "PPP", {
-                              locale: es,
-                            })
-                          : "No especificada"}
-                      </dd>
-                    </div>
-                    <div className="grid grid-cols-3 items-center border-t pt-2">
-                      <dt className="font-medium text-muted-foreground flex items-center">
-                        <User className="h-3 w-3 mr-1 text-muted-foreground" />
-                        Asesor:
-                      </dt>
-                      <dd className="col-span-2 truncate">
-                        {cliente.asesor?.nombre || "No asignado"}
-                      </dd>
-                    </div>
-                    <div className="grid grid-cols-3 items-center border-t pt-2">
                       <dt className="font-medium text-muted-foreground flex items-center">
                         <Tag className="h-3 w-3 mr-1 text-muted-foreground" />
-                        SSID:
+                        Precio:
                       </dt>
                       <dd className="col-span-2 truncate">
-                        {cliente.ssidRouter || "No especificado"}
-                      </dd>
-                    </div>
-                    <div className="grid grid-cols-3 items-center">
-                      <dt className="font-medium text-muted-foreground flex items-center">
-                        <FileText className="h-3 w-3 mr-1 text-muted-foreground" />
-                        Contraseña:
-                      </dt>
-                      <dd className="col-span-2 truncate">
-                        {cliente.contrasenaWifi || "No especificada"}
+                        {cliente.servicio?.precio || "No especificado"}
                       </dd>
                     </div>
                   </dl>
@@ -838,7 +706,9 @@ export default function CustomerDetails() {
                           <TableHead>Título</TableHead>
                           <TableHead>Estado</TableHead>
                           <TableHead>Prioridad</TableHead>
-                          <TableHead>Fecha</TableHead>
+                          <TableHead>Fecha Apertura</TableHead>
+                          <TableHead>Fecha Cierre</TableHead>
+
                           <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -872,12 +742,15 @@ export default function CustomerDetails() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              {format(
-                                new Date(ticket.fechaCreacion),
-                                "dd/MM/yyyy",
-                                { locale: es }
-                              )}
+                              {formatearFecha(ticket.fechaCreacion)}
                             </TableCell>
+
+                            <TableCell>
+                              {ticket.fechaCierre
+                                ? formatearFecha(ticket.fechaCierre)
+                                : "Sin cerrar"}
+                            </TableCell>
+
                             <TableCell className="text-right">
                               <Button
                                 variant="ghost"
@@ -916,21 +789,41 @@ export default function CustomerDetails() {
                 </CardHeader>
                 <CardContent className="text-sm">
                   {cliente.saldoCliente ? (
-                    <dl className="grid grid-cols-1 gap-2">
+                    <dl className="grid grid-cols-1 gap-4">
                       <div className="grid grid-cols-3 items-start">
                         <dt className="font-medium text-muted-foreground flex items-center">
                           <CreditCard className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                          Saldo actual:
+                          Actual:
                         </dt>
                         <dd className="col-span-2">
-                          <span
-                            className={
-                              cliente.saldoCliente.saldo > 0
-                                ? "text-red-600"
-                                : "text-green-600"
-                            }
-                          >
-                            Q{cliente.saldoCliente.saldo.toFixed(2)}
+                          <span className={"text-green-600 font-semibold"}>
+                            {formatearMoneda(cliente.saldoCliente.saldo)}
+                          </span>
+                        </dd>
+                      </div>
+
+                      <div className="grid grid-cols-3 items-start">
+                        <dt className="font-medium text-muted-foreground flex items-center">
+                          <CreditCard className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                          Pendiente:
+                        </dt>
+                        <dd className="col-span-2">
+                          <span className={"text-red-600 font-semibold"}>
+                            {formatearMoneda(
+                              cliente.saldoCliente.saldoPendiente
+                            )}
+                          </span>
+                        </dd>
+                      </div>
+
+                      <div className="grid grid-cols-3 items-start">
+                        <dt className="font-medium text-muted-foreground flex items-center">
+                          <CreditCard className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                          Total:
+                        </dt>
+                        <dd className="col-span-2">
+                          <span className="text-green-600 font-semibold">
+                            {formatearMoneda(cliente.saldoCliente.totalPagos)}
                           </span>
                         </dd>
                       </div>
@@ -942,11 +835,7 @@ export default function CustomerDetails() {
                         </dt>
                         <dd className="col-span-2">
                           {cliente.saldoCliente.ultimoPago
-                            ? format(
-                                new Date(cliente.saldoCliente.ultimoPago),
-                                "PPP",
-                                { locale: es }
-                              )
+                            ? formatearFecha(cliente.saldoCliente.ultimoPago)
                             : "No hay pagos registrados"}
                         </dd>
                       </div>
@@ -957,62 +846,194 @@ export default function CustomerDetails() {
                 </CardContent>
               </Card>
 
-              <Card className="md:col-span-2">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
-                    <CreditCard className="h-4 w-4 mr-2 text-primary" />
-                    Facturas
+              <Card className="md:col-span-2 border shadow-sm">
+                <CardHeader className="pb-1 pt-4 bg-muted/30">
+                  <CardTitle className="text-sm flex items-center justify-between">
+                    <div className="flex items-center">
+                      <CreditCard className="h-4 w-4 mr-1.5 text-primary" />
+                      <span className="font-medium">Facturas</span>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className="text-xs px-1.5 py-0 bg-background"
+                    >
+                      {cliente.facturaInternet?.length || 0} Facturas
+                    </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0">
                   {cliente.facturaInternet &&
                   cliente.facturaInternet.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>ID</TableHead>
-                          <TableHead>Fecha Emisión</TableHead>
-                          <TableHead>Fecha de Pago</TableHead>
-                          <TableHead>Monto</TableHead>
-                          <TableHead>Estado</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {cliente.facturaInternet.map((factura) => (
-                          <TableRow key={factura.id}>
-                            <TableCell className="font-medium">
-                              #{factura.id}
-                            </TableCell>
-                            <TableCell>
-                              {formatearFecha(factura.fechaEmision)}
-                            </TableCell>
-                            <TableCell>
-                              {formatearFecha(factura.fechaVencimiento)}
-                            </TableCell>
-                            <TableCell>
-                              {formatearMoneda(factura.monto)}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={
-                                  factura.pagada
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-red-100 text-red-800"
-                                }
-                              >
-                                {factura.pagada ? "Pagada" : "Pendiente"}
-                              </Badge>
-                            </TableCell>
+                    <div className="max-h-[400px] overflow-y-auto scrollbar-custom">
+                      <Table className="w-full [&_th]:py-2 [&_td]:py-2 [&_th]:text-xs [&_td]:text-xs">
+                        <TableHeader className="sticky top-0 bg-muted/50 backdrop-blur-sm z-10">
+                          <TableRow className="hover:bg-transparent border-b">
+                            <TableHead className="w-[60px] font-medium">
+                              ID
+                            </TableHead>
+                            <TableHead className="font-medium">
+                              Emisión
+                            </TableHead>
+                            <TableHead className="font-medium">
+                              Vencimiento
+                            </TableHead>
+                            <TableHead className="font-medium">Monto</TableHead>
+                            <TableHead className="w-[100px] font-medium">
+                              Estado
+                            </TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {cliente.facturaInternet.map((factura) => (
+                            <React.Fragment key={factura.id}>
+                              <TableRow className="border-b-0 hover-row transition-colors">
+                                <TableCell className="font-medium text-primary">
+                                  #{factura.id}
+                                </TableCell>
+                                <TableCell>
+                                  {formatearFecha(factura.fechaEmision)}
+                                </TableCell>
+                                <TableCell>
+                                  {formatearFecha(factura.fechaVencimiento)}
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                  {formatearMoneda(factura.monto)}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    className={
+                                      factura.estado === "PAGADA"
+                                        ? "bg-green-50 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-medium"
+                                        : factura.estado === "PENDIENTE"
+                                        ? "bg-yellow-50 text-yellow-700 border-yellow-200 text-[10px] px-1.5 py-0 font-medium"
+                                        : "bg-red-50 text-red-700 border-red-200 text-[10px] px-1.5 py-0 font-medium"
+                                    }
+                                  >
+                                    {factura.estado}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                              <TableRow className="hover:bg-transparent">
+                                <TableCell colSpan={5} className="p-0 border-b">
+                                  <Accordion
+                                    type="single"
+                                    collapsible
+                                    className="w-full"
+                                  >
+                                    <AccordionItem
+                                      value={`factura-${factura.id}`}
+                                      className="border-0"
+                                    >
+                                      <AccordionTrigger className="py-1 px-2 text-xs text-muted-foreground accordion-hover transition-colors no-underline">
+                                        <div className="flex items-center">
+                                          <Receipt className="h-3 w-3 mr-1 text-primary" />
+                                          <span className="text-xs">
+                                            {factura.pagos &&
+                                            Array.isArray(factura.pagos) &&
+                                            factura.pagos.length > 0
+                                              ? `${factura.pagos.length} Pagos`
+                                              : "Sin pagos"}
+                                          </span>
+                                        </div>
+                                      </AccordionTrigger>
+                                      <AccordionContent className="px-2 pb-2 pt-0 data-[state=open]:animate-none bg-muted/10">
+                                        {factura.pagos &&
+                                        Array.isArray(factura.pagos) &&
+                                        factura.pagos.length > 0 ? (
+                                          <div className="overflow-x-auto rounded-sm border border-muted mt-1">
+                                            <Table className="w-full [&_th]:py-1 [&_td]:py-1 [&_th]:text-[10px] [&_td]:text-[10px]">
+                                              <TableHeader className="bg-muted/30">
+                                                <TableRow className="hover:bg-transparent">
+                                                  <TableHead className="font-medium">
+                                                    Fecha
+                                                  </TableHead>
+                                                  <TableHead className="font-medium">
+                                                    Método
+                                                  </TableHead>
+                                                  <TableHead className="font-medium">
+                                                    Monto
+                                                  </TableHead>
+                                                  <TableHead className="font-medium">
+                                                    Cobrador
+                                                  </TableHead>
+                                                  <TableHead className="text-right w-[50px] font-medium">
+                                                    PDF
+                                                  </TableHead>
+                                                </TableRow>
+                                              </TableHeader>
+                                              <TableBody>
+                                                {factura.pagos.map(
+                                                  (pago, index) => (
+                                                    <TableRow
+                                                      key={`${factura.id}-pago-${index}`}
+                                                      className="hover-row transition-colors"
+                                                    >
+                                                      <TableCell>
+                                                        {formatearFecha(
+                                                          pago.fechaPago
+                                                        )}
+                                                      </TableCell>
+                                                      <TableCell>
+                                                        <Badge
+                                                          variant="outline"
+                                                          className="font-normal text-[10px] px-1 py-0 bg-background"
+                                                        >
+                                                          {pago.metodoPago}
+                                                        </Badge>
+                                                      </TableCell>
+                                                      <TableCell className="font-medium">
+                                                        {formatearMoneda(
+                                                          pago.montoPagado
+                                                        )}
+                                                      </TableCell>
+                                                      <TableCell>
+                                                        {pago.cobrador
+                                                          ?.nombreCobrador ||
+                                                          "N/A"}
+                                                      </TableCell>
+                                                      <TableCell className="text-right">
+                                                        <Button
+                                                          variant="ghost"
+                                                          size="sm"
+                                                          className="h-6 w-6 p-0 hover:bg-muted/50 hover:text-primary transition-colors"
+                                                          title="Generar PDF"
+                                                        >
+                                                          <FileText className="h-3 w-3" />
+                                                          <span className="sr-only">
+                                                            PDF
+                                                          </span>
+                                                        </Button>
+                                                      </TableCell>
+                                                    </TableRow>
+                                                  )
+                                                )}
+                                              </TableBody>
+                                            </Table>
+                                          </div>
+                                        ) : factura.estado === "PAGADA" ? (
+                                          <div className="text-[10px] text-center text-muted-foreground py-2 italic">
+                                            Factura pagada sin detalles de pago
+                                          </div>
+                                        ) : (
+                                          <div className="text-[10px] text-center text-muted-foreground py-2 italic">
+                                            No hay pagos registrados
+                                          </div>
+                                        )}
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  </Accordion>
+                                </TableCell>
+                              </TableRow>
+                            </React.Fragment>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <CreditCard className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
-                      <p className="mt-2 text-muted-foreground">
-                        No hay facturas registradas.
+                    <div className="text-center py-4">
+                      <CreditCard className="h-8 w-8 mx-auto text-muted-foreground opacity-50" />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        No hay facturas registradas
                       </p>
                     </div>
                   )}

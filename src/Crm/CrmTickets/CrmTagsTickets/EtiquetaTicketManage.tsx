@@ -48,25 +48,17 @@ import {
   AlertCircle,
   Loader2,
   Ticket,
-  LinkIcon,
   Check,
 } from "lucide-react";
-
+import axios from "axios";
+import { toast } from "sonner";
+const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 // Types
-interface TicketEtiqueta {
-  id: number;
-  ticketId: number;
-  etiquetaId: number;
-  ticket: {
-    id: number;
-    titulo: string;
-  };
-}
 
 interface EtiquetaTicket {
   id: number;
   nombre: string;
-  tickets?: TicketEtiqueta[];
+  tickets?: number;
   ticketsCount?: number; // Campo calculado para mostrar la cantidad de tickets
 }
 
@@ -114,116 +106,11 @@ const EtiquetaTicketManage: React.FC = () => {
     setError(null);
 
     try {
-      // En un entorno real, esto sería una llamada a la API
-      // const response = await axios.get('/api/etiquetas-ticket')
-      // setEtiquetas(response.data)
-
-      // Mock data para demostración
-      setTimeout(() => {
-        const mockEtiquetas: EtiquetaTicket[] = [
-          {
-            id: 1,
-            nombre: "Urgente",
-            ticketsCount: 12,
-            tickets: [
-              {
-                id: 1,
-                ticketId: 101,
-                etiquetaId: 1,
-                ticket: {
-                  id: 101,
-                  titulo: "Problema con conexión de internet",
-                },
-              },
-              {
-                id: 2,
-                ticketId: 102,
-                etiquetaId: 1,
-                ticket: { id: 102, titulo: "Servicio caído en zona norte" },
-              },
-              {
-                id: 3,
-                ticketId: 103,
-                etiquetaId: 1,
-                ticket: { id: 103, titulo: "Router no enciende" },
-              },
-            ],
-          },
-          {
-            id: 2,
-            nombre: "Soporte Técnico",
-            ticketsCount: 25,
-            tickets: [
-              {
-                id: 4,
-                ticketId: 104,
-                etiquetaId: 2,
-                ticket: { id: 104, titulo: "Configuración de router" },
-              },
-              {
-                id: 5,
-                ticketId: 105,
-                etiquetaId: 2,
-                ticket: { id: 105, titulo: "Problema con señal WiFi" },
-              },
-            ],
-          },
-          {
-            id: 3,
-            nombre: "Facturación",
-            ticketsCount: 18,
-            tickets: [
-              {
-                id: 6,
-                ticketId: 106,
-                etiquetaId: 3,
-                ticket: { id: 106, titulo: "Error en factura de marzo" },
-              },
-              {
-                id: 7,
-                ticketId: 107,
-                etiquetaId: 3,
-                ticket: { id: 107, titulo: "Solicitud de cambio de plan" },
-              },
-            ],
-          },
-          {
-            id: 4,
-            nombre: "Instalación",
-            ticketsCount: 9,
-            tickets: [
-              {
-                id: 8,
-                ticketId: 108,
-                etiquetaId: 4,
-                ticket: {
-                  id: 108,
-                  titulo: "Programar instalación de servicio",
-                },
-              },
-            ],
-          },
-          {
-            id: 5,
-            nombre: "Baja Prioridad",
-            ticketsCount: 7,
-            tickets: [
-              {
-                id: 9,
-                ticketId: 109,
-                etiquetaId: 5,
-                ticket: {
-                  id: 109,
-                  titulo: "Consulta sobre planes disponibles",
-                },
-              },
-            ],
-          },
-        ];
-
-        setEtiquetas(mockEtiquetas);
+      const response = await axios.get(`${VITE_CRM_API_URL}/tags-ticket`);
+      if (response.status === 200) {
+        setEtiquetas(response.data);
         setIsLoading(false);
-      }, 600); // Simular tiempo de carga
+      }
     } catch (err) {
       console.error("Error al cargar etiquetas:", err);
       setError("Error al cargar las etiquetas. Intente nuevamente.");
@@ -270,33 +157,17 @@ const EtiquetaTicketManage: React.FC = () => {
         throw new Error("Ya existe una etiqueta con este nombre");
       }
 
-      // En un entorno real, esto sería una llamada a la API
-      // const response = await axios.post('/api/etiquetas-ticket', nuevaEtiqueta)
-      // const createdEtiqueta = response.data
+      const response = await axios.post(
+        `${VITE_CRM_API_URL}/tags-ticket`,
+        nuevaEtiqueta
+      );
 
-      // Mock para demostración
-      setTimeout(() => {
-        const createdEtiqueta: EtiquetaTicket = {
-          id: etiquetas.length + 1,
-          nombre: nuevaEtiqueta.nombre,
-          ticketsCount: 0,
-        };
-
-        setEtiquetas([...etiquetas, createdEtiqueta]);
-
-        // Reset form
-        setNuevaEtiqueta({
-          nombre: "",
-        });
-
-        setSuccess("Etiqueta creada correctamente");
+      if (response.status === 201) {
+        toast.success("Etiqueta Creada");
+        fetchEtiquetas();
         setIsLoading(false);
-
-        // Limpiar mensaje de éxito después de 3 segundos
-        setTimeout(() => {
-          setSuccess(null);
-        }, 3000);
-      }, 600);
+        setNuevaEtiqueta({ nombre: "" });
+      }
     } catch (err: any) {
       console.error("Error al crear etiqueta:", err);
       setError(
@@ -745,7 +616,7 @@ const EtiquetaTicketManage: React.FC = () => {
       </Dialog>
 
       {/* View Tickets Dialog */}
-      <Dialog open={isTicketsDialogOpen} onOpenChange={setIsTicketsDialogOpen}>
+      {/* <Dialog open={isTicketsDialogOpen} onOpenChange={setIsTicketsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -816,7 +687,7 @@ const EtiquetaTicketManage: React.FC = () => {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </div>
   );
 };

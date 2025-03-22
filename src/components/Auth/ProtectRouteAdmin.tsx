@@ -23,7 +23,11 @@ export function ProtectRouteAdmin({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" />;
   }
 
-  if (userRol !== "ADMIN") {
+  // if (!["ADMIN", "SUPER_ADMIN"].includes(userRol)) {
+  //   return <Navigate to="/dashboard-empleado" />;
+  // }
+
+  if (userRol !== "ADMIN" && userRol !== "SUPER_ADMIN") {
     return <Navigate to="/dashboard-empleado" />;
   }
 

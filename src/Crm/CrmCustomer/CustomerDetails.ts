@@ -13,7 +13,7 @@ export interface ClienteDetailsDto {
   ssidRouter: string;
   fechaInstalacion: string; // ISO string
   asesor: Asesor | null;
-  servicio: Servicio[];
+  servicio: Servicio | null; // Relación 1:1, solo un servicio
   municipio: Municipio;
   departamento: Departamento;
   empresa: Empresa;
@@ -70,6 +70,8 @@ interface Ubicacion {
 interface SaldoCliente {
   id: number;
   saldo: number;
+  saldoPendiente: number;
+  totalPagos: number;
   ultimoPago: string; // ISO string
 }
 
@@ -88,6 +90,20 @@ interface FacturaInternet {
   fechaEmision: string; // ISO string
   fechaVencimiento: string; // ISO string
   pagada: boolean;
+  estado: string;
+  pagos: Pagos;
+}
+
+interface Cobrador {
+  id: number;
+  nombreCobrador: string;
+}
+
+interface Pagos {
+  fechaPago: string;
+  metodoPago: string;
+  montoPagado: number;
+  cobrador: Cobrador;
 }
 
 interface ClienteServicio {

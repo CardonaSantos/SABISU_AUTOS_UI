@@ -77,6 +77,9 @@ import ServicioInternetManage from "./Crm/CrmServices/CrmServiciosWifi/CrmServic
 import FacturacionZonaManage from "./Crm/CrmFacturacion/FacturacionZonaManage";
 import Samples1 from "./Samples/Samples1";
 import EtiquetaTicketManage from "./Crm/CrmTickets/CrmTagsTickets/EtiquetaTicketManage";
+import CrmPaymentFactura from "./Crm/CrmBilling/CrmFacturacion/CrmPaymentFactura";
+import CrmRuta from "./Crm/CrmRutas/CrmRuta";
+import CrmPdfPago from "./Crm/CrmPdfPago/CrmPdfPago";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
@@ -583,14 +586,14 @@ function App() {
               }
             />
 
-            <Route
+            {/* <Route
               path="/crm/cliente-detalle"
               element={
                 <ProtectRouteCrmUser>
                   <CustomerDetails />
                 </ProtectRouteCrmUser>
               }
-            />
+            /> */}
 
             <Route
               path="/crm/empresa"
@@ -643,6 +646,33 @@ function App() {
               element={
                 <ProtectRouteCrmUser>
                   <Samples1 />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm/facturacion/pago-factura/:facturaId/:clienteId"
+              element={
+                <ProtectRouteCrmUser>
+                  <CrmPaymentFactura />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm/ruta"
+              element={
+                <ProtectRouteCrmUser>
+                  <CrmRuta />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm/pdf"
+              element={
+                <ProtectRouteCrmUser>
+                  <CrmPdfPago />
                 </ProtectRouteCrmUser>
               }
             />

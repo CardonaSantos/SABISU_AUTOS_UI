@@ -189,6 +189,7 @@ export default function RegisterView() {
                 <SelectContent>
                   <SelectItem value="VENDEDOR">Vendedor</SelectItem>
                   <SelectItem value="ADMIN">Administrador</SelectItem>
+                  <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>

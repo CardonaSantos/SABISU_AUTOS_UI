@@ -69,7 +69,6 @@ interface Notificacion {
 export default function Layout2({ children }: LayoutProps) {
   // const [tokenUser, setTokenUser] = useState<UserToken | null>(null);
   // const [tokenUserCrm, setTokenUserCrm] = useState<UserCrmToken | null>(null);
-
   const setUserNombre = useStore((state) => state.setUserNombre);
   const setUserCorreo = useStore((state) => state.setUserCorreo);
   const setUserId = useStore((state) => state.setUserId);
@@ -260,7 +259,7 @@ export default function Layout2({ children }: LayoutProps) {
                   </p>
                 </Link>
               </div>
-
+              {/* vitaFertil-universal-forma:pachon, normal */}
               {/* Sección derecha: Toggle de modo, notificaciones y menú de usuario */}
               <div className="flex items-center space-x-2">
                 <div className="">
@@ -360,8 +359,8 @@ export default function Layout2({ children }: LayoutProps) {
                       >
                         <User className="h-5 w-5" />
                         <span className="sr-only">User menu</span>
-                        <Avatar className="bg-teal-500">
-                          <AvatarFallback className="bg-[#2fe0ab] text-white font-bold dark:bg-transparent">
+                        <Avatar className="bg-[#29daa5] border-2 border-transparent dark:border-white dark:bg-transparent">
+                          <AvatarFallback className="bg-[#2be6ae] text-white font-bold dark:bg-transparent dark:text-[#2be6ae]">
                             {nombreUsuario?.slice(0, 2).toUpperCase() || "??"}
                           </AvatarFallback>
                         </Avatar>
