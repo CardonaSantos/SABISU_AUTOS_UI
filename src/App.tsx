@@ -30,7 +30,7 @@ import StockEdicion from "./Pages/StockEdicion/StockEdicion";
 import StockEliminaciones from "./Pages/Eliminaciones/StockEliminaciones";
 import GarantiaPage from "./components/PDF/GarantiaPage";
 import CreateCustomer from "./Pages/Customers/CreateCustomer";
-import Layout2 from "./components/Layout/Layout2";
+import Layout2 from "./components/Layout/Layout";
 import TicketPage from "./components/PDF/TicketPage";
 import TicketManage from "./Pages/TicketManage/TicketManage";
 import ReceiveWarrantyPage from "./Pages/Warranty/ReceiveWarrantyPage";
@@ -80,6 +80,7 @@ import EtiquetaTicketManage from "./Crm/CrmTickets/CrmTagsTickets/EtiquetaTicket
 import CrmPaymentFactura from "./Crm/CrmBilling/CrmFacturacion/CrmPaymentFactura";
 import CrmRuta from "./Crm/CrmRutas/CrmRuta";
 import CrmPdfPago from "./Crm/CrmPdfPago/CrmPdfPago";
+import RutaCobro from "./Crm/CrmRutas/CrmRutasCobro/RutaCobro";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
@@ -669,10 +670,19 @@ function App() {
             />
 
             <Route
-              path="/crm/pdf"
+              path="/crm/factura-pago/pago-servicio-pdf/:factudaId"
               element={
                 <ProtectRouteCrmUser>
                   <CrmPdfPago />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm/cobros-en-ruta/:rutaId"
+              element={
+                <ProtectRouteCrmUser>
+                  <RutaCobro />
                 </ProtectRouteCrmUser>
               }
             />

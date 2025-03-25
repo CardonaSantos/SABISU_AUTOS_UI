@@ -1,37 +1,31 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import utc from "dayjs/plugin/utc";
+import localizedFormat from "dayjs/plugin/localizedFormat";
+// const API_URL = import.meta.env.VITE_API_URL;
 
-function MyTickets() {
-  const tickets = [
-    {
-      id: 1392,
-      cliente: "Albertina Yadira",
-      ticketTexto: "IR A RECOGER IP PARA SUSPENDER",
-      fechaTicket: "20 Feb 2025 3:57 pm",
-      color: "border-l-orange-500",
-    },
-    {
-      id: 1397,
-      cliente: "Juana Yadira",
-      ticketTexto: "RECOGER EQUIPO Y QUE PAGUE 2 MESES QUE DEBE",
-      fechaTicket: "21 Feb 2025 11:30 am",
-      color: "border-l-blue-500",
-    },
-    {
-      id: 1401,
-      cliente: "Carlos Pérez",
-      ticketTexto: "Problema con la velocidad del internet",
-      fechaTicket: "22 Feb 2025 9:15 am",
-      color: "border-l-green-500",
-    },
-    {
-      id: 1405,
-      cliente: "María López",
-      ticketTexto: "Cambio de plan solicitado",
-      fechaTicket: "23 Feb 2025 4:45 pm",
-      color: "border-l-purple-500",
-    },
-  ];
+dayjs.extend(utc);
+dayjs.extend(localizedFormat);
+dayjs.locale("es");
 
+const formatearFecha = (fecha: string) => {
+  // Formateo en UTC sin conversión a local
+  return dayjs(fecha).format("DD/MM/YYYY hh:mm A");
+};
+
+interface ticket {
+  id: number;
+  cliente: string;
+  fechaTicket: string;
+  ticketTexto: string;
+}
+
+interface myTicketsProps {
+  tickets: ticket[];
+}
+
+function MyTickets({ tickets }: myTicketsProps) {
   return (
     <Card className=" w-full shadow-lg">
       <CardContent>
@@ -47,13 +41,13 @@ function MyTickets() {
           {tickets.map((ticket) => (
             <Card
               key={ticket.id}
-              className={`p-3 shadow-md border-l-4 ${ticket.color}`}
+              className={`p-3 shadow-md border-l-4 border-l-teal-500`}
             >
               <CardHeader className="p-0">
                 <CardTitle>
                   <div className="flex justify-between text-xs text-gray-600 dark:text-white">
                     <p className="truncate w-32">{ticket.cliente}</p>
-                    <p>{ticket.fechaTicket}</p>
+                    <p>{formatearFecha(ticket.fechaTicket)}</p>
                   </div>
                 </CardTitle>
               </CardHeader>

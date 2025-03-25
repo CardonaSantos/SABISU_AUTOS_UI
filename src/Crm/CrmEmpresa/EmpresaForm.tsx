@@ -11,10 +11,16 @@ import {
   Phone,
   PhoneCall,
 } from "lucide-react";
+import axios from "axios";
+import { useStoreCrm } from "../ZustandCrm/ZustandCrmContext";
+import { toast } from "sonner";
+const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 
 const EmpresaForm = () => {
+  const empresaId = useStoreCrm((state) => state.empresaId) ?? 0;
   // Estado para almacenar los datos de la empresa
   const [empresa, setEmpresa] = useState({
+    // id: 0,
     nombre: "",
     direccion: "",
     telefono: "",
@@ -33,8 +39,11 @@ const EmpresaForm = () => {
   // Función para hacer un GET para obtener la empresa
   const fetchEmpresa = async () => {
     try {
-      const response = await fetch("/api/empresa"); // Asegúrate de que esta URL sea la correcta
-      const data = await response.json();
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/empresa/${empresaId}`
+      ); // Usando la constante VITE_API_CRM_URL
+      const data = response.data;
+
       if (data) {
         setEmpresa(data);
         setIsEditing(true); // Si encontramos la empresa, pasamos al modo de edición
@@ -46,34 +55,32 @@ const EmpresaForm = () => {
     }
   };
 
+  console.log("La empresa es: ", empresa);
+
   // Función para manejar el envío de datos
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const method = isEditing ? "PUT" : "POST"; // Si estamos editando, usamos PUT, sino POST
-    const url = isEditing ? `/api/empresa/${empresa}` : "/api/empresa";
+    const method = isEditing ? "PATCH" : "POST"; // Si estamos editando, usamos PUT, sino POST
+    const url = isEditing
+      ? `${VITE_CRM_API_URL}/empresa/${empresaId}`
+      : `${VITE_CRM_API_URL}/empresa`; // Asegúrate de usar el id si estás editando
 
     try {
-      const response = await fetch(url, {
-        method,
+      const response = await axios({
+        method, // 'POST' o 'PUT'
+        url,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(empresa),
+        data: empresa, // El cuerpo con los datos de la empresa
       });
-
-      if (response.ok) {
-        alert(
-          isEditing
-            ? "Empresa actualizada con éxito"
-            : "Empresa creada con éxito"
-        );
-        // Puedes redirigir o actualizar el estado según sea necesario
-      } else {
-        alert("Hubo un error al guardar la empresa");
+      if (response.status === 200 || response.status === 201) {
+        toast.info("ok");
       }
     } catch (error) {
       console.error("Error al enviar los datos:", error);
+      alert("Hubo un error al enviar los datos");
     }
   };
 

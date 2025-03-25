@@ -894,7 +894,11 @@ export default function CustomerDetails() {
                                   {formatearFecha(factura.fechaEmision)}
                                 </TableCell>
                                 <TableCell>
-                                  {formatearFecha(factura.fechaVencimiento)}
+                                  <Link
+                                    to={`/crm/facturacion/pago-factura/${factura.id}/${cliente.id}`}
+                                  >
+                                    {formatearFecha(factura.fechaVencimiento)}
+                                  </Link>
                                 </TableCell>
                                 <TableCell className="font-medium">
                                   {formatearMoneda(factura.monto)}
@@ -913,6 +917,7 @@ export default function CustomerDetails() {
                                   </Badge>
                                 </TableCell>
                               </TableRow>
+
                               <TableRow className="hover:bg-transparent">
                                 <TableCell colSpan={5} className="p-0 border-b">
                                   <Accordion

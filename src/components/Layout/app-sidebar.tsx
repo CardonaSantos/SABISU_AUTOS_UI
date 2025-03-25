@@ -19,7 +19,6 @@ import {
   Target,
   Goal,
   UserPlus,
-  UserRoundPlus,
   Waypoints,
   Cpu,
   Wifi,
@@ -457,19 +456,20 @@ const routesCrm_Admin = [
 ];
 
 const routesCrm_Otro = [
-  { icon: Home, label: "CRM", href: "/crm" },
+  { icon: Home, label: "Inicio", href: "/crm" },
+
   {
     icon: Users,
-    label: "Gestión de Clientes",
+    label: "Clientes",
     submenu: [
       {
         icon: Users,
-        label: "Clientes",
+        label: "Listado de Clientes",
         href: "/crm-clientes",
       },
       {
         icon: UserPlus,
-        label: "Crear Cliente",
+        label: "Nuevo Cliente",
         href: "/crm/crear-cliente-crm",
       },
     ],
@@ -481,38 +481,51 @@ const routesCrm_Otro = [
     icon: MonitorSmartphone,
     label: "Soporte",
     submenu: [
-      { icon: Ticket, label: "Tickets", href: "/crm/tickets" },
+      { icon: Ticket, label: "Tickets de Soporte", href: "/crm/tickets" },
       {
         icon: Tags,
-        label: "Tags",
+        label: "Categorías de Soporte",
         href: "/crm/tags",
       },
     ],
   },
 
-  // { icon: Users, label: "Cliente Detalle", href: "/crm/cliente-detalle" },
-  //SERVICIOS Y AJUSTES DE LOS MISMO
+  // { icon: Users, label: "Detalle del Cliente", href: "/crm/cliente-detalle" },
+
+  // SERVICIOS Y GESTIÓN DE SERVICIOS
   {
     icon: Waypoints,
     label: "Servicios",
     submenu: [
       {
         icon: Cpu,
-        label: "Servicios Manage",
+        label: "Gestión de Servicios",
         href: "/crm-servicios",
       },
       {
         icon: Wifi,
-        label: "Servicios Internet",
+        label: "Servicios de Internet",
         href: "/crm-servicios-internet",
       },
     ],
   },
 
   {
-    icon: UserRoundPlus,
-    label: "Facturacion Zona",
+    icon: MapPinned,
+    label: "Facturación por Zona",
     href: "/crm-facturacion-zona",
+  },
+
+  {
+    icon: MapIcon,
+    label: "Rutas Cobro",
+    submenu: [
+      {
+        icon: MapPin,
+        label: "Rutas Manage",
+        href: "/crm/ruta",
+      },
+    ],
   },
   { icon: Building, label: "Empresa", href: "/crm/empresa" },
 ];

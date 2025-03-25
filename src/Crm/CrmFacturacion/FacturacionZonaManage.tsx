@@ -952,6 +952,7 @@ const FacturacionZonaManage: React.FC = () => {
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
                                     <DropdownMenuItem
+                                      disabled={true}
                                       className="flex items-center gap-2"
                                       onClick={() => handleEditClick(zona)}
                                     >
@@ -960,6 +961,7 @@ const FacturacionZonaManage: React.FC = () => {
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                       className="flex items-center gap-2 text-destructive"
+                                      disabled={true}
                                       onClick={() => handleDeleteClick(zona.id)}
                                     >
                                       <Trash2 className="h-4 w-4" />

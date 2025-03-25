@@ -64,11 +64,11 @@ import {
   MapPinned,
   Route,
   UserCheck,
-  CalendarRange,
   Building,
   Phone,
   Home,
   Info,
+  Play,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -78,7 +78,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import axios from "axios";
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
-
+import ReactSelectComponent from "react-select";
+import { toast } from "sonner";
+import { useStoreCrm } from "../ZustandCrm/ZustandCrmContext";
+import { Link } from "react-router-dom";
 // Enums
 enum EstadoRuta {
   ACTIVO = "ACTIVO",
@@ -129,6 +132,7 @@ interface ClienteInternet {
   ubicacion?: Ubicacion;
   saldoPendiente?: number;
   facturasPendientes?: number;
+  facturacionZona: number;
 }
 
 interface Ruta {
@@ -150,21 +154,38 @@ interface Ruta {
 
 interface CreateRutaDto {
   nombreRuta: string;
-  cobradorId?: number;
+  cobradorId?: string | null;
   EmpresaId: number;
-  clientesIds: number[];
+  clientesIds: string[];
   observaciones?: string;
-  diasCobro?: string[];
+  // diasCobro?: string[];
+}
+
+interface OptionSelected {
+  value: string;
+  label: string;
+}
+
+interface FacturacionZona {
+  id: number;
+  creadoEn: string; // Puedes usar Date si lo prefieres como objeto de fecha
+  actualizadoEn: string; // Puedes usar Date si lo prefieres como objeto de fecha
+  nombreRuta: string;
+  diaPago: number; // Asegúrate de que el tipo de `diaPago` sea correcto según tu base de datos
+  diaGeneracionFactura: number; // Asegúrate de que el tipo de `diaGeneracionFactura` sea correcto
+  diaCorte: number; // Asegúrate de que el tipo de `diaCorte` sea correcto
+  facturas: number;
+  clientes: number;
 }
 
 // Componente principal
 const RutasCobroManage: React.FC = () => {
   // Estados
+  const empresaId = useStoreCrm((state) => state.empresaId) ?? 0;
   const [rutas, setRutas] = useState<Ruta[]>([]);
   const [clientes, setClientes] = useState<ClienteInternet[]>([]);
   const [cobradores, setCobradores] = useState<Usuario[]>([]);
-  const [empresas, setEmpresas] = useState<Empresa[]>([]);
-  const [selectedClientes, setSelectedClientes] = useState<number[]>([]);
+  const [selectedClientes, setSelectedClientes] = useState<string[]>([]);
   const [searchCliente, setSearchCliente] = useState("");
   const [searchRuta, setSearchRuta] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -178,194 +199,55 @@ const RutasCobroManage: React.FC = () => {
   const [clienteFilter, setClienteFilter] = useState<EstadoCliente | "TODOS">(
     "TODOS"
   );
+
+  const [zonaFacturacionId, setZonaFacturacionId] = useState<string | null>("");
+
   const [sortBy, setSortBy] = useState<"nombre" | "saldo">("nombre");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Estado para el formulario de creación de ruta
   const [nuevaRuta, setNuevaRuta] = useState<CreateRutaDto>({
     nombreRuta: "",
-    EmpresaId: 0,
-    clientesIds: [],
-    diasCobro: [],
+    EmpresaId: empresaId,
+    clientesIds: selectedClientes.map((c) => c),
+    // diasCobro: [],
+    cobradorId: "",
+    observaciones: "",
   });
-
-  // Días de la semana para selección
-  const diasSemana = [
-    { id: "LUNES", label: "Lunes" },
-    { id: "MARTES", label: "Martes" },
-    { id: "MIERCOLES", label: "Miércoles" },
-    { id: "JUEVES", label: "Jueves" },
-    { id: "VIERNES", label: "Viernes" },
-    { id: "SABADO", label: "Sábado" },
-    { id: "DOMINGO", label: "Domingo" },
-  ];
-
+  const [facturacionZona, setFacturacionZona] = useState<FacturacionZona[]>([]);
+  const fetchZonaF = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/facturacion-zona/get-zonas-facturacion-to-ruta`
+      );
+      if (response.status === 200) {
+        setFacturacionZona(response.data);
+      }
+    } catch (err) {
+      console.error("Error al cargar rutas:", err);
+      toast.info("Error al cargar datos de zona");
+    }
+  };
   // Cargar datos iniciales
   useEffect(() => {
     fetchRutas();
     fetchClientes();
     fetchCobradores();
-    fetchEmpresas();
+    fetchZonaF();
   }, []);
 
   // Función para cargar rutas
   const fetchRutas = async () => {
     setIsLoading(true);
     setError(null);
-
     try {
-      // En un entorno real, esto sería una llamada a la API
-      // const response = await axios.get('/api/rutas-cobro')
-      // setRutas(response.data)
-
-      // Mock data para demostración
-      setTimeout(() => {
-        const mockRutas: Ruta[] = [
-          {
-            id: 1,
-            nombreRuta: "Ruta Centro Huehuetenango",
-            cobradorId: 1,
-            cobrador: {
-              id: 1,
-              nombre: "Carlos",
-              apellidos: "Rodríguez",
-              email: "carlos@example.com",
-              rol: "COBRADOR",
-            },
-            empresaId: 1,
-            empresa: {
-              id: 1,
-              nombre: "InternetPro S.A.",
-            },
-            clientes: [
-              {
-                id: 1,
-                nombre: "Juan",
-                apellidos: "Pérez",
-                telefono: "5555-1234",
-                direccion: "Zona 1, Calle Principal",
-                estadoCliente: EstadoCliente.ACTIVO,
-                saldoPendiente: 250,
-              },
-              {
-                id: 2,
-                nombre: "María",
-                apellidos: "López",
-                telefono: "5555-5678",
-                direccion: "Zona 2, Avenida Central",
-                estadoCliente: EstadoCliente.ACTIVO,
-                saldoPendiente: 300,
-              },
-            ],
-            cobrados: 1,
-            montoCobrado: 250,
-            estadoRuta: EstadoRuta.ACTIVO,
-            fechaCreacion: "2025-03-15T10:30:00.000Z",
-            fechaActualizacion: "2025-03-18T14:20:00.000Z",
-            observaciones: "Cobrar preferentemente en horario de mañana",
-            diasCobro: ["LUNES", "MIERCOLES", "VIERNES"],
-          },
-          {
-            id: 2,
-            nombreRuta: "Ruta Norte Huehuetenango",
-            cobradorId: 2,
-            cobrador: {
-              id: 2,
-              nombre: "María",
-              apellidos: "González",
-              email: "maria@example.com",
-              rol: "COBRADOR",
-            },
-            empresaId: 1,
-            empresa: {
-              id: 1,
-              nombre: "InternetPro S.A.",
-            },
-            clientes: [
-              {
-                id: 3,
-                nombre: "Roberto",
-                apellidos: "Gómez",
-                telefono: "5555-9012",
-                direccion: "Zona 3, Calle 5",
-                estadoCliente: EstadoCliente.MOROSO,
-                saldoPendiente: 500,
-              },
-              {
-                id: 4,
-                nombre: "Ana",
-                apellidos: "Martínez",
-                telefono: "5555-3456",
-                direccion: "Zona 3, Avenida 2",
-                estadoCliente: EstadoCliente.ACTIVO,
-                saldoPendiente: 250,
-              },
-              {
-                id: 5,
-                nombre: "Pedro",
-                apellidos: "Sánchez",
-                telefono: "5555-7890",
-                direccion: "Zona 4, Calle 10",
-                estadoCliente: EstadoCliente.ACTIVO,
-                saldoPendiente: 250,
-              },
-            ],
-            cobrados: 0,
-            montoCobrado: 0,
-            estadoRuta: EstadoRuta.PENDIENTE,
-            fechaCreacion: "2025-03-16T09:15:00.000Z",
-            fechaActualizacion: "2025-03-16T09:15:00.000Z",
-            diasCobro: ["MARTES", "JUEVES", "SABADO"],
-          },
-          {
-            id: 3,
-            nombreRuta: "Ruta Sur Huehuetenango",
-            cobradorId: 1,
-            cobrador: {
-              id: 1,
-              nombre: "Carlos",
-              apellidos: "Rodríguez",
-              email: "carlos@example.com",
-              rol: "COBRADOR",
-            },
-            empresaId: 1,
-            empresa: {
-              id: 1,
-              nombre: "InternetPro S.A.",
-            },
-            clientes: [
-              {
-                id: 6,
-                nombre: "Laura",
-                apellidos: "Díaz",
-                telefono: "5555-2345",
-                direccion: "Zona 5, Calle 3",
-                estadoCliente: EstadoCliente.ACTIVO,
-                saldoPendiente: 250,
-              },
-              {
-                id: 7,
-                nombre: "Miguel",
-                apellidos: "Hernández",
-                telefono: "5555-6789",
-                direccion: "Zona 5, Avenida 8",
-                estadoCliente: EstadoCliente.SUSPENDIDO,
-                saldoPendiente: 750,
-              },
-            ],
-            cobrados: 2,
-            montoCobrado: 1000,
-            estadoRuta: EstadoRuta.COMPLETADO,
-            fechaCreacion: "2025-03-10T11:45:00.000Z",
-            fechaActualizacion: "2025-03-17T16:30:00.000Z",
-            observaciones: "Ruta completada satisfactoriamente",
-            diasCobro: ["LUNES", "JUEVES"],
-          },
-        ];
-
-        setRutas(mockRutas);
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/ruta-cobro/get-rutas-cobros`
+      );
+      if (response.status === 200) {
+        setRutas(response.data);
         setIsLoading(false);
-      }, 800);
+      }
     } catch (err) {
       console.error("Error al cargar rutas:", err);
       setError("Error al cargar las rutas de cobro. Intente nuevamente.");
@@ -510,77 +392,15 @@ const RutasCobroManage: React.FC = () => {
   const fetchCobradores = async () => {
     try {
       // En un entorno real, esto sería una llamada a la API
-      // const response = await axios.get('/api/usuarios/cobradores')
-      // setCobradores(response.data)
-
-      // Mock data para demostración
-      const mockCobradores: Usuario[] = [
-        {
-          id: 1,
-          nombre: "Carlos",
-          apellidos: "Rodríguez",
-          email: "carlos@example.com",
-          telefono: "5555-1111",
-          rol: "COBRADOR",
-        },
-        {
-          id: 2,
-          nombre: "María",
-          apellidos: "González",
-          email: "maria@example.com",
-          telefono: "5555-2222",
-          rol: "COBRADOR",
-        },
-        {
-          id: 3,
-          nombre: "Roberto",
-          apellidos: "Méndez",
-          email: "roberto@example.com",
-          telefono: "5555-3333",
-          rol: "COBRADOR",
-        },
-      ];
-
-      setCobradores(mockCobradores);
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/user/get-users-to-rutas`
+      );
+      setCobradores(response.data);
     } catch (err) {
       console.error("Error al cargar cobradores:", err);
     }
   };
 
-  // Función para cargar empresas
-  const fetchEmpresas = async () => {
-    try {
-      // En un entorno real, esto sería una llamada a la API
-      // const response = await axios.get('/api/empresas')
-      // setEmpresas(response.data)
-
-      // Mock data para demostración
-      const mockEmpresas: Empresa[] = [
-        {
-          id: 1,
-          nombre: "InternetPro S.A.",
-        },
-        {
-          id: 2,
-          nombre: "Conexiones Rápidas",
-        },
-      ];
-
-      setEmpresas(mockEmpresas);
-
-      // Establecer la primera empresa como predeterminada
-      if (mockEmpresas.length > 0) {
-        setNuevaRuta((prev) => ({
-          ...prev,
-          EmpresaId: mockEmpresas[0].id,
-        }));
-      }
-    } catch (err) {
-      console.error("Error al cargar empresas:", err);
-    }
-  };
-
-  // Handlers para formulario
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -592,31 +412,7 @@ const RutasCobroManage: React.FC = () => {
     }));
   };
 
-  const handleSelectChange = (name: string, value: string) => {
-    setNuevaRuta((prev) => ({
-      ...prev,
-      [name]:
-        name === "EmpresaId" || name === "cobradorId"
-          ? Number.parseInt(value)
-          : value,
-    }));
-  };
-
-  const handleDiaCobroChange = (dia: string, checked: boolean) => {
-    if (checked) {
-      setNuevaRuta((prev) => ({
-        ...prev,
-        diasCobro: [...(prev.diasCobro || []), dia],
-      }));
-    } else {
-      setNuevaRuta((prev) => ({
-        ...prev,
-        diasCobro: (prev.diasCobro || []).filter((d) => d !== dia),
-      }));
-    }
-  };
-
-  const handleClienteSelect = (clienteId: number, checked: boolean) => {
+  const handleClienteSelect = (clienteId: string, checked: boolean) => {
     if (checked) {
       setSelectedClientes((prev) => [...prev, clienteId]);
     } else {
@@ -624,15 +420,6 @@ const RutasCobroManage: React.FC = () => {
     }
   };
 
-  // Actualizar clientesIds cuando cambia selectedClientes
-  useEffect(() => {
-    setNuevaRuta((prev) => ({
-      ...prev,
-      clientesIds: selectedClientes,
-    }));
-  }, [selectedClientes]);
-
-  // Submit handler
   const handleSubmitRuta = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -651,58 +438,32 @@ const RutasCobroManage: React.FC = () => {
       if (!nuevaRuta.EmpresaId) {
         throw new Error("Debe seleccionar una empresa");
       }
+      const dataToSend = {
+        nombreRuta: nuevaRuta.nombreRuta,
+        cobradorId: Number(nuevaRuta.cobradorId),
+        empresaId: nuevaRuta.EmpresaId,
+        clientes: nuevaRuta.clientesIds.map((c) => parseInt(c)),
+        observaciones: nuevaRuta.observaciones,
+      };
 
-      // En un entorno real, esto sería una llamada a la API
-      // const response = await axios.post('/api/rutas-cobro', nuevaRuta)
+      console.log("La data a enviar es: ", dataToSend);
 
-      // Mock para demostración
-      setTimeout(() => {
-        console.log("Enviando nueva ruta:", nuevaRuta);
-
-        // Crear una nueva ruta con los datos del formulario
-        const newRuta: Ruta = {
-          id: rutas.length + 1,
-          nombreRuta: nuevaRuta.nombreRuta,
-          cobradorId: nuevaRuta.cobradorId,
-          cobrador: nuevaRuta.cobradorId
-            ? cobradores.find((c) => c.id === nuevaRuta.cobradorId)
-            : undefined,
-          empresaId: nuevaRuta.EmpresaId,
-          empresa: empresas.find((e) => e.id === nuevaRuta.EmpresaId) || {
-            id: 0,
-            nombre: "Desconocida",
-          },
-          clientes: clientes.filter((c) =>
-            nuevaRuta.clientesIds.includes(c.id)
-          ),
-          cobrados: 0,
-          montoCobrado: 0,
-          estadoRuta: EstadoRuta.ACTIVO,
-          fechaCreacion: new Date().toISOString(),
-          fechaActualizacion: new Date().toISOString(),
-          observaciones: nuevaRuta.observaciones,
-          diasCobro: nuevaRuta.diasCobro,
-        };
-
-        setRutas([...rutas, newRuta]);
-
-        // Resetear formulario
+      const response = await axios.post(
+        `${VITE_CRM_API_URL}/ruta-cobro`,
+        dataToSend
+      );
+      if (response.status === 201) {
+        toast.success("Ruta creada");
         setNuevaRuta({
-          nombreRuta: "",
-          EmpresaId: empresas.length > 0 ? empresas[0].id : 0,
           clientesIds: [],
-          diasCobro: [],
+          EmpresaId: empresaId,
+          nombreRuta: "",
+          cobradorId: "",
+          observaciones: "",
         });
-        setSelectedClientes([]);
-
-        setSuccess("Ruta de cobro creada correctamente");
         setIsSubmitting(false);
-
-        // Limpiar mensaje de éxito después de 3 segundos
-        setTimeout(() => {
-          setSuccess(null);
-        }, 3000);
-      }, 1000);
+        fetchRutas();
+      }
     } catch (err: any) {
       console.error("Error al crear ruta:", err);
       setError(
@@ -826,21 +587,14 @@ const RutasCobroManage: React.FC = () => {
       (cliente) =>
         clienteFilter === "TODOS" || cliente.estadoCliente === clienteFilter
     )
-    .sort((a, b) => {
-      if (sortBy === "nombre") {
-        const nameA = `${a.nombre} ${a.apellidos || ""}`.toLowerCase();
-        const nameB = `${b.nombre} ${b.apellidos || ""}`.toLowerCase();
-        return sortDirection === "asc"
-          ? nameA.localeCompare(nameB)
-          : nameB.localeCompare(nameA);
-      } else {
-        const saldoA = a.saldoPendiente || 0;
-        const saldoB = b.saldoPendiente || 0;
-        return sortDirection === "asc" ? saldoA - saldoB : saldoB - saldoA;
-      }
-    });
+    .filter((cliente) =>
+      zonaFacturacionId
+        ? cliente.facturacionZona.toString() === zonaFacturacionId
+        : true
+    );
+  console.log("La nueva data de ruta es: ", nuevaRuta);
+  console.log("Clientes seleccionados: ", selectedClientes);
 
-  // Filtrar rutas según búsqueda\
   const filteredRutas = rutas.filter(
     (ruta) =>
       ruta.nombreRuta.toLowerCase().includes(searchRuta.toLowerCase()) ||
@@ -862,9 +616,42 @@ const RutasCobroManage: React.FC = () => {
     }
   };
 
+  //opciones para select
+  const optionsCobradores: OptionSelected[] = cobradores.map((c) => ({
+    value: c.id.toString(),
+    label: `${c.nombre} ${c.apellidos}`,
+  }));
+
+  const optionsZonasFacturacion: OptionSelected[] = facturacionZona.map(
+    (c) => ({
+      value: c.id.toString(),
+      label: `${c.nombreRuta} Facturas: ${c.facturas} Clientes: ${c.clientes}`,
+    })
+  );
+
+  const handleSelectCobrador = (optionSelected: OptionSelected | null) => {
+    const newValue = optionSelected ? optionSelected.value : null;
+    setNuevaRuta((prev) => ({
+      ...prev,
+      cobradorId: newValue,
+    }));
+  };
+
+  const handleSelecZona = (option: OptionSelected | null) => {
+    const newValue = option ? option.value : null;
+    setZonaFacturacionId(newValue);
+  };
+
+  useEffect(() => {
+    setNuevaRuta((prev) => ({
+      ...prev,
+      clientesIds: selectedClientes,
+    }));
+  }, [selectedClientes]); // Esto se ejecutará cuando selectedClientes cambie
+
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="container mx-auto ">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between ">
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Route className="h-6 w-6" />
@@ -934,57 +721,25 @@ const RutasCobroManage: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="empresa">Empresa</Label>
-                    <Select
-                      onValueChange={(value) =>
-                        handleSelectChange("EmpresaId", value)
-                      }
-                      defaultValue={nuevaRuta.EmpresaId.toString() || undefined}
-                    >
-                      <SelectTrigger id="empresa">
-                        <SelectValue placeholder="Seleccione una empresa" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {empresas.map((empresa) => (
-                          <SelectItem
-                            key={empresa.id}
-                            value={empresa.id.toString()}
-                          >
-                            <div className="flex items-center">
-                              <Building className="h-4 w-4 mr-2" />
-                              {empresa.nombre}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
                     <Label htmlFor="cobrador">Cobrador (Opcional)</Label>
-                    <Select
-                      onValueChange={(value) =>
-                        handleSelectChange("cobradorId", value)
+                    <ReactSelectComponent
+                      className="text-sm text-black"
+                      options={optionsCobradores}
+                      onChange={handleSelectCobrador}
+                      isClearable
+                      value={
+                        nuevaRuta.cobradorId
+                          ? {
+                              value: nuevaRuta.cobradorId,
+                              label:
+                                cobradores.find(
+                                  (c) =>
+                                    c.id.toString() === nuevaRuta.cobradorId
+                                )?.nombre || "",
+                            }
+                          : null
                       }
-                      defaultValue={nuevaRuta.cobradorId?.toString()}
-                    >
-                      <SelectTrigger id="cobrador">
-                        <SelectValue placeholder="Seleccione un cobrador" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {cobradores.map((cobrador) => (
-                          <SelectItem
-                            key={cobrador.id}
-                            value={cobrador.id.toString()}
-                          >
-                            <div className="flex items-center">
-                              <UserCheck className="h-4 w-4 mr-2" />
-                              {cobrador.nombre} {cobrador.apellidos || ""}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -999,31 +754,6 @@ const RutasCobroManage: React.FC = () => {
                       onChange={handleInputChange}
                       rows={3}
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Días de Cobro (Opcional)</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {diasSemana.map((dia) => (
-                        <div
-                          key={dia.id}
-                          className="flex items-center space-x-2"
-                        >
-                          <Checkbox
-                            id={`dia-${dia.id}`}
-                            checked={(nuevaRuta.diasCobro || []).includes(
-                              dia.id
-                            )}
-                            onCheckedChange={(checked) =>
-                              handleDiaCobroChange(dia.id, checked === true)
-                            }
-                          />
-                          <Label htmlFor={`dia-${dia.id}`} className="text-sm">
-                            {dia.label}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 </CardContent>
                 <CardFooter>
@@ -1055,15 +785,13 @@ const RutasCobroManage: React.FC = () => {
                     <div>
                       <CardTitle className="text-lg flex items-center gap-2">
                         <Users className="h-5 w-5" />
-                        Selección de Clientes
+                        Clientes
                       </CardTitle>
-                      <CardDescription>
-                        Seleccione los clientes que formarán parte de esta ruta
-                        de cobro
-                      </CardDescription>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2">
-                      <div className="relative">
+                      <div className="relative w-full sm:w-auto">
+                        {" "}
+                        {/* Ajustamos el ancho de la búsqueda */}
                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                           placeholder="Buscar clientes..."
@@ -1072,156 +800,187 @@ const RutasCobroManage: React.FC = () => {
                           onChange={(e) => setSearchCliente(e.target.value)}
                         />
                       </div>
-                      <Select
-                        onValueChange={(value) =>
-                          setClienteFilter(value as EstadoCliente | "TODOS")
-                        }
-                        defaultValue="TODOS"
-                      >
-                        <SelectTrigger className="w-[140px]">
-                          <SelectValue placeholder="Filtrar por" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="TODOS">Todos</SelectItem>
-                          <SelectItem value={EstadoCliente.ACTIVO}>
-                            Activos
-                          </SelectItem>
-                          <SelectItem value={EstadoCliente.MOROSO}>
-                            Morosos
-                          </SelectItem>
-                          <SelectItem value={EstadoCliente.SUSPENDIDO}>
-                            Suspendidos
-                          </SelectItem>
-                          <SelectItem value={EstadoCliente.INACTIVO}>
-                            Inactivos
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        {" "}
+                        {/* Ajustamos el contenedor para Select y ReactSelectComponent */}
+                        <Select
+                          onValueChange={(value) =>
+                            setClienteFilter(value as EstadoCliente | "TODOS")
+                          }
+                          defaultValue="TODOS"
+                        >
+                          <SelectTrigger className="w-full sm:w-[160px]">
+                            <SelectValue placeholder="Filtrar por" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="TODOS">Todos</SelectItem>
+                            <SelectItem value={EstadoCliente.ACTIVO}>
+                              Activos
+                            </SelectItem>
+                            <SelectItem value={EstadoCliente.MOROSO}>
+                              Morosos
+                            </SelectItem>
+                            <SelectItem value={EstadoCliente.SUSPENDIDO}>
+                              Suspendidos
+                            </SelectItem>
+                            <SelectItem value={EstadoCliente.INACTIVO}>
+                              Inactivos
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {/* Selector de zona de facturación */}
+                        <ReactSelectComponent
+                          className="text-black text-sm w-full sm:w-[250px]"
+                          options={optionsZonasFacturacion}
+                          onChange={handleSelecZona}
+                          isClearable
+                          value={
+                            zonaFacturacionId
+                              ? {
+                                  value: zonaFacturacionId,
+                                  label:
+                                    facturacionZona.find(
+                                      (c) =>
+                                        c.id.toString() === zonaFacturacionId
+                                    )?.nombreRuta || "",
+                                }
+                              : null
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="rounded-md border overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[50px]">
-                              <span className="sr-only">Seleccionar</span>
-                            </TableHead>
-                            <TableHead>
-                              <Button
-                                variant="ghost"
-                                className="flex items-center gap-1 p-0 h-auto font-medium"
-                                onClick={() => toggleSort("nombre")}
-                              >
-                                Cliente
-                                <ArrowUpDown className="h-3 w-3" />
-                              </Button>
-                            </TableHead>
-                            <TableHead className="hidden md:table-cell">
-                              Dirección
-                            </TableHead>
-                            <TableHead className="hidden md:table-cell">
-                              Estado
-                            </TableHead>
-                            <TableHead>
-                              <Button
-                                variant="ghost"
-                                className="flex items-center gap-1 p-0 h-auto font-medium"
-                                onClick={() => toggleSort("saldo")}
-                              >
-                                Saldo
-                                <ArrowUpDown className="h-3 w-3" />
-                              </Button>
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredClientes.length === 0 ? (
+
+                {/* Selección de clientes */}
+                <Card className="lg:col-span-2">
+                  {/* El contenido del card sigue igual */}
+                  <CardContent>
+                    <div className="rounded-md border overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
                             <TableRow>
-                              <TableCell
-                                colSpan={5}
-                                className="text-center text-muted-foreground py-6"
-                              >
-                                No se encontraron clientes
-                              </TableCell>
+                              <TableHead className="w-[50px]">
+                                <span className="sr-only">Seleccionar</span>
+                              </TableHead>
+                              <TableHead>
+                                <Button
+                                  variant="ghost"
+                                  className="flex items-center gap-1 p-0 h-auto font-medium"
+                                  onClick={() => toggleSort("nombre")}
+                                >
+                                  Cliente
+                                  <ArrowUpDown className="h-3 w-3" />
+                                </Button>
+                              </TableHead>
+                              <TableHead className="hidden md:table-cell">
+                                Dirección
+                              </TableHead>
+                              <TableHead className="hidden md:table-cell">
+                                Estado
+                              </TableHead>
+                              <TableHead>
+                                <Button
+                                  variant="ghost"
+                                  className="flex items-center gap-1 p-0 h-auto font-medium"
+                                  onClick={() => toggleSort("saldo")}
+                                >
+                                  Saldo
+                                  <ArrowUpDown className="h-3 w-3" />
+                                </Button>
+                              </TableHead>
                             </TableRow>
-                          ) : (
-                            filteredClientes.map((cliente) => (
-                              <TableRow key={cliente.id}>
-                                <TableCell>
-                                  <Checkbox
-                                    checked={selectedClientes.includes(
-                                      cliente.id
-                                    )}
-                                    onCheckedChange={(checked) =>
-                                      handleClienteSelect(
-                                        cliente.id,
-                                        checked === true
-                                      )
-                                    }
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <div className="font-medium">
-                                    {cliente.nombre} {cliente.apellidos || ""}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground md:hidden">
-                                    {cliente.telefono}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="hidden md:table-cell">
-                                  <div className="flex items-start gap-1">
-                                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                    <span className="truncate max-w-[200px]">
-                                      {cliente.direccion || "No disponible"}
-                                    </span>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="hidden md:table-cell">
-                                  <Badge
-                                    className={getClienteEstadoBadgeColor(
-                                      cliente.estadoCliente
-                                    )}
-                                  >
-                                    {cliente.estadoCliente}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="font-medium">
-                                    Q
-                                    {cliente.saldoPendiente?.toFixed(2) ||
-                                      "0.00"}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {cliente.facturasPendientes || 0} facturas
-                                  </div>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredClientes.length === 0 ? (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={5}
+                                  className="text-center text-muted-foreground py-6"
+                                >
+                                  No se encontraron clientes
                                 </TableCell>
                               </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
+                            ) : (
+                              filteredClientes.map((cliente) => (
+                                <TableRow key={cliente.id}>
+                                  <TableCell>
+                                    <Checkbox
+                                      checked={selectedClientes.includes(
+                                        cliente.id.toString()
+                                      )}
+                                      onCheckedChange={(checked) =>
+                                        handleClienteSelect(
+                                          cliente.id.toString(),
+                                          checked === true
+                                        )
+                                      }
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="font-medium">
+                                      {cliente.nombre} {cliente.apellidos || ""}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground md:hidden">
+                                      {cliente.telefono}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="hidden md:table-cell">
+                                    <div className="flex items-start gap-1">
+                                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                      <span className="truncate max-w-[200px]">
+                                        {cliente.direccion || "No disponible"}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="hidden md:table-cell">
+                                    <Badge
+                                      className={getClienteEstadoBadgeColor(
+                                        cliente.estadoCliente
+                                      )}
+                                    >
+                                      {cliente.estadoCliente}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="font-medium">
+                                      Q
+                                      {cliente.saldoPendiente?.toFixed(2) ||
+                                        "0.00"}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {cliente.facturasPendientes || 0} facturas
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                      {selectedClientes.length} clientes seleccionados
+                    <div className="mt-4 flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        {selectedClientes.length} clientes seleccionados
+                      </div>
+                      <div className="text-sm font-medium">
+                        Total a cobrar: Q
+                        {clientes
+                          .filter((c) =>
+                            selectedClientes.includes(c.id.toString())
+                          )
+                          .reduce(
+                            (sum, cliente) =>
+                              sum + (cliente.saldoPendiente || 0),
+                            0
+                          )
+                          .toFixed(2)}
+                      </div>
                     </div>
-                    <div className="text-sm font-medium">
-                      Total a cobrar: Q
-                      {clientes
-                        .filter((c) => selectedClientes.includes(c.id))
-                        .reduce(
-                          (sum, cliente) => sum + (cliente.saldoPendiente || 0),
-                          0
-                        )
-                        .toFixed(2)}
-                    </div>
-                  </div>
-                </CardContent>
+                  </CardContent>
+                </Card>
               </Card>
             </div>
           </form>
@@ -1372,6 +1131,16 @@ const RutasCobroManage: React.FC = () => {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
+                                    <Link to={`/crm/cobros-en-ruta/${ruta.id}`}>
+                                      <DropdownMenuItem
+                                        className="flex items-center gap-2 hover:cursor-pointer"
+                                        onClick={() => handleViewRuta(ruta)}
+                                      >
+                                        <Play className="h-4 w-4" />
+                                        <span>Iniciar Ruta</span>
+                                      </DropdownMenuItem>
+                                    </Link>
+
                                     <DropdownMenuItem
                                       className="flex items-center gap-2"
                                       onClick={() => handleViewRuta(ruta)}
@@ -1379,6 +1148,7 @@ const RutasCobroManage: React.FC = () => {
                                       <Eye className="h-4 w-4" />
                                       <span>Ver detalles</span>
                                     </DropdownMenuItem>
+
                                     <DropdownMenuItem className="flex items-center gap-2">
                                       <Edit className="h-4 w-4" />
                                       <span>Editar</span>
@@ -1499,19 +1269,6 @@ const RutasCobroManage: React.FC = () => {
                           <h3 className="text-sm font-medium text-muted-foreground">
                             Días de Cobro
                           </h3>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {selectedRuta.diasCobro.map((dia) => (
-                              <Badge
-                                key={dia}
-                                variant="outline"
-                                className="flex items-center gap-1"
-                              >
-                                <CalendarRange className="h-3 w-3" />
-                                {diasSemana.find((d) => d.id === dia)?.label ||
-                                  dia}
-                              </Badge>
-                            ))}
-                          </div>
                         </div>
                       </>
                     )}

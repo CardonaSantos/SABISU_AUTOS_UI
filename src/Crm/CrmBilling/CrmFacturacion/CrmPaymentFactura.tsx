@@ -58,8 +58,11 @@ import {
   Coins,
   ReceiptText,
   X,
+  Download,
+  BadgeCheck,
+  Printer,
 } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useStoreCrm } from "@/Crm/ZustandCrm/ZustandCrmContext";
 import axios from "axios";
 import { toast } from "sonner";
@@ -204,6 +207,17 @@ const CrmPaymentFactura: React.FC = () => {
     cobradorId: userId,
   });
 
+  const [openPdfPago, setOpenPdfPago] = useState(false);
+  // interface newFacturacionPaymentSucces {
+  //   facturaInternetId: number | null;
+  //   clienteId: number | null;
+  // }
+  // const [pagoPdfId, setPagoPdfId] = useState<newFacturacionPaymentSucces>({
+  //   clienteId: null,
+  //   facturaInternetId: null,
+  // });
+  // const [pdf]
+
   console.log("EL nuevo pago es: ", nuevoPago);
 
   // Cargar datos de la factura
@@ -324,6 +338,11 @@ const CrmPaymentFactura: React.FC = () => {
         fetchFactura(Number(facturaId));
         setIsSubmitting(false);
         setOpenConfirm(false);
+
+        setOpenPdfPago(true);
+        console.log("La data recibida es: ", response.data.dataToPdfSucces);
+
+        // setPagoPdfId(response.data.dataToPdfSucces);
       }
     } catch (err: any) {
       console.error("Error al registrar pago:", err);
@@ -928,6 +947,10 @@ const CrmPaymentFactura: React.FC = () => {
                         <th className="text-left p-2 text-sm font-medium">
                           Cobrador
                         </th>
+
+                        <th className="text-left p-2 text-sm font-medium">
+                          Acción
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -960,6 +983,16 @@ const CrmPaymentFactura: React.FC = () => {
                             </div>
                           </td>
                           <td className="p-2 text-sm">{pago.cobrador || ""}</td>
+
+                          <td className="p-2 text-sm">
+                            <Link
+                              to={`/crm/factura-pago/pago-servicio-pdf/${facturaId}`}
+                            >
+                              <Button size={"icon"} variant={"outline"}>
+                                <Printer />
+                              </Button>
+                            </Link>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -1028,6 +1061,58 @@ const CrmPaymentFactura: React.FC = () => {
                   </>
                 )}
               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={openPdfPago} onOpenChange={setOpenPdfPago}>
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-lg border-0 shadow-lg">
+          {/* Header with icon */}
+          <DialogHeader className="pt-6 px-6 pb-2">
+            <DialogTitle
+              className="flex items-center gap-3 text-xl font-semibold
+              justify-center 
+              "
+            >
+              <div className="bg-blue-100 dark:bg-gray-900 p-2 rounded-full">
+                <BadgeCheck className="h-5 w-5 text-green-500" />
+              </div>
+              Pago registrado exitosamente
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="px-6 py-4">
+            <div className="border border-gray-200 dark:border-gray-800 rounded-md p-4 mb-5 bg-gray-50 dark:bg-gray-800 ">
+              <h3 className="font-medium mb-2 text-gray-900 dark:text-gray-100 text-center">
+                ¿Desea imprimir su comprobante?
+              </h3>
+              {/* <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                Por favor, revisa cuidadosamente los datos antes de proceder.
+              </p> */}
+            </div>
+
+            <div className="h-px bg-gray-200 dark:bg-gray-800 my-4"></div>
+
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2 pb-2">
+              <Button
+                variant={"outline"}
+                onClick={() => setOpenPdfPago(false)}
+                className="border w-full bg-red-500 text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-600 rounded-lg py-2 hover:text-white "
+              >
+                <X className="mr-2 h-4 w-4" />
+                Mantenerse
+              </Button>
+              <Link to={`/crm/factura-pago/pago-servicio-pdf/${facturaId}`}>
+                <Button
+                  onClick={() => setOpenPdfPago(false)}
+                  variant={"outline"}
+                  className="bg-teal-600 text-white w-full hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 rounded-lg py-2 hover:text-white"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Conseguir comprobante
+                </Button>
+              </Link>
             </div>
           </div>
         </DialogContent>

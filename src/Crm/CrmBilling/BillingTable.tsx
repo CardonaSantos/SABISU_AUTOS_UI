@@ -70,7 +70,7 @@ interface FacturacionData {
 // **Definir columnas de la tabla**
 const columns: ColumnDef<Factura>[] = [
   { accessorKey: "id", header: "ID" },
-  { accessorKey: "metodo", header: "Metódo" },
+  // { accessorKey: "metodo", header: "Metódo" },
   { accessorKey: "cliente", header: "Cliente" },
   { accessorKey: "cantidad", header: "Cantidad" },
   { accessorKey: "fechaCreado", header: "Fecha Creado" },
@@ -230,11 +230,11 @@ export default function BilingTable() {
                   className="hover:bg-gray-200 dark:hover:bg-gray-700 border-b border-gray-300"
                 >
                   <td className="px-2 py-1 text-center">{row.original.id}</td>
-                  <td className="px-2 py-1 truncate max-w-[120px] whitespace-nowrap">
+                  {/* <td className="px-2 py-1 truncate max-w-[120px] whitespace-nowrap">
                     {row.original.metodo}
-                  </td>
+                  </td> */}
                   <Link
-                    to={`/crm/cliente/${row.original.id}`}
+                    to={`/crm/cliente/${row.original.clienteId}`}
                     className="contents"
                   >
                     <td className="px-2 py-1 truncate max-w-[100px] hover:underline">
