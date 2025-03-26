@@ -207,15 +207,17 @@ export default function ClientesTable() {
                     {row.original.facturacionZona}
                   </td>
                   <td className="px-2 py-1 flex justify-center items-center">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() =>
-                        alert(`Acción con cliente ID: ${row.original.id}`)
-                      }
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    <Link to={`/crm/cliente-edicion/${row.original.id}`}>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        // onClick={() =>
+                        //   alert(`Acción con cliente ID: ${row.original.id}`)
+                        // }
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </Link>
                   </td>
                 </motion.tr>
               ))}

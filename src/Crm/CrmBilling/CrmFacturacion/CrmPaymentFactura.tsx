@@ -175,6 +175,7 @@ interface NuevoPago {
   montoPagado: number;
   metodoPago: MetodoPagoFacturaInternet;
   cobradorId: number;
+  numeroBoleta: string;
 }
 
 // Componente principal
@@ -205,6 +206,7 @@ const CrmPaymentFactura: React.FC = () => {
     montoPagado: 0,
     metodoPago: MetodoPagoFacturaInternet.EFECTIVO,
     cobradorId: userId,
+    numeroBoleta: "",
   });
 
   const [openPdfPago, setOpenPdfPago] = useState(false);
@@ -325,6 +327,7 @@ const CrmPaymentFactura: React.FC = () => {
         montoPagado: nuevoPago.montoPagado,
         metodoPago: nuevoPago.metodoPago,
         cobradorId: Number(userId),
+        numeroBoleta: nuevoPago.numeroBoleta,
       };
 
       // En un entorno real, esto sería una llamada a la API
@@ -341,6 +344,14 @@ const CrmPaymentFactura: React.FC = () => {
 
         setOpenPdfPago(true);
         console.log("La data recibida es: ", response.data.dataToPdfSucces);
+        setNuevoPago({
+          facturaInternetId: Number(facturaId) || 1,
+          clienteId: Number(clienteId),
+          montoPagado: 0,
+          metodoPago: MetodoPagoFacturaInternet.EFECTIVO,
+          cobradorId: userId,
+          numeroBoleta: "",
+        });
 
         // setPagoPdfId(response.data.dataToPdfSucces);
       }
@@ -350,6 +361,7 @@ const CrmPaymentFactura: React.FC = () => {
         err.message || "Error al registrar el pago. Intente nuevamente."
       );
       setIsSubmitting(false);
+      toast.error("Porfavor verifique sus datos");
     }
   };
 
@@ -890,14 +902,38 @@ const CrmPaymentFactura: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Conditional field for receipt number when payment method is DEPOSITO */}
+                  {nuevoPago.metodoPago === "DEPOSITO" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="numeroBoleta">No. Boleta</Label>
+                      <div className="relative">
+                        <Receipt className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="numeroBoleta"
+                          name="numeroBoleta"
+                          className="pl-8"
+                          value={nuevoPago.numeroBoleta || ""}
+                          onChange={handleInputChange}
+                          placeholder="Ingrese número de boleta"
+                          required
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
+
               <CardFooter className="flex justify-end">
                 <Button
                   onClick={() => setOpenConfirm(true)}
                   type="button"
                   className="w-full md:w-auto"
-                  disabled={isSubmitting || nuevoPago.montoPagado <= 0}
+                  disabled={
+                    isSubmitting ||
+                    !nuevoPago.montoPagado ||
+                    Number(nuevoPago.montoPagado) <= 0
+                  }
                 >
                   <Save className="mr-2 h-4 w-4" />
                   Registrar

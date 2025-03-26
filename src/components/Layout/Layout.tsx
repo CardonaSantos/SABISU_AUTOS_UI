@@ -13,6 +13,8 @@ import {
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { ModeToggle } from "../mode-toggle";
 import nv2 from "@/assets/LOGOPNG.png";
+import nv3 from "@/assets/Logonuevo.png";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -182,11 +184,13 @@ export default function Layout2({ children }: LayoutProps) {
 
   const getNotificaciones = async () => {
     try {
-      const response = await axios.get(
-        `${API_URL}/notification/get-my-notifications/${userID}`
-      );
-      if (response.status === 200) {
-        setNotificaciones(response.data);
+      if (isCrmLocation) {
+        const response = await axios.get(
+          `${API_URL}/notification/get-my-notifications/${userID}`
+        );
+        if (response.status === 200) {
+          setNotificaciones(response.data);
+        }
       }
     } catch (error) {
       console.log(error);
@@ -250,18 +254,18 @@ export default function Layout2({ children }: LayoutProps) {
             <div className="mx-auto flex h-16 max-w-7xl w-full items-center px-4 sm:px-6 lg:px-8 justify-between">
               {/* Sección izquierda: Logo y nombre de la sucursal */}
               <div className="flex items-center space-x-2">
-                <Link to={"/"}>
-                  <img
-                    className="h-12 w-12 md:h-16 md:w-28" // Mobile: 12x12, Medium+: 16x28
-                    src={nv2}
-                    alt="Logo"
-                  />
-                </Link>
-                <Link to={"/"}>
-                  <p className="text-xs font-semibold text-foreground sm:text-sm md:text-base">
-                    {sucursalInfo?.nombre}
-                  </p>
-                </Link>
+                {/* <Link to={"/"}> */}
+                <img
+                  className="h-10 w-10 md:h-10 md:w-16" // Mobile: 12x12, Medium+: 16x28
+                  src={isCrmLocation ? nv3 : nv2}
+                  alt="Logo"
+                />
+                {/* </Link> */}
+                {/* <Link to={"/"}> */}
+                <p className="text-xs font-semibold text-foreground sm:text-sm md:text-base">
+                  Center Internet
+                </p>
+                {/* </Link> */}
               </div>
               {/* vitaFertil-universal-forma:pachon, normal */}
               {/* Sección derecha: Toggle de modo, notificaciones y menú de usuario */}

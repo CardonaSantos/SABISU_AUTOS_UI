@@ -63,6 +63,9 @@ interface FormData {
   municipioId: string | null;
   departamentoId: string | null;
   empresaId: string;
+
+  mascara: string;
+  gateway: string;
 }
 
 interface Departamentos {
@@ -296,6 +299,8 @@ function CreateCustomers() {
     nombre: "",
     coordenadas: "",
     ip: "",
+    gateway: "",
+    mascara: "",
     apellidos: "",
     telefono: "",
     direccion: "",
@@ -399,16 +404,13 @@ function CreateCustomers() {
       return;
     }
 
-    const token = localStorage.getItem("tokenAuthCRM");
-    console.log("Datos del formulario:", formDataToSend);
-
-    if (!token) {
-      toast.warning("Token no encontrado");
+    if (!formDataToSend.zonaFacturacionId) {
+      toast.warning("Debe agregar una zona de facturación");
       return;
     }
 
-    if (!formDataToSend.zonaFacturacionId) {
-      toast.info("Seleccione una zona de facturación");
+    if (!formDataToSend.servicioWifiId) {
+      toast.warning("No puede crear un cliente sin asignarle un servicio");
       return;
     }
 
@@ -417,29 +419,65 @@ function CreateCustomers() {
     try {
       const response = await axios.post(
         `${VITE_CRM_API_URL}/internet-customer/create-new-customer`,
-        formDataToSend, // <-- Envía los datos directamente
-        // formDataContrado,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        formDataToSend // <-- Envía los datos directamente
       );
 
       if (response.status === 201) {
         toast.success("Cliente creado");
-        // setFormData(estadoInicialForm);
+        resetFormData();
+        setOpenConfirm(false);
       }
 
       console.log("Respuesta del servidor:", response.data);
     } catch (error) {
       console.error("Error al enviar los datos:", error);
+      toast.info("Revise sus datos enviados");
     }
   };
 
-  //===================>
-  // Component for calendar (simplified for this example)
-  console.log("Fecha de instalacion: ", fechaInstalacion);
+  console.log("El form data es: ", formData);
+
+  const resetFormData = () => {
+    setFormData({
+      nombre: "",
+      coordenadas: "",
+      ip: "",
+      apellidos: "",
+      telefono: "",
+      direccion: "",
+      dpi: "",
+      observaciones: "",
+      contactoReferenciaNombre: "",
+      contactoReferenciaTelefono: "",
+      contrasenaWifi: "",
+      ssidRouter: "",
+      fechaInstalacion: null,
+      asesorId: "",
+      servicioId: "",
+      municipioId: "",
+      departamentoId: "",
+      empresaId: "",
+      gateway: "",
+      mascara: "",
+    });
+
+    // Resetear formDataContrato
+    setFormDataContrato({
+      archivoContrato: "",
+      clienteId: 0,
+      fechaFirma: new Date(),
+      idContrato: "",
+      observaciones: "",
+    });
+
+    // Resetear los selects
+    setDepaSelected(null);
+    setMuniSelected(null);
+    setSeriviceSelected([]);
+    setSeriviceWifiSelected(null);
+    setZonasFacturacionSelected(null);
+    setFechaInstalacion(new Date()); // Si es necesario, puedes restablecer la fecha a su valor inicial.
+  };
 
   return (
     <div className="container ">
@@ -534,17 +572,43 @@ function CreateCustomers() {
                   </h3>
                   <div className="space-y-3">
                     <div className="space-y-1">
-                      <Label htmlFor="ip-all">
-                        IP <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="ip-all"
-                        name="ip"
-                        value={formData.ip}
-                        onChange={handleChange}
-                        placeholder="IP"
-                        required
-                      />
+                      <div className="flex space-x-2">
+                        {" "}
+                        {/* Contenedor flexible para los tres inputs */}
+                        <div className="flex-1">
+                          <Label htmlFor="ip">IP</Label>
+                          <Input
+                            id="ip"
+                            name="ip"
+                            value={formData.ip}
+                            onChange={handleChange}
+                            placeholder="IP"
+                            required
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <Label htmlFor="gateway">Gateway</Label>
+                          <Input
+                            id="gateway"
+                            name="gateway"
+                            value={formData.gateway}
+                            onChange={handleChange}
+                            placeholder="(opcional)"
+                            required
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <Label htmlFor="mascara">Subnet Mask</Label>
+                          <Input
+                            id="mascara"
+                            name="mascara"
+                            value={formData.mascara}
+                            onChange={handleChange}
+                            placeholder="(opcional)"
+                            required
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     <div className="space-y-1">

@@ -81,6 +81,7 @@ import CrmPaymentFactura from "./Crm/CrmBilling/CrmFacturacion/CrmPaymentFactura
 import CrmRuta from "./Crm/CrmRutas/CrmRuta";
 import CrmPdfPago from "./Crm/CrmPdfPago/CrmPdfPago";
 import RutaCobro from "./Crm/CrmRutas/CrmRutasCobro/RutaCobro";
+import EditCustomers from "./Crm/CrmCustomerEdition/CrmCustomerEdition";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
@@ -556,6 +557,15 @@ function App() {
               element={
                 <ProtectRouteCrmUser>
                   <CustomerDetails />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm/cliente-edicion/:customerId"
+              element={
+                <ProtectRouteCrmUser>
+                  <EditCustomers />
                 </ProtectRouteCrmUser>
               }
             />
