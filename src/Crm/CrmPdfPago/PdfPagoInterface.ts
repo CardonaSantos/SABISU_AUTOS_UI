@@ -5,6 +5,8 @@ export interface Pago {
   montoPagado: number;
   fechaPago: string;
   creadoEn: string;
+
+  numeroBoleta: string;
 }
 
 // Definición de la interfaz para la información del cliente

@@ -117,12 +117,6 @@ function CrmPdfPago() {
   const descargarPDF = () => {
     if (!factura) return;
 
-    // const pdf = new jsPDF({
-    //   orientation: "portrait",
-    //   unit: "mm",
-    //   format: "a4",
-    // });
-
     // Usar la URL del PDF ya generado
     if (pdfUrl) {
       const link = document.createElement("a");
@@ -140,6 +134,8 @@ function CrmPdfPago() {
       setPdfUrl(null);
     }
   };
+
+  console.log("el factura es: ", factura);
 
   useEffect(() => {
     getInfoFactura();
@@ -389,12 +385,13 @@ function CrmPdfPago() {
                         >
                           {index + 1}
                         </td>
-                        <td
-                          className="py-2 px-4 border-b
-                        "
-                        >
+                        <td className="py-2 px-4 border-b">
                           {pago.metodoPago}
+                          <span className="block mt-1 text-[10px] text-gray-500">
+                            {pago.numeroBoleta ? pago.numeroBoleta : null}
+                          </span>
                         </td>
+
                         <td
                           className="py-2 px-4 border-b
                         "

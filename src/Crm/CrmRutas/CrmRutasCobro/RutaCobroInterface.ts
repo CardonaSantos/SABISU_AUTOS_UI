@@ -1,8 +1,8 @@
 export interface RutaCobroInterface {
   id: number;
   nombreRuta: string;
-  creadoEn: Date;
-  actualizadoEn: Date;
+  creadoEn: string;
+  actualizadoEn: string;
   cobrador: {
     id: number;
     nombre: string;
@@ -15,6 +15,7 @@ interface Cliente {
   id: number;
   nombreCompleto: string;
   telefono: string;
+  direccion: string;
   contactoReferencia: {
     telefono: string;
     nombre: string;
@@ -27,8 +28,9 @@ interface Cliente {
   saldo: {
     saldoFavor: number;
     saldoPendiente: number;
-    ultimoPago: Date;
+    ultimoPago: string;
   };
+  imagenes: string[];
 }
 
 interface Factura {
@@ -36,6 +38,6 @@ interface Factura {
   montoPago: number;
   estadoFactura: string;
   saldoPendiente: number;
-  creadoEn: Date;
+  creadoEn: string;
   detalleFactura: string;
 }

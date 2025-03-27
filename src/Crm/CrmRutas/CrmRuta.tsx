@@ -64,7 +64,7 @@ import {
   MapPinned,
   Route,
   UserCheck,
-  Building,
+  // Building,
   Phone,
   Home,
   Info,
@@ -205,6 +205,9 @@ const RutasCobroManage: React.FC = () => {
   const [sortBy, setSortBy] = useState<"nombre" | "saldo">("nombre");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
+  console.log("las rutas son: ", rutas);
+  console.log(error);
+
   // Estado para el formulario de creación de ruta
   const [nuevaRuta, setNuevaRuta] = useState<CreateRutaDto>({
     nombreRuta: "",
@@ -254,6 +257,9 @@ const RutasCobroManage: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  console.log("Las rutas consegudas son: ", rutas);
+  console.log("los clientes son: ", clientes);
 
   // Función para cargar clientes
   const fetchClientes = async () => {
@@ -466,6 +472,7 @@ const RutasCobroManage: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Error al crear ruta:", err);
+      toast.error("Revise sus datos antes de enviar");
       setError(
         err.message || "Error al crear la ruta de cobro. Intente nuevamente."
       );
@@ -664,13 +671,6 @@ const RutasCobroManage: React.FC = () => {
       </div>
 
       {/* Mensajes de error y éxito */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       {success && (
         <Alert className="bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-900/30">
@@ -693,10 +693,9 @@ const RutasCobroManage: React.FC = () => {
         </TabsList>
 
         {/* Tab de Crear Ruta */}
-        <TabsContent value="crear" className="space-y-6">
+        <TabsContent value="crear" className="space-y-1">
           <form onSubmit={handleSubmitRuta}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Formulario de datos básicos */}
               <Card className="lg:col-span-1">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -854,110 +853,119 @@ const RutasCobroManage: React.FC = () => {
 
                 {/* Selección de clientes */}
                 <Card className="lg:col-span-2">
-                  {/* El contenido del card sigue igual */}
                   <CardContent>
                     <div className="rounded-md border overflow-hidden">
                       <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead className="w-[50px]">
-                                <span className="sr-only">Seleccionar</span>
-                              </TableHead>
-                              <TableHead>
-                                <Button
-                                  variant="ghost"
-                                  className="flex items-center gap-1 p-0 h-auto font-medium"
-                                  onClick={() => toggleSort("nombre")}
-                                >
-                                  Cliente
-                                  <ArrowUpDown className="h-3 w-3" />
-                                </Button>
-                              </TableHead>
-                              <TableHead className="hidden md:table-cell">
-                                Dirección
-                              </TableHead>
-                              <TableHead className="hidden md:table-cell">
-                                Estado
-                              </TableHead>
-                              <TableHead>
-                                <Button
-                                  variant="ghost"
-                                  className="flex items-center gap-1 p-0 h-auto font-medium"
-                                  onClick={() => toggleSort("saldo")}
-                                >
-                                  Saldo
-                                  <ArrowUpDown className="h-3 w-3" />
-                                </Button>
-                              </TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {filteredClientes.length === 0 ? (
-                              <TableRow>
-                                <TableCell
-                                  colSpan={5}
-                                  className="text-center text-muted-foreground py-6"
-                                >
-                                  No se encontraron clientes
-                                </TableCell>
-                              </TableRow>
-                            ) : (
-                              filteredClientes.map((cliente) => (
-                                <TableRow key={cliente.id}>
-                                  <TableCell>
-                                    <Checkbox
-                                      checked={selectedClientes.includes(
-                                        cliente.id.toString()
-                                      )}
-                                      onCheckedChange={(checked) =>
-                                        handleClienteSelect(
-                                          cliente.id.toString(),
-                                          checked === true
-                                        )
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="font-medium">
-                                      {cliente.nombre} {cliente.apellidos || ""}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground md:hidden">
-                                      {cliente.telefono}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="hidden md:table-cell">
-                                    <div className="flex items-start gap-1">
-                                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                      <span className="truncate max-w-[200px]">
-                                        {cliente.direccion || "No disponible"}
-                                      </span>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="hidden md:table-cell">
-                                    <Badge
-                                      className={getClienteEstadoBadgeColor(
-                                        cliente.estadoCliente
-                                      )}
+                        <ScrollArea className="h-96 rounded-md border">
+                          <div className="p-4">
+                            <h4 className="mb-4 text-sm font-medium leading-none">
+                              Tags
+                            </h4>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="w-[50px]">
+                                    <span className="sr-only">Seleccionar</span>
+                                  </TableHead>
+                                  <TableHead>
+                                    <Button
+                                      variant="ghost"
+                                      className="flex items-center gap-1 p-0 h-auto font-medium"
+                                      onClick={() => toggleSort("nombre")}
                                     >
-                                      {cliente.estadoCliente}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="font-medium">
-                                      Q
-                                      {cliente.saldoPendiente?.toFixed(2) ||
-                                        "0.00"}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {cliente.facturasPendientes || 0} facturas
-                                    </div>
-                                  </TableCell>
+                                      Cliente
+                                      <ArrowUpDown className="h-3 w-3" />
+                                    </Button>
+                                  </TableHead>
+                                  <TableHead className="hidden md:table-cell">
+                                    Dirección
+                                  </TableHead>
+                                  <TableHead className="hidden md:table-cell">
+                                    Estado
+                                  </TableHead>
+                                  <TableHead>
+                                    <Button
+                                      variant="ghost"
+                                      className="flex items-center gap-1 p-0 h-auto font-medium"
+                                      onClick={() => toggleSort("saldo")}
+                                    >
+                                      Saldo
+                                      <ArrowUpDown className="h-3 w-3" />
+                                    </Button>
+                                  </TableHead>
                                 </TableRow>
-                              ))
-                            )}
-                          </TableBody>
-                        </Table>
+                              </TableHeader>
+                              <TableBody>
+                                {filteredClientes.length === 0 ? (
+                                  <TableRow>
+                                    <TableCell
+                                      colSpan={5}
+                                      className="text-center text-muted-foreground py-6"
+                                    >
+                                      No se encontraron clientes
+                                    </TableCell>
+                                  </TableRow>
+                                ) : (
+                                  filteredClientes.map((cliente) => (
+                                    <TableRow key={cliente.id}>
+                                      <TableCell>
+                                        <Checkbox
+                                          checked={selectedClientes.includes(
+                                            cliente.id.toString()
+                                          )}
+                                          onCheckedChange={(checked) =>
+                                            handleClienteSelect(
+                                              cliente.id.toString(),
+                                              checked === true
+                                            )
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="font-medium">
+                                          {cliente.nombre}{" "}
+                                          {cliente.apellidos || ""}
+                                        </div>
+                                        <div className="text-sm text-muted-foreground md:hidden">
+                                          {cliente.telefono}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="hidden md:table-cell">
+                                        <div className="flex items-start gap-1">
+                                          <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                          <span className="truncate max-w-[200px]">
+                                            {cliente.direccion ||
+                                              "No disponible"}
+                                          </span>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="hidden md:table-cell">
+                                        <Badge
+                                          className={getClienteEstadoBadgeColor(
+                                            cliente.estadoCliente
+                                          )}
+                                        >
+                                          {cliente.estadoCliente}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="font-medium">
+                                          Q
+                                          {cliente.saldoPendiente?.toFixed(2) ||
+                                            "0.00"}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {cliente.facturasPendientes || 0}{" "}
+                                          facturas
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </ScrollArea>
                       </div>
                     </div>
 
@@ -987,7 +995,7 @@ const RutasCobroManage: React.FC = () => {
         </TabsContent>
 
         {/* Tab de Rutas Existentes */}
-        <TabsContent value="rutas" className="space-y-6">
+        <TabsContent value="rutas" className="space-y-1">
           <Card>
             <CardHeader className="pb-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -1033,7 +1041,6 @@ const RutasCobroManage: React.FC = () => {
                           <TableHead className="hidden md:table-cell">
                             Clientes
                           </TableHead>
-                          <TableHead>Progreso</TableHead>
                           <TableHead className="hidden md:table-cell">
                             Estado
                           </TableHead>
@@ -1082,30 +1089,7 @@ const RutasCobroManage: React.FC = () => {
                                   <span>{ruta.clientes.length}</span>
                                 </div>
                               </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-full max-w-[100px] bg-muted rounded-full h-2.5">
-                                    <div
-                                      className="bg-primary h-2.5 rounded-full"
-                                      style={{
-                                        width: `${
-                                          ruta.clientes.length > 0
-                                            ? (ruta.cobrados /
-                                                ruta.clientes.length) *
-                                              100
-                                            : 0
-                                        }%`,
-                                      }}
-                                    ></div>
-                                  </div>
-                                  <span className="text-xs whitespace-nowrap">
-                                    {ruta.cobrados}/{ruta.clientes.length}
-                                  </span>
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  Q{ruta.montoCobrado.toFixed(2)}
-                                </div>
-                              </TableCell>
+
                               <TableCell className="hidden md:table-cell">
                                 <Badge
                                   className={`${getEstadoBadgeColor(
@@ -1196,12 +1180,6 @@ const RutasCobroManage: React.FC = () => {
                     </h3>
                     <div className="mt-2 space-y-2">
                       <div className="flex items-center gap-2">
-                        <Building className="h-4 w-4 text-primary" />
-                        <span className="font-medium">
-                          {selectedRuta.empresa.nombre}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
                         <Badge
                           className={`${getEstadoBadgeColor(
                             selectedRuta.estadoRuta
@@ -1260,19 +1238,6 @@ const RutasCobroManage: React.FC = () => {
                     )}
                   </div>
 
-                  {selectedRuta.diasCobro &&
-                    selectedRuta.diasCobro.length > 0 && (
-                      <>
-                        <Separator />
-
-                        <div>
-                          <h3 className="text-sm font-medium text-muted-foreground">
-                            Días de Cobro
-                          </h3>
-                        </div>
-                      </>
-                    )}
-
                   {selectedRuta.observaciones && (
                     <>
                       <Separator />
@@ -1291,32 +1256,7 @@ const RutasCobroManage: React.FC = () => {
 
                 <div className="space-y-4">
                   <div>
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-muted-foreground">
-                        Clientes en la Ruta
-                      </h3>
-                      <span className="text-xs font-medium">
-                        {selectedRuta.cobrados} de{" "}
-                        {selectedRuta.clientes.length} cobrados
-                      </span>
-                    </div>
-
                     <div className="mt-2">
-                      <div className="w-full bg-muted rounded-full h-2.5 mb-4">
-                        <div
-                          className="bg-primary h-2.5 rounded-full"
-                          style={{
-                            width: `${
-                              selectedRuta.clientes.length > 0
-                                ? (selectedRuta.cobrados /
-                                    selectedRuta.clientes.length) *
-                                  100
-                                : 0
-                            }%`,
-                          }}
-                        ></div>
-                      </div>
-
                       <div className="text-sm font-medium flex justify-between mb-2">
                         <span>
                           Total a cobrar: Q

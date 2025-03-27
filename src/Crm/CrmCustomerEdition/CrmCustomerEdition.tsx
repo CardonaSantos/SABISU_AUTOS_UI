@@ -150,6 +150,9 @@ function EditCustomers() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [openConfirm, setOpenConfirm] = useState(false);
+
+  const [openDelete, setOpenDelete] = useState(false);
+
   const [departamentos, setDepartamentos] = useState<Departamentos[]>([]);
   const [municipios, setMunicipios] = useState<Municipios[]>([]);
   const [servicios, setServicios] = useState<Servicios[]>([]);
@@ -564,6 +567,24 @@ function EditCustomers() {
     } catch (error) {
       console.error("Error al actualizar los datos:", error);
       toast.error("Error al actualizar el cliente");
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      const response = await axios.delete(
+        `${VITE_CRM_API_URL}/internet-customer/delete-one-customer/${customerId}`
+      );
+      if (response.status === 200 || response.status === 201) {
+        toast.info("Cliente eliminado");
+        setOpenDelete(false);
+
+        setTimeout(() => {
+          navigate("/crm-clientes");
+        }, 1000);
+      }
+    } catch (error) {
+      console.log("Proximamente...");
     }
   };
 
@@ -1042,11 +1063,11 @@ function EditCustomers() {
             <CardFooter className="flex justify-between">
               <Button
                 type="button"
-                variant="outline"
-                onClick={() => navigate(`/crm/cliente/${customerId}`)}
+                variant="destructive"
+                onClick={() => setOpenDelete(true)}
               >
                 <X className="mr-2 h-4 w-4" />
-                Cancelar
+                Elininar
               </Button>
               <Button
                 type="button"
@@ -1105,6 +1126,56 @@ function EditCustomers() {
                 >
                   <Check className="mr-2 h-4 w-4" />
                   Sí, guardar cambios
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={openDelete} onOpenChange={setOpenDelete}>
+          <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-lg border-0 shadow-lg">
+            {/* Header with icon */}
+            <DialogHeader className="pt-6 px-6 pb-2">
+              <DialogTitle
+                className="flex items-center gap-3 text-xl font-semibold
+                justify-center"
+              >
+                <div className="bg-amber-100 dark:bg-gray-900 p-2 rounded-full">
+                  <AlertCircle className="h-5 w-5 text-rose-500" />
+                </div>
+                Confirmación de eliminación
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="px-6 py-4">
+              <div className="border border-gray-200 dark:border-gray-800 rounded-md p-4 mb-5 bg-gray-50 dark:bg-gray-800">
+                <h3 className="font-medium mb-2 text-gray-900 dark:text-gray-100">
+                  ¿Estás seguro de que deseas eliminar este clientes?
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Por favor, revisa cuidadosamente los datos antes de procede.
+                  Los datos relacionados a este cliente podrían perderse
+                </p>
+              </div>
+
+              <div className="h-px bg-gray-200 dark:bg-gray-800 my-4"></div>
+
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2 pb-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setOpenDelete(false)}
+                  className="border w-full bg-red-500 text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-600 rounded-lg py-2 hover:text-white"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Cancelar
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleDelete}
+                  className="bg-teal-600 text-white w-full hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 rounded-lg py-2 hover:text-white"
+                >
+                  <Check className="mr-2 h-4 w-4" />
+                  Sí, continuar y eliminar
                 </Button>
               </div>
             </div>
