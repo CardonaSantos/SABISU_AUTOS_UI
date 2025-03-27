@@ -142,7 +142,7 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({
                 type="number"
                 className="pl-8"
                 min="1"
-                max="28"
+                max="31"
                 value={formData.diaGeneracionFactura}
                 onChange={handleInputChange}
                 required
@@ -163,7 +163,7 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({
                 type="number"
                 className="pl-8"
                 min="1"
-                max="28"
+                max="31"
                 value={formData.diaRecordatorio}
                 onChange={handleInputChange}
                 required
@@ -186,7 +186,7 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({
                 type="number"
                 className="pl-8"
                 min="1"
-                max="28"
+                max="31"
                 value={formData.diaSegundoRecordatorio}
                 onChange={handleInputChange}
                 required
@@ -207,7 +207,7 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({
                 type="number"
                 className="pl-8"
                 min="1"
-                max="28"
+                max="31"
                 value={formData.diaPago}
                 onChange={handleInputChange}
                 required
@@ -230,7 +230,7 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({
                 type="number"
                 className="pl-8"
                 min="1"
-                max="28"
+                max="31"
                 value={formData.diaCorte || ""}
                 onChange={handleInputChange}
               />
@@ -248,7 +248,7 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({
               id="suspenderTrasFacturas"
               name="suspenderTrasFacturas"
               type="number"
-              min="1"
+              min="0"
               value={formData.suspenderTrasFacturas || ""}
               onChange={handleInputChange}
             />
