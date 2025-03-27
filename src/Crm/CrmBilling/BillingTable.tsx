@@ -135,12 +135,24 @@ export default function BilingTable() {
       const cliente = row.original as Factura; //tomamos de donde vamos a filtrar
 
       return (
-        cliente.telefono.toString().toLocaleLowerCase().includes(search) ||
-        cliente.id.toString().toLocaleLowerCase().includes(search) ||
-        cliente.cliente.toString().toLocaleLowerCase().includes(search) ||
-        cliente.metodo.toString().toLocaleLowerCase().includes(search) ||
-        cliente.direccionIp.toString().toLocaleLowerCase().includes(search) ||
-        cliente.por.toString().toLocaleLowerCase().includes(search)
+        (cliente.telefono || "")
+          .toString()
+          .toLocaleLowerCase()
+          .includes(search) ||
+        (cliente.id || "").toString().toLocaleLowerCase().includes(search) ||
+        (cliente.cliente || "")
+          .toString()
+          .toLocaleLowerCase()
+          .includes(search) ||
+        (cliente.metodo || "")
+          .toString()
+          .toLocaleLowerCase()
+          .includes(search) ||
+        (cliente.direccionIp || "")
+          .toString()
+          .toLocaleLowerCase()
+          .includes(search) ||
+        (cliente.por || "").toString().toLocaleLowerCase().includes(search)
       );
     },
   });

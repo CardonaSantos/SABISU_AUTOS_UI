@@ -31,8 +31,10 @@ export const DeleteZonaDialog: React.FC<DeleteZonaDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Confirmar Eliminación</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-center">
+            Confirmar Eliminación
+          </DialogTitle>
+          <DialogDescription className="text-center">
             ¿Está seguro que desea eliminar esta zona de facturación? Esta
             acción no se puede deshacer.
           </DialogDescription>

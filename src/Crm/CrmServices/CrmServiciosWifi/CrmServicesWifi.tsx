@@ -127,6 +127,7 @@ const ServicioInternetManage: React.FC = () => {
   const [editingServicio, setEditingServicio] =
     useState<ServicioInternet | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  console.log("el servicio a editar es: ", editingServicio);
 
   // State for delete confirmation
   const [deleteServicioId, setDeleteServicioId] = useState<number | null>(null);
@@ -218,41 +219,81 @@ const ServicioInternetManage: React.FC = () => {
     }
   };
 
+  const handleUpdateServicio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Creating internet service:", nuevoServicio);
+
+    try {
+      const dataToSend = {
+        nombre: editingServicio?.nombre.trim(),
+        velocidad: editingServicio?.velocidad?.trim(),
+        precio: editingServicio?.precio,
+        estado: editingServicio?.estado,
+        empresaId: empresaId,
+      };
+
+      const response = await axios.patch(
+        `${VITE_CRM_API_URL}/servicio-internet/update-servicio-wifi/${editingServicio?.id}`,
+        dataToSend
+      );
+      if (response.status === 200) {
+        toast.success("Servicio de internet actualizado");
+        setIsEditDialogOpen(false);
+        // Reset form
+        setEditingServicio(null);
+        getServiciosInternet();
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al crear servicio de internet");
+    }
+  };
+
   const handleEditClick = (servicio: ServicioInternet) => {
     setEditingServicio(servicio);
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveEdit = () => {
-    if (!editingServicio) return;
+  // const handleSaveEdit = () => {
+  //   if (!editingServicio) return;
 
-    console.log("Updating internet service:", editingServicio);
+  //   console.log("Updating internet service:", editingServicio);
 
-    setServicios(
-      servicios.map((s) =>
-        s.id === editingServicio.id
-          ? { ...editingServicio, actualizadoEn: new Date().toISOString() }
-          : s
-      )
-    );
-    setIsEditDialogOpen(false);
-    setEditingServicio(null);
-  };
+  //   setServicios(
+  //     servicios.map((s) =>
+  //       s.id === editingServicio.id
+  //         ? { ...editingServicio, actualizadoEn: new Date().toISOString() }
+  //         : s
+  //     )
+  //   );
+  //   setIsEditDialogOpen(false);
+  //   setEditingServicio(null);
+  // };
 
   const handleDeleteClick = (id: number) => {
     setDeleteServicioId(id);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deleteServicioId === null) return;
 
-    console.log("Deleting internet service with ID:", deleteServicioId);
+    try {
+      const response = await axios.delete(
+        `${VITE_CRM_API_URL}/servicio-internet/remove-servicio/${deleteServicioId}`
+      );
+      if (response.status === 200) {
+        toast.success("Servicio de internet eliminado");
+        setIsDeleteDialogOpen(false);
+        setDeleteServicioId(null);
 
-    setServicios(servicios.filter((s) => s.id !== deleteServicioId));
-
-    setIsDeleteDialogOpen(false);
-    setDeleteServicioId(null);
+        getServiciosInternet();
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al crear servicio de internet");
+    }
+    // setServicios(servicios.filter((s) => s.id !== deleteServicioId));
   };
 
   // Filter services based on search
@@ -588,7 +629,7 @@ const ServicioInternetManage: React.FC = () => {
               >
                 Cancelar
               </Button>
-              <Button onClick={handleSaveEdit} className="gap-2">
+              <Button onClick={handleUpdateServicio} className="gap-2">
                 <Save className="h-4 w-4" />
                 Guardar Cambios
               </Button>
@@ -600,17 +641,22 @@ const ServicioInternetManage: React.FC = () => {
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Confirmar Eliminación</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-center">
+                Confirmar Eliminación
+              </DialogTitle>
+              <DialogDescription className="text-center">
                 ¿Está seguro que desea eliminar este plan de internet? Esta
                 acción no se puede deshacer.
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Advertencia</AlertTitle>
-                <AlertDescription>
+            <div className="py-4 flex justify-center items-center">
+              <Alert className="" variant="destructive">
+                <div className="flex justify-center items-center">
+                  <AlertCircle className="h-4 w-4" />
+                </div>
+
+                <AlertTitle className="text-center">Advertencia</AlertTitle>
+                <AlertDescription className="text-center">
                   Si hay clientes asociados a este plan, se perderá la relación
                   con ellos.
                 </AlertDescription>

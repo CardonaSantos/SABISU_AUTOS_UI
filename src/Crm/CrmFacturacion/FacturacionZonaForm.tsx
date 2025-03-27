@@ -75,29 +75,20 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({
     }));
   };
 
-  // Función para manejar el cambio de la hora seleccionada
-  //   const handleSelectChange = (value: string) => {
-  //     const newValue = value + ":00"; // Añadir los segundos ":00"
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       horaRecordatorio: newValue,
-  //     }));
-  //   };
-
   // Verificar si el formulario es válido
   const isFormValid = (): boolean => {
     return (
       formData.nombre.trim() !== "" &&
       formData.diaGeneracionFactura > 0 &&
-      formData.diaGeneracionFactura <= 28 &&
+      formData.diaGeneracionFactura <= 31 &&
       formData.diaPago > 0 &&
-      formData.diaPago <= 28 &&
+      formData.diaPago <= 31 &&
       formData.diaRecordatorio > 0 &&
-      formData.diaRecordatorio <= 28 &&
+      formData.diaRecordatorio <= 31 &&
       formData.diaSegundoRecordatorio > 0 &&
-      formData.diaSegundoRecordatorio <= 28 &&
+      formData.diaSegundoRecordatorio <= 31 &&
       (!formData.diaCorte ||
-        (formData.diaCorte > 0 && formData.diaCorte <= 28)) &&
+        (formData.diaCorte > 0 && formData.diaCorte <= 31)) &&
       (!formData.suspenderTrasFacturas || formData.suspenderTrasFacturas > 0)
       // Comentado para evitar validaciones demasiado estrictas
       // validateDays()

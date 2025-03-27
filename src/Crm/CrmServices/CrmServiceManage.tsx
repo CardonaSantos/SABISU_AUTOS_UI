@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+
 import {
   Select,
   SelectContent,
@@ -50,6 +51,8 @@ import {
   XCircle,
   Search,
   Coins,
+  // AlertTriangle,
+  AlertCircle,
 } from "lucide-react";
 import { useStoreCrm } from "../ZustandCrm/ZustandCrmContext";
 import axios from "axios";
@@ -57,6 +60,15 @@ import { toast } from "sonner";
 import ReactSelectComponent from "react-select";
 import { motion } from "framer-motion";
 import currency from "currency.js";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const formatearMoneda = (monto: number) => {
   return currency(monto, {
@@ -95,6 +107,7 @@ interface Servicio {
 }
 
 interface NuevoServicio {
+  id?: number;
   nombre: string;
   descripcion: string;
   precio: number;
@@ -127,8 +140,6 @@ const CrmServiceManage: React.FC = () => {
     tipoServicioId: tipoServicioSelected?.toString() || null,
     empresaId: empresaID,
   });
-  console.log(nuevoServicio);
-  console.log("LOS SERVICIOS OTROS SON:", servicios);
 
   const [nuevoTipoServicio, setNuevoTipoServicio] = useState<NuevoTipoServicio>(
     {
@@ -142,8 +153,13 @@ const CrmServiceManage: React.FC = () => {
   const [searchServicio, setSearchServicio] = useState("");
   const [searchTipoServicio, setSearchTipoServicio] = useState("");
 
-  // Mock data loading - would be replaced with actual API calls
-  useEffect(() => {}, []);
+  // States for edit and delete dialogs
+  const [openEdit, setOpenEdit] = useState(false);
+  const [serviceEdit, setServiceEdit] = useState<NuevoServicio | null>(null);
+  const [tipoServicioEdit, setTipoServicioEdit] = useState<string | null>(null);
+
+  const [openDelete, setOpenDelete] = useState(false);
+  const [serviceDeleteId, setServiceDeleteId] = useState<number | null>(null);
 
   const getTiposServicio = async () => {
     try {
@@ -174,7 +190,6 @@ const CrmServiceManage: React.FC = () => {
     getTiposServicio();
     getServicios();
   }, []);
-  console.log("lista de tipos", tiposServicio);
 
   interface OptionSelected {
     value: string;
@@ -195,6 +210,19 @@ const CrmServiceManage: React.FC = () => {
     }));
   };
 
+  const handleSelectTipoEdit = (option: OptionSelected | null) => {
+    const newValue = option ? option.value : null;
+    setTipoServicioEdit(newValue);
+    setServiceEdit((prev) =>
+      prev
+        ? {
+            ...prev,
+            tipoServicioId: newValue,
+          }
+        : null
+    );
+  };
+
   // Handlers for form inputs
   const handleServicioChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -204,6 +232,20 @@ const CrmServiceManage: React.FC = () => {
       ...prev,
       [name]: name === "precio" ? Number.parseFloat(value) || 0 : value,
     }));
+  };
+
+  const handleServicioEditChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setServiceEdit((prev) =>
+      prev
+        ? {
+            ...prev,
+            [name]: name === "precio" ? Number.parseFloat(value) || 0 : value,
+          }
+        : null
+    );
   };
 
   const handleTipoServicioChange = (
@@ -226,7 +268,6 @@ const CrmServiceManage: React.FC = () => {
   // Submit handlers
   const handleSubmitServicio = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Creating service:", nuevoServicio);
 
     if (!nuevoServicio.tipoServicioId) {
       toast.info("Seleccione un tipo para el servicio");
@@ -240,6 +281,7 @@ const CrmServiceManage: React.FC = () => {
 
     if (!nuevoServicio.nombre) {
       toast.info("Añada un nombre para su servicio");
+      return;
     }
 
     const dataToSend = {
@@ -247,7 +289,7 @@ const CrmServiceManage: React.FC = () => {
       descripcion: nuevoServicio.descripcion.trim(),
       precio: nuevoServicio.precio,
       estado: "ACTIVO",
-      tipoServicioId: parseInt(nuevoServicio.tipoServicioId),
+      tipoServicioId: Number.parseInt(nuevoServicio.tipoServicioId),
       empresaId: Number(nuevoServicio.empresaId),
     };
 
@@ -309,8 +351,85 @@ const CrmServiceManage: React.FC = () => {
         });
         getTiposServicio();
       }
-    } catch (error) {}
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al crear tipo de servicio");
+    }
   };
+
+  // New function to handle service update
+  const handleUpdateServicio = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!serviceEdit) return;
+
+    if (!serviceEdit.tipoServicioId) {
+      toast.info("Seleccione un tipo para el servicio");
+      return;
+    }
+
+    if (!serviceEdit.precio || serviceEdit.precio <= 0) {
+      toast.info("Seleccione un precio valido para el servicio");
+      return;
+    }
+
+    if (!serviceEdit.nombre) {
+      toast.info("Añada un nombre para su servicio");
+      return;
+    }
+
+    const dataToSend = {
+      nombre: serviceEdit.nombre.trim(),
+      descripcion: serviceEdit.descripcion.trim(),
+      precio: serviceEdit.precio,
+      estado: serviceEdit.estado,
+      tipoServicioId: Number.parseInt(serviceEdit.tipoServicioId),
+      empresaId: Number(serviceEdit.empresaId),
+    };
+
+    console.log("data para la actualizacion: ", dataToSend);
+
+    try {
+      const response = await axios.patch(
+        `${VITE_CRM_API_URL}/servicio/update-servicio/${serviceEdit.id}`,
+        dataToSend
+      );
+
+      if (response.status === 200) {
+        toast.success("Servicio actualizado");
+        getServicios();
+        setOpenEdit(false);
+        setServiceEdit(null);
+        setTipoServicioEdit(null);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al actualizar servicio");
+    }
+  };
+
+  // New function to handle service deletion
+  const handleDeleteServicio = async () => {
+    if (!serviceDeleteId) return;
+
+    try {
+      const response = await axios.delete(
+        `${VITE_CRM_API_URL}/servicio/delete-servicio/${serviceDeleteId}`
+      );
+
+      if (response.status === 200) {
+        toast.success("Servicio eliminado");
+        getServicios();
+        setOpenDelete(false);
+        setServiceDeleteId(null);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Error al eliminar servicio");
+    }
+  };
+  console.log("el id del delete es: ", serviceDeleteId);
+  console.log("el serviceEdit del serviceEdit es: ", serviceEdit);
 
   // Filter services and service types based on search
   const filteredServicios = servicios.filter(
@@ -552,11 +671,36 @@ const CrmServiceManage: React.FC = () => {
                                       </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                      <DropdownMenuItem className="flex items-center gap-2">
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setServiceEdit({
+                                            id: servicio.id,
+                                            descripcion: servicio.descripcion,
+                                            empresaId: servicio.empresaId,
+                                            estado: servicio.estado,
+                                            nombre: servicio.nombre,
+                                            precio: servicio.precio,
+                                            tipoServicioId: String(
+                                              servicio.tipoServicioId
+                                            ),
+                                          });
+                                          setTipoServicioEdit(
+                                            String(servicio.tipoServicioId)
+                                          );
+                                          setOpenEdit(true);
+                                        }}
+                                        className="flex items-center gap-2"
+                                      >
                                         <Edit className="h-4 w-4" />
                                         <span>Editar</span>
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem className="flex items-center gap-2 text-destructive">
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setServiceDeleteId(servicio.id);
+                                          setOpenDelete(true);
+                                        }}
+                                        className="flex items-center gap-2 text-destructive"
+                                      >
                                         <Trash2 className="h-4 w-4" />
                                         <span>Eliminar</span>
                                       </DropdownMenuItem>
@@ -754,8 +898,157 @@ const CrmServiceManage: React.FC = () => {
           </TabsContent>
         </Tabs>
       </motion.div>
+
+      {/* Edit Service Dialog */}
+      <Dialog open={openEdit} onOpenChange={setOpenEdit}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Servicio</DialogTitle>
+            <DialogDescription>
+              Actualice la información del servicio
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateServicio}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-nombre">Nombre</Label>
+                <Input
+                  id="edit-nombre"
+                  name="nombre"
+                  placeholder="Ej: Internet 24 Mbps"
+                  value={serviceEdit?.nombre || ""}
+                  onChange={handleServicioEditChange}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-descripcion">Descripción</Label>
+                <Textarea
+                  id="edit-descripcion"
+                  name="descripcion"
+                  placeholder="Descripción del servicio"
+                  rows={2}
+                  className="h-[60px] resize-none"
+                  value={serviceEdit?.descripcion || ""}
+                  onChange={handleServicioEditChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-precio">Precio</Label>
+                <div className="relative">
+                  <Coins className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="edit-precio"
+                    name="precio"
+                    type="number"
+                    className="pl-8"
+                    placeholder="0.00"
+                    value={serviceEdit?.precio || ""}
+                    onChange={handleServicioEditChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-tipoServicio">Tipo de Servicio</Label>
+                <ReactSelectComponent
+                  isClearable
+                  className="text-sm text-black"
+                  options={optionsTiposServicios}
+                  onChange={handleSelectTipoEdit}
+                  value={
+                    tipoServicioEdit
+                      ? {
+                          value: tipoServicioEdit,
+                          label:
+                            tiposServicio.find(
+                              (t) => t.id.toString() === tipoServicioEdit
+                            )?.nombre || "",
+                        }
+                      : null
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-estado">Estado</Label>
+                <Select
+                  onValueChange={(value) =>
+                    setServiceEdit((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            estado: value as EstadoServicio,
+                          }
+                        : null
+                    )
+                  }
+                  defaultValue={serviceEdit?.estado || "ACTIVO"}
+                >
+                  <SelectTrigger id="edit-estado">
+                    <SelectValue placeholder="Seleccione un estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVO">Activo</SelectItem>
+                    <SelectItem value="INACTIVO">Inactivo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpenEdit(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit">Guardar Cambios</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Service Alert Dialog */}
+
+      <Dialog open={openDelete} onOpenChange={setOpenDelete}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              Confirmar Eliminación
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              ¿Está seguro que desea eliminar este servicio? Esta acción no se
+              puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 flex justify-center items-center">
+            <Alert className="" variant="destructive">
+              <div className="flex justify-center items-center">
+                <AlertCircle className="h-4 w-4" />
+              </div>
+
+              <AlertTitle className="text-center">Advertencia</AlertTitle>
+              <AlertDescription className="text-center">
+                Si hay clientes asociados a este servicio, se perderá la
+                relación con ellos.
+              </AlertDescription>
+            </Alert>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenDelete(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteServicio}>
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
-
 export default CrmServiceManage;

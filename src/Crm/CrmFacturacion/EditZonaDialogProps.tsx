@@ -55,7 +55,7 @@ export const EditZonaDialog: React.FC<EditZonaDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       {/* Set a max height and enable scroll */}
-      <DialogContent className="sm:max-w-[700px] max-h-[99vh] overflow-y-auto p-4">
+      <DialogContent className="sm:max-w-[700px] max-h-[95vh] overflow-y-auto p-4">
         {/* Reduce vertical spacing on header */}
         <DialogHeader className="mb-2">
           <DialogTitle className="text-base font-semibold">

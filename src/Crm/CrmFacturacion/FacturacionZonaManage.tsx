@@ -205,6 +205,8 @@ const FacturacionZonaManage: React.FC = () => {
     zona.nombre.toLowerCase().includes(searchZona.toLowerCase())
   );
 
+  console.log("El id de delete es: ", deleteZonaId);
+
   return (
     <div className="container mx-auto py-1 space-y-1">
       <motion.div
@@ -291,7 +293,7 @@ const FacturacionZonaManage: React.FC = () => {
           </Card>
         </div>
 
-        {/* Edit Dialog */}
+        {/* EDITAR Dialog */}
         <EditZonaDialog
           isOpen={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
@@ -300,7 +302,7 @@ const FacturacionZonaManage: React.FC = () => {
           isLoading={isLoading}
         />
 
-        {/* Delete Confirmation Dialog */}
+        {/* ELIMINAR CONFIRMACION Dialog */}
         <DeleteZonaDialog
           isOpen={isDeleteDialogOpen}
           onOpenChange={setIsDeleteDialogOpen}

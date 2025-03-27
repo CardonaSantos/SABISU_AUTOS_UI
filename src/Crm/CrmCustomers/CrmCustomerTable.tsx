@@ -95,27 +95,31 @@ export default function ClientesTable() {
       const cliente = row.original as ClienteDto;
 
       return (
-        cliente.nombreCompleto
+        (cliente.nombreCompleto || "")
           .toString()
           .toLocaleLowerCase()
           .trim()
           .includes(search) ||
-        cliente.telefono
+        (cliente.telefono || "")
           .toString()
           .toLocaleLowerCase()
           .trim()
           .includes(search) ||
-        cliente.direccionIp
+        (cliente.direccionIp || "")
           .toString()
           .toLocaleLowerCase()
           .trim()
           .includes(search) ||
-        cliente.direccion
+        (cliente.direccion || "")
           .toString()
           .toLocaleLowerCase()
           .trim()
           .includes(search) ||
-        cliente.dpi.toString().toLocaleLowerCase().trim().includes(search)
+        (cliente.dpi || "")
+          .toString()
+          .toLocaleLowerCase()
+          .trim()
+          .includes(search)
       );
     },
   });

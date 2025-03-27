@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 // Types
 
@@ -426,90 +427,95 @@ const EtiquetaTicketManage: React.FC = () => {
               </Alert>
             ) : (
               <div className="rounded-md border overflow-hidden">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Etiqueta</TableHead>
-                        <TableHead className="text-center">Tickets</TableHead>
-                        <TableHead className="w-[100px] text-right">
-                          Acciones
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredEtiquetas.length === 0 ? (
+                <ScrollArea className="h-96 rounded-md border">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell
-                            colSpan={3}
-                            className="text-center text-muted-foreground py-6"
-                          >
-                            No se encontraron resultados para "{searchEtiqueta}"
-                          </TableCell>
+                          <TableHead>Etiqueta</TableHead>
+                          <TableHead className="text-center">Tickets</TableHead>
+                          <TableHead className="w-[100px] text-right">
+                            Acciones
+                          </TableHead>
                         </TableRow>
-                      ) : (
-                        filteredEtiquetas.map((etiqueta) => (
-                          <TableRow key={etiqueta.id}>
-                            <TableCell>
-                              <Badge
-                                className={`font-medium ${getTagColor(
-                                  etiqueta.id
-                                )}`}
-                              >
-                                <Tag className="mr-1 h-3 w-3" />
-                                {etiqueta.nombre}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 flex items-center gap-1"
-                                onClick={() => handleViewTickets(etiqueta)}
-                                disabled={!etiqueta.ticketsCount}
-                              >
-                                <Ticket className="h-3.5 w-3.5" />
-                                <span>{etiqueta.ticketsCount || 0}</span>
-                              </Button>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <MoreVertical className="h-4 w-4" />
-                                    <span className="sr-only">Abrir menú</span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    className="flex items-center gap-2"
-                                    onClick={() => handleEditClick(etiqueta)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                    <span>Editar</span>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="flex items-center gap-2 text-destructive"
-                                    onClick={() =>
-                                      handleDeleteClick(etiqueta.id)
-                                    }
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                    <span>Eliminar</span>
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredEtiquetas.length === 0 ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={3}
+                              className="text-center text-muted-foreground py-6"
+                            >
+                              No se encontraron resultados para "
+                              {searchEtiqueta}"
                             </TableCell>
                           </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                        ) : (
+                          filteredEtiquetas.map((etiqueta) => (
+                            <TableRow key={etiqueta.id}>
+                              <TableCell>
+                                <Badge
+                                  className={`font-medium ${getTagColor(
+                                    etiqueta.id
+                                  )}`}
+                                >
+                                  <Tag className="mr-1 h-3 w-3" />
+                                  {etiqueta.nombre}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 flex items-center gap-1"
+                                  onClick={() => handleViewTickets(etiqueta)}
+                                  disabled={!etiqueta.ticketsCount}
+                                >
+                                  <Ticket className="h-3.5 w-3.5" />
+                                  <span>{etiqueta.ticketsCount || 0}</span>
+                                </Button>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <MoreVertical className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Abrir menú
+                                      </span>
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      className="flex items-center gap-2"
+                                      onClick={() => handleEditClick(etiqueta)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                      <span>Editar</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="flex items-center gap-2 text-destructive"
+                                      onClick={() =>
+                                        handleDeleteClick(etiqueta.id)
+                                      }
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      <span>Eliminar</span>
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </ScrollArea>
               </div>
             )}
           </CardContent>
