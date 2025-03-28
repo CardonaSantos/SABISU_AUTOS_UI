@@ -11,6 +11,7 @@ export interface ClienteDto {
   direccionIp: string;
   servicios: ServicioInternetDto[];
   facturacionZona: string;
+  facturacionZonaId: number;
 }
 
 export interface ServicioInternetDto {

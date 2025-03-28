@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ColumnDef,
   flexRender,
@@ -29,6 +29,8 @@ import "dayjs/locale/es";
 import utc from "dayjs/plugin/utc";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import { CreditCard, File, FileCheck } from "lucide-react";
+import { FacturacionZona } from "../CrmFacturacion/FacturacionZonaTypes";
+import ReactSelectComponent from "react-select";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -51,6 +53,7 @@ type Factura = {
   fechaPago: string;
   por: string;
   telefono: number;
+  facturacionZonaId?: number;
 };
 
 enum EstadoFactura {
@@ -78,6 +81,10 @@ const columns: ColumnDef<Factura>[] = [
   { accessorKey: "estado", header: "Estado" },
 ];
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
+interface OptionSelected {
+  value: string;
+  label: string;
+}
 
 export default function BilingTable() {
   const [filter, setFilter] = useState("");
@@ -89,6 +96,31 @@ export default function BilingTable() {
     facturados: null,
     porCobrar: null,
   });
+
+  const [zonasFacturacion, setZonasFacturacion] = useState<FacturacionZona[]>(
+    []
+  );
+
+  const [zonasFacturacionSelected, setZonasFacturacionSelected] = useState<
+    string | null
+  >(null);
+
+  const optionsZonasFacturacion: OptionSelected[] = zonasFacturacion
+    .sort((a, b) => {
+      const numA = parseInt(a.nombre.match(/\d+/)?.[0] || "0");
+      const numB = parseInt(b.nombre.match(/\d+/)?.[0] || "0");
+      return numA - numB;
+    })
+    .map((zona) => ({
+      value: zona.id.toString(),
+      label: `${zona.nombre} Clientes: (${zona.clientesCount}) Facturas: (${zona.facturasCount})`,
+    }));
+
+  const handleSelectZonaFacturacion = (
+    selectedOption: OptionSelected | null
+  ) => {
+    setZonasFacturacionSelected(selectedOption ? selectedOption.value : null);
+  };
 
   console.log("Las facturas son: ", facturas);
 
@@ -112,12 +144,38 @@ export default function BilingTable() {
     }
   };
 
+  const getFacturacionZona = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/facturacion-zona/get-zonas-facturacion-to-customer`
+      );
+
+      if (response.status === 200) {
+        setZonasFacturacion(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.info("Error al conseguir servicios wifi");
+    }
+  };
+
   useEffect(() => {
     getFacturas();
+    getFacturacionZona();
   }, []);
+
+  const filterdFacturas = useMemo(() => {
+    return zonasFacturacionSelected
+      ? facturas.filter(
+          (factura) =>
+            factura.facturacionZonaId === Number(zonasFacturacionSelected)
+        )
+      : facturas;
+  }, [facturas, zonasFacturacionSelected]); // Solo recalcula si clientes o zonasFacturacionSelected cambian
+
   // **Configuración de la tabla**
   const table = useReactTable({
-    data: facturas,
+    data: filterdFacturas,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -172,27 +230,45 @@ export default function BilingTable() {
         <div className="flex justify-between items-center mb-4"></div>
         {/* **Campo de Búsqueda** */}
         <Input
+          style={{ boxShadow: "none" }}
           type="text"
           placeholder="Buscar por nombre, telefono o ip"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="mb-3 text-xs px-2 py-1"
+          className="mb-3 text-xs px-2 py-1 border-2"
         />
 
         {/* **Selector de Cantidad de Filas** */}
-        <div className="flex justify-between">
-          <div className="flex justify-start mb-3 font-semibold">
+        <div className="flex justify-between items-center mb-3">
+          {/* Left icons */}
+          <div className="flex items-center font-semibold">
             <File className="h-5 w-5 mr-2 dark:text-white" />
             <span>Facturados: {facutracionData.facturados}</span>
-
             <CreditCard className="h-5 w-5 mr-2 ml-2 dark:text-white" />
             <span>Cobrados: {facutracionData.cobrados}</span>
-
             <FileCheck className="h-5 w-5 mr-2 ml-2 dark:text-white" />
             <span>Por Cobrar: {facutracionData.porCobrar}</span>
           </div>
-
-          <div className="flex justify-end mb-3">
+          {/* Right selects */}
+          <div className="flex items-center gap-2">
+            <ReactSelectComponent
+              isClearable
+              placeholder="Ordenar por facturación zona"
+              className="w-72 text-black text-sm"
+              options={optionsZonasFacturacion}
+              onChange={handleSelectZonaFacturacion}
+              value={
+                zonasFacturacionSelected
+                  ? {
+                      value: zonasFacturacionSelected,
+                      label:
+                        zonasFacturacion.find(
+                          (s) => s.id.toString() === zonasFacturacionSelected
+                        )?.nombre || "",
+                    }
+                  : null
+              }
+            />
             <Select
               onValueChange={(value) =>
                 setPagination({ ...pagination, pageSize: Number(value) })

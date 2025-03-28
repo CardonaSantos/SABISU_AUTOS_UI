@@ -255,24 +255,15 @@ const EtiquetaTicketManage: React.FC = () => {
 
     try {
       // En un entorno real, esto sería una llamada a la API
-      // await axios.delete(`/api/etiquetas-ticket/${deleteEtiquetaId}`)
+      const response = await axios.delete(
+        `${VITE_CRM_API_URL}/tags-ticket/delete-ticket/${deleteEtiquetaId}`
+      );
 
-      // Mock para demostración
-      setTimeout(() => {
-        setEtiquetas(etiquetas.filter((e) => e.id !== deleteEtiquetaId));
-
-        // Close dialog and reset delete state
+      if (response.status === 200) {
+        toast.success("Tag eliminada");
+        fetchEtiquetas();
         setIsDeleteDialogOpen(false);
-        setDeleteEtiquetaId(null);
-        setIsLoading(false);
-
-        setSuccess("Etiqueta eliminada correctamente");
-
-        // Limpiar mensaje de éxito después de 3 segundos
-        setTimeout(() => {
-          setSuccess(null);
-        }, 3000);
-      }, 600);
+      }
     } catch (err) {
       console.error("Error al eliminar etiqueta:", err);
       setError("Error al eliminar la etiqueta. Intente nuevamente.");

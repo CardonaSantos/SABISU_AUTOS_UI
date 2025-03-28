@@ -257,12 +257,16 @@ function CreateCustomers() {
     })
   );
 
-  const optionsZonasFacturacion: OptionSelected[] = zonasFacturacion.map(
-    (zona) => ({
+  const optionsZonasFacturacion: OptionSelected[] = zonasFacturacion
+    .sort((a, b) => {
+      const numA = parseInt(a.nombre.match(/\d+/)?.[0] || "0");
+      const numB = parseInt(b.nombre.match(/\d+/)?.[0] || "0");
+      return numA - numB;
+    })
+    .map((zona) => ({
       value: zona.id.toString(),
       label: `${zona.nombre} Clientes: (${zona.clientesCount}) Facturas:(${zona.facturasCount})`,
-    })
-  );
+    }));
 
   // Manejar el cambio en el select de departamento
   const handleSelectDepartamento = (selectedOption: OptionSelected | null) => {

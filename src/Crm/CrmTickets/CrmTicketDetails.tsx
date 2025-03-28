@@ -6,7 +6,17 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Ellipsis, Flag, Send, Tag, UserIcon } from "lucide-react";
+import {
+  AlertCircle,
+  Clock,
+  Ellipsis,
+  Flag,
+  RotateCcw,
+  Send,
+  Tag,
+  TicketSlash,
+  UserIcon,
+} from "lucide-react";
 import type { Ticket } from "./ticketTypes";
 
 import dayjs from "dayjs";
@@ -30,7 +40,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -42,6 +51,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import SelectComponent, { MultiValue, SingleValue } from "react-select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 dayjs.extend(localizedFormat);
@@ -59,6 +69,8 @@ interface OptionSelectedReactComponent {
 interface TicketDetailProps {
   ticket: Ticket;
   getTickets: () => void;
+  setSelectedTicketId: (value: number | null) => void;
+
   //para volver a poder seleccionar las labels
   optionsLabels: OptionSelectedReactComponent[];
   optionsTecs: OptionSelectedReactComponent[];
@@ -88,6 +100,8 @@ export default function TicketDetail({
   //LAS ETIQUETAS CON EL FORMATO QUE REACT SELECT COMPONENT PUEDE SOPORTAR
   optionsLabels,
   optionsTecs,
+  //setticket
+  setSelectedTicketId,
 }: TicketDetailProps) {
   const userId = useStoreCrm((state) => state.userIdCRM) ?? 0;
   const [openUpdateTicket, setOpenUpdateTicket] = useState(false);
@@ -98,6 +112,10 @@ export default function TicketDetail({
     usuarioId: userId,
   });
   console.log("El form para el seguimiento es: ", formDataComent);
+
+  const [ticketDeleteId, setTicketDeleteId] = useState<number | null>(null);
+  const [openDelete, setOpenDelete] = useState(false);
+  console.log("el id del ticket seleccionado es: ", ticketDeleteId);
 
   const submitNewComentaryFollowUp = async (e: React.FormEvent) => {
     console.log("EJECUTANDO FUNCION");
@@ -253,6 +271,24 @@ export default function TicketDetail({
     }
   };
 
+  const handleDeleteTicket = async () => {
+    try {
+      const response = await axios.delete(
+        `${VITE_CRM_API_URL}/tickets-soporte/delete-ticket/${ticketDeleteId}`
+      );
+      if (response.status === 200) {
+        toast.success("Ticket eliminado");
+        setOpenDelete(false);
+        setSelectedTicketId(null);
+        await getTickets();
+        // set
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Algo salió mal");
+    }
+  };
+
   return (
     <div className="h-[calc(100vh-220px)] flex flex-col">
       <div className="border-b px-4">
@@ -296,21 +332,23 @@ export default function TicketDetail({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56">
-                <DropdownMenuLabel>Actualizar Ticket</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem>
-                  Archivar Ticket
+                <DropdownMenuCheckboxItem
+                  onClick={() => {
+                    setTicketDeleteId(ticket.id);
+                    setOpenDelete(true);
+                  }}
+                >
+                  Eliminar Ticket <TicketSlash className="h-4 w-4 mx-2" />
                 </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem>
-                  Iniciar Ticket
-                </DropdownMenuCheckboxItem>
+
                 <DropdownMenuCheckboxItem
                   onClick={() => {
                     setOpenUpdateTicket(true);
                     setTicketToEdit(ticket);
                   }}
                 >
-                  Actualizar Ticket
+                  Actualizar Ticket <RotateCcw className="h-4 w-4 mx-2" />
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -596,6 +634,50 @@ export default function TicketDetail({
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* DIALOG DE ELIMINACION */}
+      <Dialog open={openDelete} onOpenChange={setOpenDelete}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              Confirmar Eliminación
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              ¿Está seguro que desea eliminar este servicio? Esta acción no se
+              puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 flex justify-center items-center">
+            <Alert className="" variant="destructive">
+              <div className="flex justify-center items-center">
+                <AlertCircle className="h-4 w-4" />
+              </div>
+
+              <AlertTitle className="text-center">Advertencia</AlertTitle>
+              <AlertDescription className="text-center">
+                Si hay clientes asociados a este servicio, se perderá la
+                relación con ellos.
+              </AlertDescription>
+            </Alert>
+          </div>
+          <DialogFooter>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => setOpenDelete(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="w-full"
+              variant="destructive"
+              onClick={handleDeleteTicket}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

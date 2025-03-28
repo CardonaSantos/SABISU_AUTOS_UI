@@ -120,6 +120,10 @@ export default function TicketDashboard() {
     getTecs();
   }, []);
 
+  const selectedTicket = tickets.find(
+    (ticket) => ticket.id === selectedTicketId
+  );
+
   return (
     <div className="container mx-auto p-2 md:p-4 lg:py-0">
       <motion.div
@@ -161,13 +165,14 @@ export default function TicketDashboard() {
           transition={{ duration: 0.3, delay: 0.2 }}
           className="bg-card rounded-lg shadow"
         >
-          {selectedTicketId && (
+          {selectedTicket && (
             <TicketDetail
-              ticket={tickets.find((ticket) => ticket.id === selectedTicketId)!}
+              ticket={selectedTicket}
               getTickets={getTickets}
-              //ETIQUETAS Y TECNICOS
               optionsLabels={optionsLabels}
               optionsTecs={optionsTecs}
+              //setl del ticket para preveer error cuando elimine el mismo
+              setSelectedTicketId={setSelectedTicketId}
             />
           )}
         </motion.div>

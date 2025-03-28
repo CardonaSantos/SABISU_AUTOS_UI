@@ -1039,10 +1039,18 @@ const CrmServiceManage: React.FC = () => {
             </Alert>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenDelete(false)}>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => setOpenDelete(false)}
+            >
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleDeleteServicio}>
+            <Button
+              className="w-full"
+              variant="destructive"
+              onClick={handleDeleteServicio}
+            >
               Eliminar
             </Button>
           </DialogFooter>
