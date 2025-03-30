@@ -13,6 +13,7 @@ import {
   Flag,
   RotateCcw,
   Send,
+  Sticker,
   Tag,
   TicketSlash,
   UserIcon,
@@ -111,6 +112,8 @@ export default function TicketDetail({
     ticketId: ticket.id,
     usuarioId: userId,
   });
+  const [openCloseTicket, setOpenCloseTicket] = useState(false);
+
   console.log("El form para el seguimiento es: ", formDataComent);
 
   const [ticketDeleteId, setTicketDeleteId] = useState<number | null>(null);
@@ -289,6 +292,30 @@ export default function TicketDetail({
     }
   };
 
+  const handleCloseTicket = async () => {
+    try {
+      const response = await axios.patch(
+        `${VITE_CRM_API_URL}/tickets-soporte/close-ticket-soporte/${ticketToEdit.id}`,
+        {
+          comentario: formDataComent.descripcion,
+          ticketId: formDataComent.ticketId,
+          usuarioId: formDataComent.usuarioId,
+          ...ticketToEdit,
+        }
+      );
+
+      if (response.status === 200) {
+        toast.success("Ticket cerrado correctamente");
+        getTickets();
+        setOpenCloseTicket(false);
+        setSelectedTicketId(null);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("No se pudo cerrar el ticket");
+    }
+  };
+
   return (
     <div className="h-[calc(100vh-220px)] flex flex-col">
       <div className="border-b px-4">
@@ -332,23 +359,35 @@ export default function TicketDetail({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56">
-                <DropdownMenuSeparator />
+                {/* Grupo: Eliminar */}
                 <DropdownMenuCheckboxItem
                   onClick={() => {
                     setTicketDeleteId(ticket.id);
                     setOpenDelete(true);
                   }}
                 >
-                  Eliminar Ticket <TicketSlash className="h-4 w-4 mx-2" />
+                  Eliminar Ticket <TicketSlash className="h-5 w-5 mx-2" />
                 </DropdownMenuCheckboxItem>
 
+                <DropdownMenuSeparator />
+
+                {/* Grupo: Acciones de edición */}
                 <DropdownMenuCheckboxItem
                   onClick={() => {
                     setOpenUpdateTicket(true);
                     setTicketToEdit(ticket);
                   }}
                 >
-                  Actualizar Ticket <RotateCcw className="h-4 w-4 mx-2" />
+                  Actualizar Ticket <RotateCcw className="h-5 w-5 mx-2" />
+                </DropdownMenuCheckboxItem>
+
+                <DropdownMenuCheckboxItem
+                  onClick={() => {
+                    setOpenCloseTicket(true);
+                    setTicketToEdit(ticket);
+                  }}
+                >
+                  Cerrar Ticket <Sticker className="h-5 w-5 mx-2" />
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -676,6 +715,69 @@ export default function TicketDetail({
               onClick={handleDeleteTicket}
             >
               Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DIALOG DE ABRIR CERRAR */}
+      <Dialog open={openCloseTicket} onOpenChange={setOpenCloseTicket}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-center">Cerrar Ticket</DialogTitle>
+            <DialogDescription className="text-center">
+              Puedes añadir una nota antes de cerrar el ticket.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Label htmlFor="title">Título</Label>
+            <Input
+              id="title"
+              value={ticketToEdit.title}
+              onChange={(e) =>
+                setTicketToEdit((prev) => ({
+                  ...prev,
+                  title: e.target.value,
+                }))
+              }
+            />
+
+            <Label htmlFor="description">Descripción</Label>
+            <Textarea
+              id="description"
+              value={ticketToEdit.description}
+              onChange={(e) =>
+                setTicketToEdit((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
+            />
+
+            <Textarea
+              placeholder="Escriba un comentario"
+              className="min-h-[50px] resize-none pr-12 flex-1"
+              value={formDataComent.descripcion}
+              onChange={(e) =>
+                setFormDataComent((previaData) => ({
+                  ...previaData,
+                  descripcion: e.target.value,
+                }))
+              }
+            />
+          </div>
+
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setOpenCloseTicket(false)}
+              type="button"
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleCloseTicket} type="submit" variant="default">
+              Cerrar Ticket
             </Button>
           </DialogFooter>
         </DialogContent>

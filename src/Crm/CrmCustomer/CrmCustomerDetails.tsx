@@ -895,7 +895,8 @@ export default function CustomerDetails() {
                                 </TableCell>
                                 <TableCell>
                                   <Link
-                                    to={`/crm/facturacion/pago-factura/${factura.id}/${cliente.id}`}
+                                    className="text-blue-500 underline"
+                                    to={`/crm/facturacion/pago-factura/${factura.id}`}
                                   >
                                     {formatearFecha(factura.fechaVencimiento)}
                                   </Link>

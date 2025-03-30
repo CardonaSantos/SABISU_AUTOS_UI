@@ -662,7 +662,7 @@ function App() {
             />
 
             <Route
-              path="/crm/facturacion/pago-factura/:facturaId/:clienteId"
+              path="/crm/facturacion/pago-factura/:facturaId"
               element={
                 <ProtectRouteCrmUser>
                   <CrmPaymentFactura />

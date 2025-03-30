@@ -128,68 +128,72 @@ export default function TicketList({
                   </Alert>
                 </div>
               ) : (
-                tickets.map((ticket) => (
-                  <motion.div
-                    key={ticket.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className={`border-b p-4 cursor-pointer ${
-                      Number(selectedTicketId) === Number(ticket.id)
-                        ? "bg-gray-100 dark:bg-gray-900"
-                        : ""
-                    }`}
-                    onClick={() => {
-                      onSelectTicket(ticket);
-                      console.log("El ticket seleccionado es: ", ticket.id);
-                    }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>
-                          {ticket.customer
-                            ? ticket.customer.name.slice(0, 2).toUpperCase()
-                            : "NA"}{" "}
-                          {/* Aquí se asigna las iniciales del técnico si hay asignado, si no, se muestra "NA" */}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="text-[13px]">
-                            #{ticket.id} ·{" "}
+                tickets
+                  .filter((ticket) => ticket.status !== "RESUELTA")
+                  .map((ticket) => (
+                    <motion.div
+                      key={ticket.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className={`border-b p-4 cursor-pointer ${
+                        Number(selectedTicketId) === Number(ticket.id)
+                          ? "bg-gray-100 dark:bg-gray-900"
+                          : ""
+                      }`}
+                      onClick={() => {
+                        onSelectTicket(ticket);
+                        console.log("El ticket seleccionado es: ", ticket.id);
+                      }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>
                             {ticket.customer
-                              ? ticket.customer.name
-                              : "No asignado"}{" "}
-                            {/* Si el ticket tiene asignado un técnico, muestra su nombre, si no, muestra "No asignado" */}
+                              ? ticket.customer.name.slice(0, 2).toUpperCase()
+                              : "NA"}{" "}
+                            {/* Aquí se asigna las iniciales del técnico si hay asignado, si no, se muestra "NA" */}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="text-[13px]">
+                              #{ticket.id} ·{" "}
+                              {ticket.customer
+                                ? ticket.customer.name
+                                : "No asignado"}{" "}
+                              {/* Si el ticket tiene asignado un técnico, muestra su nombre, si no, muestra "No asignado" */}
+                            </div>
+                            <div className="text-xs ">
+                              {format(new Date(ticket.date), "d MMM yyyy", {
+                                locale: es,
+                              })}
+                            </div>
                           </div>
-                          <div className="text-xs ">
-                            {format(new Date(ticket.date), "d MMM yyyy", {
-                              locale: es,
-                            })}
-                          </div>
+                          <h3 className="font-normal text-base truncate">
+                            {ticket.title}
+                          </h3>
+                          <p className="text-[12px] line-clamp-2">
+                            {ticket.description}
+                          </p>
                         </div>
-                        <h3 className="font-normal text-base truncate">
-                          {ticket.title}
-                        </h3>
-                        <p className="text-[12px] line-clamp-2">
-                          {ticket.description}
-                        </p>
+                        {/* {ticket.status === "NUEVO" && ( */}
+                        <div className="mt-2">
+                          <Badge
+                            variant="outline"
+                            className={`${
+                              getBadgeProps(ticket.status).bgColor
+                            } ${getBadgeProps(ticket.status).text}  ${
+                              getBadgeProps(ticket.status).textColor
+                            } `}
+                          >
+                            <span className="text-[10px]">{ticket.status}</span>
+                          </Badge>
+                        </div>
+                        {/* )} */}
                       </div>
-                      {/* {ticket.status === "NUEVO" && ( */}
-                      <div className="mt-2">
-                        <Badge
-                          variant="outline"
-                          className={`${getBadgeProps(ticket.status).bgColor} ${
-                            getBadgeProps(ticket.status).text
-                          }  ${getBadgeProps(ticket.status).textColor} `}
-                        >
-                          <span className="text-[10px]">{ticket.status}</span>
-                        </Badge>
-                      </div>
-                      {/* )} */}
-                    </div>
-                  </motion.div>
-                ))
+                    </motion.div>
+                  ))
               )}
             </AnimatePresence>
           </div>

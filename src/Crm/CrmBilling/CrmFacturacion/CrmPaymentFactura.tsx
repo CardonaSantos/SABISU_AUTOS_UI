@@ -66,6 +66,7 @@ import { Link, useParams } from "react-router-dom";
 import { useStoreCrm } from "@/Crm/ZustandCrm/ZustandCrmContext";
 import axios from "axios";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 // Enums
 enum EstadoFacturaInternet {
@@ -167,6 +168,7 @@ interface FacturaInternet {
   facturacionZonaId?: number;
   facturacionZona?: FacturacionZona;
   RecordatorioPago: RecordatorioPago[];
+  facturasPendientes: FacturaInternet[];
 }
 
 interface NuevoPago {
@@ -180,7 +182,7 @@ interface NuevoPago {
 
 // Componente principal
 const CrmPaymentFactura: React.FC = () => {
-  const { facturaId, clienteId } = useParams();
+  const { facturaId } = useParams();
   console.log("el id es: ", facturaId);
   const userId = useStoreCrm((state) => state.userIdCRM) ?? 0;
   // Estados
@@ -202,7 +204,7 @@ const CrmPaymentFactura: React.FC = () => {
   // Estado para el formulario de pago
   const [nuevoPago, setNuevoPago] = useState<NuevoPago>({
     facturaInternetId: Number(facturaId) || 1,
-    clienteId: Number(clienteId),
+    clienteId: Number(factura?.clienteId),
     montoPagado: 0,
     metodoPago: MetodoPagoFacturaInternet.EFECTIVO,
     cobradorId: userId,
@@ -210,16 +212,6 @@ const CrmPaymentFactura: React.FC = () => {
   });
 
   const [openPdfPago, setOpenPdfPago] = useState(false);
-  // interface newFacturacionPaymentSucces {
-  //   facturaInternetId: number | null;
-  //   clienteId: number | null;
-  // }
-  // const [pagoPdfId, setPagoPdfId] = useState<newFacturacionPaymentSucces>({
-  //   clienteId: null,
-  //   facturaInternetId: null,
-  // });
-  // const [pdf]
-
   console.log("EL nuevo pago es: ", nuevoPago);
 
   // Cargar datos de la factura
@@ -257,6 +249,7 @@ const CrmPaymentFactura: React.FC = () => {
       );
       if (response.status === 200) {
         setFactura(response.data);
+        setFacturasPendientes(response.data.facturasPendientes);
         setIsLoading(false);
       }
     } catch (err) {
@@ -323,7 +316,7 @@ const CrmPaymentFactura: React.FC = () => {
 
       const dataToSend = {
         facturaInternetId: Number(facturaId),
-        clienteId: Number(clienteId),
+        clienteId: Number(factura?.clienteId),
         montoPagado: nuevoPago.montoPagado,
         metodoPago: nuevoPago.metodoPago,
         cobradorId: Number(userId),
@@ -342,11 +335,14 @@ const CrmPaymentFactura: React.FC = () => {
         setIsSubmitting(false);
         setOpenConfirm(false);
 
-        setOpenPdfPago(true);
+        setTimeout(() => {
+          setOpenPdfPago(true);
+        }, 1000);
+
         console.log("La data recibida es: ", response.data.dataToPdfSucces);
         setNuevoPago({
           facturaInternetId: Number(facturaId) || 1,
-          clienteId: Number(clienteId),
+          clienteId: Number(factura?.clienteId),
           montoPagado: 0,
           metodoPago: MetodoPagoFacturaInternet.EFECTIVO,
           cobradorId: userId,
@@ -459,6 +455,9 @@ const CrmPaymentFactura: React.FC = () => {
     );
   };
   const [openConfirm, setOpenConfirm] = useState(false);
+
+  const facturasPendientesx = factura?.facturasPendientes;
+  console.log("Las facturas pendientes son: ", facturasPendientesx);
 
   return (
     <div className="container mx-auto py-6 space-y-6 print:py-0">
@@ -715,8 +714,10 @@ const CrmPaymentFactura: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <UserCheck className="h-4 w-4 text-primary dark:text-white" />
-                  <span className="font-medium">
-                    {factura.cliente.nombre} {factura.cliente.apellidos || ""}
+                  <span className="font-medium text-blue-500 underline">
+                    <Link to={`/crm/cliente/${factura.cliente.id}`}>
+                      {factura.cliente.nombre} {factura.cliente.apellidos || ""}
+                    </Link>
                   </span>
                 </div>
               </div>
@@ -799,28 +800,48 @@ const CrmPaymentFactura: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {facturasPendientes.map((facturaPendiente) => (
-                      <div
-                        key={facturaPendiente.id}
-                        className="flex justify-between items-center p-2 bg-muted rounded-md"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Receipt className="h-4 w-4 text-primary" />
-                          <div>
-                            <div className="text-sm font-medium">
-                              Factura #{facturaPendiente.id}
+                    <ScrollArea className="h-72">
+                      {facturasPendientes.map((facturaPendiente) => (
+                        <Link
+                          to={`/crm/facturacion/pago-factura/${facturaPendiente.id}`}
+                        >
+                          <div
+                            key={facturaPendiente.id}
+                            className="flex justify-between items-center p-3 bg-muted rounded-md mb-2"
+                          >
+                            {/* Columna izquierda: ícono + info */}
+                            <div className="flex items-start gap-3">
+                              <Receipt className="h-5 w-5 text-primary dark:text-white mt-0.5" />
+                              <div className="space-y-1">
+                                <div className="text-sm font-medium">
+                                  Factura #{facturaPendiente.id}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  Vence:{" "}
+                                  {formatDate(
+                                    facturaPendiente.fechaPagoEsperada
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              Vence:{" "}
-                              {formatDate(facturaPendiente.fechaPagoEsperada)}
+
+                            {/* Columna derecha: estado + monto */}
+                            <div className="flex flex-col items-end gap-1">
+                              <Badge
+                                className={`${getEstadoBadgeColor(
+                                  facturaPendiente.estadoFacturaInternet
+                                )}`}
+                              >
+                                {facturaPendiente.estadoFacturaInternet}
+                              </Badge>
+                              <div className="text-sm font-semibold">
+                                {formatMoney(facturaPendiente.montoPago)}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="font-medium">
-                          {formatMoney(facturaPendiente.montoPago)}
-                        </div>
-                      </div>
-                    ))}
+                        </Link>
+                      ))}
+                    </ScrollArea>
                   </div>
                 )}
               </div>

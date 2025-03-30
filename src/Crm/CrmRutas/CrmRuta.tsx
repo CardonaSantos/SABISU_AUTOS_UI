@@ -272,123 +272,6 @@ const RutasCobroManage: React.FC = () => {
       if (response.status === 200) {
         setClientes(response.data);
       }
-      // setClientes(response.data)
-
-      // Mock data para demostración
-      // const mockClientes: ClienteInternet[] = [
-      //   {
-      //     id: 1,
-      //     nombre: "Juan",
-      //     apellidos: "Pérez",
-      //     telefono: "5555-1234",
-      //     direccion: "Zona 1, Calle Principal",
-      //     estadoCliente: EstadoCliente.ACTIVO,
-      //     empresaId: 1,
-      //     saldoPendiente: 250,
-      //     facturasPendientes: 1,
-      //   },
-      //   {
-      //     id: 2,
-      //     nombre: "María",
-      //     apellidos: "López",
-      //     telefono: "5555-5678",
-      //     direccion: "Zona 2, Avenida Central",
-      //     estadoCliente: EstadoCliente.ACTIVO,
-      //     empresaId: 1,
-      //     saldoPendiente: 300,
-      //     facturasPendientes: 1,
-      //   },
-      //   {
-      //     id: 3,
-      //     nombre: "Roberto",
-      //     apellidos: "Gómez",
-      //     telefono: "5555-9012",
-      //     direccion: "Zona 3, Calle 5",
-      //     estadoCliente: EstadoCliente.MOROSO,
-      //     empresaId: 1,
-      //     saldoPendiente: 500,
-      //     facturasPendientes: 2,
-      //   },
-      //   {
-      //     id: 4,
-      //     nombre: "Ana",
-      //     apellidos: "Martínez",
-      //     telefono: "5555-3456",
-      //     direccion: "Zona 3, Avenida 2",
-      //     estadoCliente: EstadoCliente.ACTIVO,
-      //     empresaId: 1,
-      //     saldoPendiente: 250,
-      //     facturasPendientes: 1,
-      //   },
-      //   {
-      //     id: 5,
-      //     nombre: "Pedro",
-      //     apellidos: "Sánchez",
-      //     telefono: "5555-7890",
-      //     direccion: "Zona 4, Calle 10",
-      //     estadoCliente: EstadoCliente.ACTIVO,
-      //     empresaId: 1,
-      //     saldoPendiente: 250,
-      //     facturasPendientes: 1,
-      //   },
-      //   {
-      //     id: 6,
-      //     nombre: "Laura",
-      //     apellidos: "Díaz",
-      //     telefono: "5555-2345",
-      //     direccion: "Zona 5, Calle 3",
-      //     estadoCliente: EstadoCliente.ACTIVO,
-      //     empresaId: 1,
-      //     saldoPendiente: 250,
-      //     facturasPendientes: 1,
-      //   },
-      //   {
-      //     id: 7,
-      //     nombre: "Miguel",
-      //     apellidos: "Hernández",
-      //     telefono: "5555-6789",
-      //     direccion: "Zona 5, Avenida 8",
-      //     estadoCliente: EstadoCliente.SUSPENDIDO,
-      //     empresaId: 1,
-      //     saldoPendiente: 750,
-      //     facturasPendientes: 3,
-      //   },
-      //   {
-      //     id: 8,
-      //     nombre: "Carmen",
-      //     apellidos: "Flores",
-      //     telefono: "5555-0123",
-      //     direccion: "Zona 6, Calle 7",
-      //     estadoCliente: EstadoCliente.ACTIVO,
-      //     empresaId: 1,
-      //     saldoPendiente: 250,
-      //     facturasPendientes: 1,
-      //   },
-      //   {
-      //     id: 9,
-      //     nombre: "José",
-      //     apellidos: "Torres",
-      //     telefono: "5555-4567",
-      //     direccion: "Zona 6, Avenida 4",
-      //     estadoCliente: EstadoCliente.MOROSO,
-      //     empresaId: 1,
-      //     saldoPendiente: 500,
-      //     facturasPendientes: 2,
-      //   },
-      //   {
-      //     id: 10,
-      //     nombre: "Lucía",
-      //     apellidos: "Ramírez",
-      //     telefono: "5555-8901",
-      //     direccion: "Zona 7, Calle 2",
-      //     estadoCliente: EstadoCliente.ACTIVO,
-      //     empresaId: 1,
-      //     saldoPendiente: 250,
-      //     facturasPendientes: 1,
-      //   },
-      // ];
-
-      // setClientes(mockClientes);
     } catch (err) {
       console.error("Error al cargar clientes:", err);
     }
@@ -498,10 +381,7 @@ const RutasCobroManage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // En un entorno real, esto sería una llamada a la API
       // await axios.delete(`/api/rutas-cobro/${rutaToDelete}`)
-
-      // Mock para demostración
       setTimeout(() => {
         setRutas(rutas.filter((r) => r.id !== rutaToDelete));
         setIsDeleteDialogOpen(false);

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -31,6 +32,8 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import { CreditCard, File, FileCheck } from "lucide-react";
 import { FacturacionZona } from "../CrmFacturacion/FacturacionZonaTypes";
 import ReactSelectComponent from "react-select";
+import DatePicker from "react-datepicker";
+import { es } from "date-fns/locale";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -164,18 +167,61 @@ export default function BilingTable() {
     getFacturacionZona();
   }, []);
 
-  const filterdFacturas = useMemo(() => {
-    return zonasFacturacionSelected
-      ? facturas.filter(
-          (factura) =>
-            factura.facturacionZonaId === Number(zonasFacturacionSelected)
-        )
-      : facturas;
-  }, [facturas, zonasFacturacionSelected]); // Solo recalcula si clientes o zonasFacturacionSelected cambian
+  const opcionesEstadoFactura = [
+    "TODOS",
+    "PENDIENTE",
+    "PAGADA",
+    "VENCIDA",
+    "ANULADA",
+    "PARCIAL",
+  ];
 
+  // Tipos para las fechas
+  type DateRange = {
+    startDate: Date | undefined;
+    endDate: Date | undefined;
+  };
+
+  const [dateRange, setDateRange] = useState<DateRange>({
+    startDate: undefined,
+    endDate: undefined,
+  });
+
+  const [estadoFactura, setEstadoFactura] = useState<string>("");
+  const handleSelectEstadoFactura = (estado: EstadoFactura) => {
+    setEstadoFactura(estado);
+  };
+  console.log("El estado de la factura es: ", estadoFactura);
+
+  const filteredFacturas = useMemo(() => {
+    return facturas.filter((factura) => {
+      // Filtros existentes
+      const matchesZona = zonasFacturacionSelected
+        ? factura?.facturacionZonaId === Number(zonasFacturacionSelected)
+        : true;
+
+      const matchesEstado =
+        estadoFactura === "TODOS" || estadoFactura === ""
+          ? true
+          : factura?.estado === estadoFactura;
+
+      // Nuevo filtro de fechas
+      const matchesDate = () => {
+        if (!dateRange.startDate && !dateRange.endDate) return true;
+
+        const invoiceDate = new Date(factura.fechaPago); // Asegúrate que factura.fecha sea un Date válido
+        const start = dateRange.startDate ?? new Date(0);
+        const end = dateRange.endDate ?? new Date();
+
+        return invoiceDate >= start && invoiceDate <= end;
+      };
+
+      return matchesZona && matchesEstado && matchesDate();
+    });
+  }, [facturas, zonasFacturacionSelected, estadoFactura, dateRange]); // Añadir dateRange como dependencia
   // **Configuración de la tabla**
   const table = useReactTable({
-    data: filterdFacturas,
+    data: filteredFacturas,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -239,18 +285,68 @@ export default function BilingTable() {
         />
 
         {/* **Selector de Cantidad de Filas** */}
-        <div className="flex justify-between items-center mb-3">
+        <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
           {/* Left icons */}
-          <div className="flex items-center font-semibold">
-            <File className="h-5 w-5 mr-2 dark:text-white" />
-            <span>Facturados: {facutracionData.facturados}</span>
-            <CreditCard className="h-5 w-5 mr-2 ml-2 dark:text-white" />
-            <span>Cobrados: {facutracionData.cobrados}</span>
-            <FileCheck className="h-5 w-5 mr-2 ml-2 dark:text-white" />
-            <span>Por Cobrar: {facutracionData.porCobrar}</span>
+          <div className="flex flex-wrap items-center font-semibold gap-x-4 gap-y-2">
+            <div className="flex items-center">
+              <File className="h-5 w-5 mr-2 dark:text-white" />
+              <span>Facturados: {facutracionData.facturados}</span>
+            </div>
+            <div className="flex items-center">
+              <CreditCard className="h-5 w-5 mr-2 dark:text-white" />
+              <span>Cobrados: {facutracionData.cobrados}</span>
+            </div>
+            <div className="flex items-center">
+              <FileCheck className="h-5 w-5 mr-2 dark:text-white" />
+              <span>Por Cobrar: {facutracionData.porCobrar}</span>
+            </div>
           </div>
+
           {/* Right selects */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Left column - Date filters */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium">Rango de fechas</label>
+              <div className="flex flex-wrap gap-2">
+                <DatePicker
+                  locale={es}
+                  selected={dateRange.startDate || null}
+                  onChange={(date: Date | null) =>
+                    setDateRange((prev) => ({
+                      ...prev,
+                      startDate: date || undefined,
+                    }))
+                  }
+                  selectsStart
+                  startDate={dateRange.startDate}
+                  endDate={dateRange.endDate}
+                  placeholderText="Fecha inicial"
+                  className="h-9 w-full min-w-[140px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  dateFormat="dd/MM/yyyy"
+                  isClearable
+                />
+
+                <DatePicker
+                  selected={dateRange.endDate || null}
+                  onChange={(date: Date | null) =>
+                    setDateRange((prev) => ({
+                      ...prev,
+                      endDate: date || undefined,
+                    }))
+                  }
+                  selectsEnd
+                  startDate={dateRange.startDate}
+                  endDate={dateRange.endDate}
+                  minDate={dateRange.startDate}
+                  placeholderText="Fecha final"
+                  className="h-9 w-full min-w-[140px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  dateFormat="dd/MM/yyyy"
+                  isClearable
+                />
+              </div>
+            </div>
+
+            {/* Select de zonas (React Select) */}
             <ReactSelectComponent
               isClearable
               placeholder="Ordenar por facturación zona"
@@ -269,6 +365,21 @@ export default function BilingTable() {
                   : null
               }
             />
+            {/* Select de ShadCN (Nuevo filtro) */}
+            <Select onValueChange={handleSelectEstadoFactura}>
+              <SelectTrigger className="w-48 text-xs">
+                <SelectValue placeholder="Estado Factura" />
+              </SelectTrigger>
+              <SelectContent>
+                {opcionesEstadoFactura.map((state) => (
+                  <SelectGroup>
+                    <SelectItem value={state}>{state}</SelectItem>
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Select de tamaño de página */}
             <Select
               onValueChange={(value) =>
                 setPagination({ ...pagination, pageSize: Number(value) })
@@ -336,9 +447,7 @@ export default function BilingTable() {
                     {formatearFecha(row.original.fechaCreado)}
                   </td>
 
-                  <Link
-                    to={`/crm/facturacion/pago-factura/${row.original.id}/${row.original.clienteId}`}
-                  >
+                  <Link to={`/crm/facturacion/pago-factura/${row.original.id}`}>
                     <td className="px-2 py-1 truncate max-w-[120px] whitespace-nowrap hover:underline">
                       {formatearFecha(row.original.fechaPago)}
                     </td>
