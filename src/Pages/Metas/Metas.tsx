@@ -44,7 +44,6 @@ import {
   Lock,
   MoreVertical,
   Percent,
-  Search,
   Store,
   Target,
   TargetIcon,
@@ -243,6 +242,7 @@ function Metas() {
   const [metasTienda, setMetasTienda] = useState<MetaTienda[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioSucursal[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  console.log(setSearchTerm);
 
   const [openUpdateMetaTienda, setOpenUpdateMetaTienda] = useState(false);
   const [openUpdateMetaCobro, setOpenUpdateMetaCobro] = useState(false);
@@ -261,8 +261,6 @@ function Metas() {
   const [metasTiendaSummary, setMetasTiendaSummary] = useState<MetaTienda[]>(
     []
   );
-
-  // const [formData, setFormData] = useState<MetaTienda | null>(null);
 
   const [metaDto, setMetaDto] = useState<MetaInterfaceDTO>({
     usuarioId: 0,
@@ -287,7 +285,6 @@ function Metas() {
       toast.error("Error al conseguir los registros de metas de cobros");
     }
   };
-  // console.log("Las metas de cobros son: ", metasCobros);
 
   const getMetasTienda = async () => {
     try {
@@ -357,16 +354,14 @@ function Metas() {
       meta.usuario.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Opciones para el componente Select
   const optionsUsuarios = usuarios.map((user) => ({
     value: user.id,
     label: `${user.nombre} (${user.sucursal.nombre})`,
   }));
 
-  //LA UNICA RAZON DE ESTE STATE ES PARA LIMPIAR EL INPUT
   const [opcionSeleccionada, setOpcionSeleccionada] =
-    useState<OptionSelected | null>(null); // Usuario seleccionado
-  // Manejar cambios en el Select de usuarios
+    useState<OptionSelected | null>(null);
+
   const handleChangeUser = (
     opcionSeleccionada: SingleValue<OptionSelected>
   ) => {
@@ -380,7 +375,6 @@ function Metas() {
 
   const handleSubmitGoal = async () => {
     try {
-      // Validar que todos los campos requeridos estén presentes
       const { usuarioId, tipoMeta, fechaFin, montoMeta } = metaDto;
 
       if (!usuarioId || !tipoMeta || !fechaFin || !montoMeta) {
@@ -394,7 +388,6 @@ function Metas() {
           ? `${API_URL}/metas`
           : `${API_URL}/metas/regist-new-meta-cobros`;
 
-      // Construir el cuerpo de la solicitud
       const requestBody = {
         usuarioId,
         tipoMeta,
@@ -404,10 +397,7 @@ function Metas() {
         sucursalId: sucursalId,
       };
 
-      // Enviar la solicitud al backend
       const response = await axios.post(endpoint, requestBody);
-
-      // Verificar la respuesta
       if (response.status === 201) {
         toast.success(`Meta registrada para el usuario ${user?.nombre}`);
         resetForm(); // Restablecer el formulario
@@ -424,7 +414,6 @@ function Metas() {
     }
   };
 
-  // Función para restablecer el formulario
   const resetForm = () => {
     setMetaDto({
       usuarioId: null,
@@ -442,8 +431,8 @@ function Metas() {
   const [selectedMeta, setSelectedMeta] = useState<MetaCobros>();
 
   const handleOpenDepositos = (meta: MetaCobros) => {
-    setSelectedMeta(meta); // Establece la meta seleccionada
-    setOpenDepositosDialog(true); // Abre el dialog
+    setSelectedMeta(meta);
+    setOpenDepositosDialog(true);
   };
 
   const formatearMoneda = (monto: number) => {
@@ -490,7 +479,7 @@ function Metas() {
   const [openDeleteCobro, setOpenDeleteCobro] = useState(false);
   const [CobroToDelete, setCobroToDelete] = useState(0);
   const [passwordAdminCobro, setPasswordAdminCobro] = useState("");
-  //
+
   const [openDeleteG, setOpenDeleteG] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState(0);
   const [passwordAdmin, setPasswordAdmin] = useState("");
@@ -558,7 +547,6 @@ function Metas() {
     }
   };
 
-  //METAS DE COBROS
   const getMetasCobroTotal = () => {
     return metasCobrosSummary.reduce((acc, meta) => acc + meta.montoMeta, 0);
   };
@@ -620,7 +608,7 @@ function Metas() {
   return (
     <div className="container mx-auto p-4">
       <Tabs defaultValue="asignar" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 md:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 ">
           <TabsTrigger value="asignar">
             <Target className="w-4 h-4 mr-2" />
             Asignar Metas
@@ -745,46 +733,98 @@ function Metas() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* TAB PAR METAS DE TIENDAS */}
         <TabsContent value="tiendas">
           <Card>
-            <CardHeader>
-              <CardTitle>Metas de Tiendas</CardTitle>
-              <CardDescription>
-                Visualiza y gestiona las metas de las tiendas
-              </CardDescription>
-            </CardHeader>
+            <div className="flex gap-2 flex-col md:flex-row">
+              {/* RESUMEN DE METAS DE COBROS EN TIENDAS */}
+              <Card className="shadow-sm w-full m-2">
+                <CardHeader className="py-1 px-4">
+                  <CardTitle className="text-sm">
+                    Resumen de metas de tiendas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-3 pt-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground">
+                        Meta total
+                      </span>
+                      <div className="flex items-center">
+                        <TargetIcon className="mr-1 h-3 w-3 text-muted-foreground" />
+                        <span className="text-sm font-bold">
+                          {formatearMoneda(getMetasTiendaTotal())}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground">
+                        Avance
+                      </span>
+                      <div className="flex items-center">
+                        <ArrowUpIcon className="mr-1 h-3 w-3 text-green-500" />
+                        <span className="text-sm font-bold">
+                          {formatearMoneda(getMetasTiendaAvance())}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground">
+                        Faltante
+                      </span>
+                      <div className="flex items-center">
+                        <ArrowDownIcon className="mr-1 h-3 w-3 text-red-500" />
+                        <span className="text-sm font-bold">
+                          {formatearMoneda(getMetasTiendaRestante())}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium">Progreso</span>
+                      <span className="text-xs font-medium">
+                        {getPercentTiendaCobro().toFixed(2)}%
+                      </span>
+                    </div>
+                    <Progress
+                      value={getPercentTiendaCobro()}
+                      className={cn(
+                        "w-full h-2",
+                        getPercentTiendaCobro() >= 100
+                          ? "[&>div]:bg-green-500"
+                          : getPercentTiendaCobro() >= 75
+                          ? "[&>div]:bg-blue-500"
+                          : getPercentTiendaCobro() >= 50
+                          ? "[&>div]:bg-yellow-500"
+                          : "[&>div]:bg-red-500"
+                      )}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <h2 className="py-2 text-lg font-semibold px-2 text-center">
+              Metas de Tiendas
+            </h2>
             <CardContent>
-              <div className="mb-4">
-                <Label htmlFor="searchTiendas">Buscar</Label>
-                <div className="flex">
-                  <Input
-                    id="searchTiendas"
-                    placeholder="Buscar por título, sucursal o usuario"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-grow"
-                  />
-                  <Button variant="outline" className="ml-2">
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="overflow-x-auto ">
-                <Table>
+              <div className="overflow-x-auto">
+                <Table className="w-full">
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Título</TableHead>
-                      <TableHead>Usuario</TableHead>
-                      <TableHead>Monto Meta</TableHead>
-                      <TableHead>Monto Actual</TableHead>
-                      <TableHead>Faltante</TableHead>
-
-                      <TableHead>Porcentaje</TableHead>
-                      <TableHead>Referencia</TableHead>
-
-                      <TableHead>Diferencia</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Acción</TableHead>
+                    <TableRow className="h-5">
+                      <TableHead className="py-0">Título</TableHead>
+                      <TableHead className="py-0">Usuario</TableHead>
+                      <TableHead className="py-0">Meta</TableHead>
+                      <TableHead className="py-0">Actual</TableHead>
+                      <TableHead className="py-0">Faltante</TableHead>
+                      <TableHead className="py-0">%</TableHead>
+                      <TableHead className="py-0">Ref.</TableHead>
+                      <TableHead className="py-0">Dif.</TableHead>
+                      <TableHead className="py-0">Estado</TableHead>
+                      <TableHead className="py-0 w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody className="text-[0.8rem]">
@@ -793,29 +833,29 @@ function Metas() {
                         meta.montoMeta > 0
                           ? (meta.montoActual / meta.montoMeta) * 100
                           : 0;
-                      // const diferencia = 100 - porcentaje;
-
                       return (
-                        <TableRow key={meta.id}>
-                          <TableCell>
-                            {meta.tituloMeta ? meta.tituloMeta : ""}
+                        <TableRow key={meta.id} className="h-8">
+                          <TableCell className="py-0">
+                            {meta.tituloMeta || ""}
                           </TableCell>
-                          <TableCell>{meta.usuario.nombre}</TableCell>
-                          <TableCell>
+                          <TableCell className="py-0">
+                            {meta.usuario.nombre}
+                          </TableCell>
+                          <TableCell className="py-0">
                             {formatearMoneda(meta.montoMeta)}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="py-0">
                             {formatearMoneda(meta.montoActual)}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="py-0">
                             {formatearMoneda(meta.montoMeta - meta.montoActual)}
                           </TableCell>
 
-                          {/* EL PORCENTAJE */}
-                          <TableCell>
-                            <div className="flex items-center gap-2">
+                          {/* Porcentaje */}
+                          <TableCell className="py-0">
+                            <div className="flex items-center gap-1">
                               <Percent
-                                className={`w-4 h-4 ${
+                                className={`w-3 h-3 ${
                                   porcentaje >= 70
                                     ? "text-green-500"
                                     : porcentaje >= 40
@@ -823,15 +863,15 @@ function Metas() {
                                     : "text-red-500"
                                 }`}
                               />
-                              {porcentaje.toFixed(2)}%
+                              <span>{porcentaje.toFixed(0)}%</span>
                             </div>
                           </TableCell>
 
-                          {/* LA REFERENCIA */}
-                          <TableCell>
-                            <div className="flex items-center gap-2">
+                          {/* Referencia */}
+                          <TableCell className="py-0">
+                            <div className="flex items-center gap-1">
                               <Clock
-                                className={`w-4 h-4 ${
+                                className={`w-3 h-3 ${
                                   calcularReferencia() >= 70
                                     ? "text-green-500"
                                     : calcularReferencia() >= 40
@@ -839,89 +879,88 @@ function Metas() {
                                     : "text-red-500"
                                 }`}
                               />
-                              {calcularReferencia().toFixed(2)}%
+                              <span>{calcularReferencia().toFixed(0)}%</span>
                             </div>
                           </TableCell>
 
-                          {/* LA DIFERENCIA */}
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {/* Icono dinámico con color */}
+                          {/* Diferencia */}
+                          <TableCell className="py-0">
+                            <div className="flex items-center gap-1">
                               {porcentaje - calcularReferencia() >= 0 ? (
-                                <TrendingUp className="w-4 h-4 text-green-500" />
+                                <TrendingUp className="w-3 h-3 text-green-500" />
                               ) : (
-                                <TrendingDown className="w-4 h-4 text-red-500" />
+                                <TrendingDown className="w-3 h-3 text-red-500" />
                               )}
-
-                              {/* Texto de la diferencia con color dinámico */}
                               <span
-                                className={`${
+                                className={
                                   porcentaje - calcularReferencia() >= 0
                                     ? "text-green-500"
                                     : "text-red-500"
-                                }`}
+                                }
                               >
-                                {(porcentaje - calcularReferencia()).toFixed(2)}
+                                {Math.abs(
+                                  porcentaje - calcularReferencia()
+                                ).toFixed(0)}
                                 %
                               </span>
                             </div>
                           </TableCell>
 
-                          <TableCell>
+                          {/* Estado */}
+                          <TableCell className="py-0">
                             {meta.estado === EstadoMetaTienda.FINALIZADO ? (
-                              <div className="flex items-center gap-2 text-green-500">
-                                <CheckCircle className="w-4 h-4" />
-                                Cumplida
+                              <div className="flex items-center gap-1 text-green-500">
+                                <CheckCircle className="w-3 h-3" />
+                                <span>Cumplida</span>
                               </div>
                             ) : meta.estado === EstadoMetaTienda.CERRADO ? (
-                              <div className="flex items-center gap-2 text-violet-500">
-                                <XCircle className="w-4 h-4" />
-                                Cerrada
+                              <div className="flex items-center gap-1 text-violet-500">
+                                <XCircle className="w-3 h-3" />
+                                <span>Cerrada</span>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2 text-yellow-500">
-                                <Clock className="w-4 h-4" />
-                                En progreso
+                              <div className="flex items-center gap-1 text-yellow-500">
+                                <Clock className="w-3 h-3" />
+                                <span>En progreso</span>
                               </div>
                             )}
                           </TableCell>
 
-                          <TableCell className="text-right">
+                          {/* Acciones */}
+                          <TableCell className="py-0 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreVertical className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <MoreVertical className="h-4 w-4 text-gray-500" />
                                 </Button>
                               </DropdownMenuTrigger>
-
                               <DropdownMenuContent
                                 align="end"
-                                className="w-40 shadow-lg rounded-md border border-gray-200 "
+                                className="w-36 shadow-lg rounded-md border border-gray-200"
                               >
-                                {/* Opción para actualizar */}
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setOpenUpdateMetaTienda(true);
                                     setMetaTiendaSelected(meta);
                                   }}
-                                  className="flex items-center gap-2 hover:bg-gray-100"
+                                  className="flex items-center gap-2 hover:bg-gray-100 text-xs py-1"
                                 >
-                                  <Edit className="h-4 w-4 text-blue-500" />
+                                  <Edit className="h-3 w-3 text-blue-500" />
                                   <span>Actualizar</span>
                                 </DropdownMenuItem>
-
-                                {/* Separador */}
-                                <div className="h-px bg-gray-200 my-1" />
-
-                                {/* Opción para eliminar */}
+                                <div className="h-px bg-gray-200 my-0.5" />
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setGoalToDelete(meta.id);
                                     setOpenDeleteG(true);
                                   }}
-                                  className="flex items-center gap-2 text-red-500 hover:bg-red-100"
+                                  className="flex items-center gap-2 text-red-500 hover:bg-red-100 text-xs py-1"
                                 >
-                                  <Delete className="h-4 w-4" />
+                                  <Delete className="h-3 w-3" />
                                   <span>Eliminar</span>
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -936,86 +975,142 @@ function Metas() {
             </CardContent>
           </Card>
         </TabsContent>
+        {/* TAB PAR METAS DE TIENDAS */}
+
+        {/* TAB PAR METAS DE COBRO */}
         <TabsContent value="cobros">
           <Card>
-            <CardHeader>
-              <CardTitle>Metas de Cobros</CardTitle>
-              <CardDescription>
-                Visualiza y gestiona las metas de cobros
-              </CardDescription>
-            </CardHeader>
+            <div className="flex gap-2 flex-col md:flex-row">
+              {/* RESUMEN DE METAS DE COBROS*/}
+              <Card className="shadow-sm w-full m-2">
+                <CardHeader className="py-1 px-4">
+                  <CardTitle className="text-sm">
+                    Resumen de metas de cobros
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-3 pt-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground">
+                        Meta total
+                      </span>
+                      <div className="flex items-center">
+                        <TargetIcon className="mr-1 h-3 w-3 text-muted-foreground" />
+                        <span className="text-sm font-bold">
+                          {formatearMoneda(getMetasCobroTotal())}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground">
+                        Avance
+                      </span>
+                      <div className="flex items-center">
+                        <ArrowUpIcon className="mr-1 h-3 w-3 text-green-500" />
+                        <span className="text-sm font-bold">
+                          {formatearMoneda(getMetasCobroAvance())}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground">
+                        Faltante
+                      </span>
+                      <div className="flex items-center">
+                        <ArrowDownIcon className="mr-1 h-3 w-3 text-red-500" />
+                        <span className="text-sm font-bold">
+                          {formatearMoneda(getMetasCobroRestante())}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium">Progreso</span>
+                      <span className="text-xs font-medium">
+                        {getPercentMetaCobro().toFixed(2)}%
+                      </span>
+                    </div>
+                    <Progress
+                      value={getPercentMetaCobro()}
+                      className={cn(
+                        "w-full h-2",
+                        getPercentMetaCobro() >= 100
+                          ? "[&>div]:bg-green-500"
+                          : getPercentMetaCobro() >= 75
+                          ? "[&>div]:bg-blue-500"
+                          : getPercentMetaCobro() >= 50
+                          ? "[&>div]:bg-yellow-500"
+                          : "[&>div]:bg-red-500"
+                      )}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <h2 className="py-2 text-lg font-semibold px-2 text-center">
+              Metas de Cobros
+            </h2>
             <CardContent>
-              <div className="mb-4">
-                <Label htmlFor="searchCobros">Buscar</Label>
-                <div className="flex">
-                  <Input
-                    id="searchCobros"
-                    placeholder="Buscar por título, sucursal o usuario"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-grow"
-                  />
-                  <Button variant="outline" className="ml-2">
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="w-full">
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Título</TableHead>
-                      <TableHead>Usuario</TableHead>
-                      <TableHead>Monto Meta</TableHead>
-                      <TableHead>Monto Actual</TableHead>
-                      <TableHead>Faltante</TableHead>
-                      <TableHead>Porcentaje</TableHead>
-                      <TableHead>Referencia</TableHead>
-                      <TableHead>Diferencia</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Acciónes</TableHead>
+                    <TableRow className="h-5">
+                      <TableHead className="py-0">Título</TableHead>
+                      <TableHead className="py-0">Usuario</TableHead>
+                      <TableHead className="py-0">Meta</TableHead>
+                      <TableHead className="py-0">Actual</TableHead>
+                      <TableHead className="py-0">Faltante</TableHead>
+                      <TableHead className="py-0">%</TableHead>
+                      <TableHead className="py-0">Ref.</TableHead>
+                      <TableHead className="py-0">Dif.</TableHead>
+                      <TableHead className="py-0">Estado</TableHead>
+                      <TableHead className="py-0 w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="text-[0.8rem]">
                     {filteredMetasCobros.map((meta) => {
                       const porcentaje =
                         meta.montoMeta > 0
                           ? (meta.montoActual / meta.montoMeta) * 100
                           : 0;
-
-                      const referencia = calcularReferencia(); // Basado en la fecha actual y el mes
+                      const referencia = calcularReferencia();
                       const diferencia = porcentaje - referencia;
 
                       return (
-                        <TableRow key={meta.id}>
+                        <TableRow key={meta.id} className="h-8">
                           {/* Título */}
-                          <TableCell>
-                            {meta.tituloMeta ? meta.tituloMeta : "Sin título"}
+                          <TableCell className="py-0">
+                            {meta.tituloMeta || "Sin título"}
                           </TableCell>
 
                           {/* Usuario */}
-                          <TableCell>{meta.usuario.nombre}</TableCell>
+                          <TableCell className="py-0">
+                            {meta.usuario.nombre}
+                          </TableCell>
 
                           {/* Monto Meta */}
-                          <TableCell>
+                          <TableCell className="py-0">
                             {formatearMoneda(meta.montoMeta)}
                           </TableCell>
 
                           {/* Monto Actual */}
-                          <TableCell>
+                          <TableCell className="py-0">
                             {formatearMoneda(meta.montoActual)}
                           </TableCell>
 
                           {/* Faltante */}
-                          <TableCell>
+                          <TableCell className="py-0">
                             {formatearMoneda(meta.montoMeta - meta.montoActual)}
                           </TableCell>
 
                           {/* Porcentaje de progreso */}
-                          <TableCell>
-                            <div className="flex items-center gap-2">
+                          <TableCell className="py-0">
+                            <div className="flex items-center gap-1">
                               <Percent
-                                className={`w-4 h-4 ${
+                                className={`w-3 h-3 ${
                                   porcentaje >= 70
                                     ? "text-green-500"
                                     : porcentaje >= 40
@@ -1023,15 +1118,15 @@ function Metas() {
                                     : "text-red-500"
                                 }`}
                               />
-                              {porcentaje.toFixed(2)}%
+                              <span>{porcentaje.toFixed(0)}%</span>
                             </div>
                           </TableCell>
 
-                          {/* Referencia (progreso ideal según el tiempo transcurrido) */}
-                          <TableCell>
-                            <div className="flex items-center gap-2">
+                          {/* Referencia */}
+                          <TableCell className="py-0">
+                            <div className="flex items-center gap-1">
                               <Clock
-                                className={`w-4 h-4 ${
+                                className={`w-3 h-3 ${
                                   referencia >= 70
                                     ? "text-green-500"
                                     : referencia >= 40
@@ -1039,72 +1134,78 @@ function Metas() {
                                     : "text-red-500"
                                 }`}
                               />
-                              {referencia.toFixed(2)}%
+                              <span>{referencia.toFixed(0)}%</span>
                             </div>
                           </TableCell>
 
-                          {/* Diferencia entre el progreso real y la referencia */}
-                          <TableCell>
-                            <div
-                              className={`flex items-center gap-2 ${
-                                diferencia >= 0
-                                  ? "text-green-500"
-                                  : "text-red-500"
-                              }`}
-                            >
+                          {/* Diferencia */}
+                          <TableCell className="py-0">
+                            <div className="flex items-center gap-1">
                               {diferencia >= 0 ? (
-                                <TrendingUp className="w-4 h-4" />
+                                <TrendingUp className="w-3 h-3 text-green-500" />
                               ) : (
-                                <TrendingDown className="w-4 h-4" />
+                                <TrendingDown className="w-3 h-3 text-red-500" />
                               )}
-                              {diferencia.toFixed(2)}%
+                              <span
+                                className={
+                                  diferencia >= 0
+                                    ? "text-green-500"
+                                    : "text-red-500"
+                                }
+                              >
+                                {Math.abs(diferencia).toFixed(0)}%
+                              </span>
                             </div>
                           </TableCell>
 
-                          {/* Estado de la meta */}
-                          <TableCell className="">
+                          {/* Estado */}
+                          <TableCell className="py-0">
                             {meta.estado === EstadoMetaCobro.FINALIZADO ? (
-                              <div className="flex items-center gap-2 text-green-500 ">
-                                <CheckCircle className="w-4 h-4" />
-                                Cumplida
+                              <div className="flex items-center gap-1 text-green-500">
+                                <CheckCircle className="w-3 h-3" />
+                                <span>Cumplida</span>
                               </div>
                             ) : meta.estado === EstadoMetaCobro.CERRADO ? (
-                              <div className="flex items-center gap-2 text-violet-500">
-                                <XCircle className="w-4 h-4" />
-                                Cerrada
+                              <div className="flex items-center gap-1 text-violet-500">
+                                <XCircle className="w-3 h-3" />
+                                <span>Cerrada</span>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2 text-yellow-500">
-                                <Clock className="w-4 h-4" />
-                                En progreso
+                              <div className="flex items-center gap-1 text-yellow-500">
+                                <Clock className="w-3 h-3" />
+                                <span>En progreso</span>
                               </div>
                             )}
                           </TableCell>
 
                           {/* Acciones */}
-                          <TableCell className="text-right">
+                          <TableCell className="py-0 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreVertical className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <MoreVertical className="h-4 w-4 text-gray-500" />
                                 </Button>
                               </DropdownMenuTrigger>
 
                               <DropdownMenuContent
                                 align="end"
-                                className="w-44 shadow-lg rounded-md border border-gray-200 "
+                                className="w-36 shadow-lg rounded-md border border-gray-200"
                               >
                                 {/* Opción para ver depósitos */}
                                 <DropdownMenuItem
                                   onClick={() => handleOpenDepositos(meta)}
-                                  className="flex items-center gap-2 hover:bg-gray-100"
+                                  className="flex items-center gap-2 hover:bg-gray-100 text-xs py-1"
                                 >
-                                  <Coins className="h-4 w-4 text-yellow-500" />
+                                  <Coins className="h-3 w-3 text-yellow-500" />
                                   <span>Depósitos</span>
                                 </DropdownMenuItem>
 
                                 {/* Separador */}
-                                <div className="h-px bg-gray-200 my-1" />
+                                <div className="h-px bg-gray-200 my-0.5" />
 
                                 {/* Opción para actualizar */}
                                 <DropdownMenuItem
@@ -1112,14 +1213,14 @@ function Metas() {
                                     setMetaCobroSelected(meta);
                                     setOpenUpdateMetaCobro(true);
                                   }}
-                                  className="flex items-center gap-2 hover:bg-gray-100"
+                                  className="flex items-center gap-2 hover:bg-gray-100 text-xs py-1"
                                 >
-                                  <Edit className="h-4 w-4 text-blue-500" />
+                                  <Edit className="h-3 w-3 text-blue-500" />
                                   <span>Actualizar</span>
                                 </DropdownMenuItem>
 
                                 {/* Separador */}
-                                <div className="h-px bg-gray-200 my-1" />
+                                <div className="h-px bg-gray-200 my-0.5" />
 
                                 {/* Opción para eliminar */}
                                 <DropdownMenuItem
@@ -1127,9 +1228,9 @@ function Metas() {
                                     setCobroToDelete(meta.id);
                                     setOpenDeleteCobro(true);
                                   }}
-                                  className="flex items-center gap-2 text-red-500 hover:bg-red-100"
+                                  className="flex items-center gap-2 text-red-500 hover:bg-red-100 text-xs py-1"
                                 >
-                                  <Delete className="h-4 w-4" />
+                                  <Delete className="h-3 w-3" />
                                   <span>Eliminar</span>
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -1242,6 +1343,7 @@ function Metas() {
                     </DialogHeader>
                     <DialogFooter className="sm:justify-start">
                       <Button
+                        className="w-full"
                         variant="destructive"
                         onClick={() => {
                           onConfirmDelete(selectedDepo.id);
@@ -1250,6 +1352,7 @@ function Metas() {
                         Eliminar
                       </Button>
                       <Button
+                        className="w-full"
                         variant="outline"
                         onClick={() => setOpenDeletDepo(false)}
                       >
@@ -1262,61 +1365,66 @@ function Metas() {
             </CardContent>
           </Card>
         </TabsContent>
+        {/* TAB PAR METAS DE COBRO */}
 
+        {/* TAB PAR METAS DE COBRO */}
         <TabsContent value="totales">
-          <Card className="my-6 shadow-md">
+          {/* Resumen de metas de cobros */}
+          <Card className="my-1 shadow-md">
             <CardHeader>
-              <CardTitle>Resumen de metas de cobros</CardTitle>
-              <CardDescription>
-                Visualiza el avance de todas las metas de cobro
+              <CardTitle className="text-base">
+                Resumen de metas de cobros
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Avance de todas las metas de cobro
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
                 <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     Meta total
                   </span>
                   <div className="flex items-center">
-                    <TargetIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <span className="text-2xl font-bold">
+                    <TargetIcon className="mr-2 h-3 w-3 text-muted-foreground" />
+                    <span className="text-base font-semibold">
                       {formatearMoneda(getMetasCobroTotal())}
                     </span>
                   </div>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">Avance</span>
+                  <span className="text-xs text-muted-foreground">Avance</span>
                   <div className="flex items-center">
-                    <ArrowUpIcon className="mr-2 h-4 w-4 text-green-500" />
-                    <span className="text-2xl font-bold">
+                    <ArrowUpIcon className="mr-2 h-3 w-3 text-green-500" />
+                    <span className="text-base font-semibold">
                       {formatearMoneda(getMetasCobroAvance())}
                     </span>
                   </div>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     Faltante
                   </span>
                   <div className="flex items-center">
-                    <ArrowDownIcon className="mr-2 h-4 w-4 text-red-500" />
-                    <span className="text-2xl font-bold">
+                    <ArrowDownIcon className="mr-2 h-3 w-3 text-red-500" />
+                    <span className="text-base font-semibold">
                       {formatearMoneda(getMetasCobroRestante())}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Progreso</span>
-                  <span className="text-sm font-medium">
+                  <span className="text-xs font-medium">Progreso</span>
+                  <span className="text-xs font-medium">
                     {getPercentMetaCobro().toFixed(2)}%
                   </span>
                 </div>
                 <Progress
                   value={getPercentMetaCobro()}
                   className={cn(
-                    "w-full",
+                    "w-full h-3",
                     getPercentMetaCobro() >= 100
                       ? "[&>div]:bg-green-500"
                       : getPercentMetaCobro() >= 75
@@ -1330,60 +1438,62 @@ function Metas() {
             </CardContent>
           </Card>
 
-          {/* RESUMEN DE METAS DE COBROS EN TIENDAS */}
-          <Card className="my-6 shadow-md">
+          {/* Resumen de metas de tiendas */}
+          <Card className="my-1 shadow-md">
             <CardHeader>
-              <CardTitle>Resumen de metas de tiendas</CardTitle>
-              <CardDescription>
-                Visualiza el avance de todas las metas de tienda
+              <CardTitle className="text-base">
+                Resumen de metas de tiendas
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Avance de todas las metas de tienda
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
                 <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     Meta total
                   </span>
                   <div className="flex items-center">
-                    <TargetIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <span className="text-2xl font-bold">
+                    <TargetIcon className="mr-2 h-3 w-3 text-muted-foreground" />
+                    <span className="text-base font-semibold">
                       {formatearMoneda(getMetasTiendaTotal())}
                     </span>
                   </div>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">Avance</span>
+                  <span className="text-xs text-muted-foreground">Avance</span>
                   <div className="flex items-center">
-                    <ArrowUpIcon className="mr-2 h-4 w-4 text-green-500" />
-                    <span className="text-2xl font-bold">
+                    <ArrowUpIcon className="mr-2 h-3 w-3 text-green-500" />
+                    <span className="text-base font-semibold">
                       {formatearMoneda(getMetasTiendaAvance())}
                     </span>
                   </div>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     Faltante
                   </span>
                   <div className="flex items-center">
-                    <ArrowDownIcon className="mr-2 h-4 w-4 text-red-500" />
-                    <span className="text-2xl font-bold">
+                    <ArrowDownIcon className="mr-2 h-3 w-3 text-red-500" />
+                    <span className="text-base font-semibold">
                       {formatearMoneda(getMetasTiendaRestante())}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Progreso</span>
-                  <span className="text-sm font-medium">
+                  <span className="text-xs font-medium">Progreso</span>
+                  <span className="text-xs font-medium">
                     {getPercentTiendaCobro().toFixed(2)}%
                   </span>
                 </div>
                 <Progress
                   value={getPercentTiendaCobro()}
                   className={cn(
-                    "w-full",
+                    "w-full h-3",
                     getPercentTiendaCobro() >= 100
                       ? "[&>div]:bg-green-500"
                       : getPercentTiendaCobro() >= 75
@@ -1396,7 +1506,102 @@ function Metas() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Resumen de metas combinadas */}
+          <Card className="my-1 shadow-md">
+            <CardHeader>
+              <CardTitle className="text-base">
+                Resumen de metas combinadas
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Avance de todas las metas de cobro y tienda
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground">
+                    Meta total
+                  </span>
+                  <div className="flex items-center">
+                    <TargetIcon className="mr-2 h-3 w-3 text-muted-foreground" />
+                    <span className="text-base font-semibold">
+                      {formatearMoneda(
+                        getMetasCobroTotal() + getMetasTiendaTotal()
+                      )}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground">Avance</span>
+                  <div className="flex items-center">
+                    <ArrowUpIcon className="mr-2 h-3 w-3 text-green-500" />
+                    <span className="text-base font-semibold">
+                      {formatearMoneda(
+                        getMetasCobroAvance() + getMetasTiendaAvance()
+                      )}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground">
+                    Faltante
+                  </span>
+                  <div className="flex items-center">
+                    <ArrowDownIcon className="mr-2 h-3 w-3 text-red-500" />
+                    <span className="text-base font-semibold">
+                      {formatearMoneda(
+                        getMetasCobroRestante() + getMetasTiendaRestante()
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-medium">Progreso</span>
+                  <span className="text-xs font-medium">
+                    {(
+                      ((getMetasCobroAvance() + getMetasTiendaAvance()) /
+                        (getMetasCobroTotal() + getMetasTiendaTotal())) *
+                      100
+                    ).toFixed(2)}
+                    %
+                  </span>
+                </div>
+                <Progress
+                  value={
+                    ((getMetasCobroAvance() + getMetasTiendaAvance()) /
+                      (getMetasCobroTotal() + getMetasTiendaTotal())) *
+                    100
+                  }
+                  className={cn(
+                    "w-full h-3",
+                    ((getMetasCobroAvance() + getMetasTiendaAvance()) /
+                      (getMetasCobroTotal() + getMetasTiendaTotal())) *
+                      100 >=
+                      100
+                      ? "[&>div]:bg-green-500"
+                      : ((getMetasCobroAvance() + getMetasTiendaAvance()) /
+                          (getMetasCobroTotal() + getMetasTiendaTotal())) *
+                          100 >=
+                        75
+                      ? "[&>div]:bg-blue-500"
+                      : ((getMetasCobroAvance() + getMetasTiendaAvance()) /
+                          (getMetasCobroTotal() + getMetasTiendaTotal())) *
+                          100 >=
+                        50
+                      ? "[&>div]:bg-yellow-500"
+                      : "[&>div]:bg-red-500"
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
+
+        {/* TAB PAR METAS DE COBRO */}
       </Tabs>
 
       {/* DIALOG PARA ELIMINACIONES DE METAS EN TIENDAS */}
