@@ -125,57 +125,56 @@ export default function TicketDashboard() {
   );
 
   return (
-    <div className="container mx-auto p-2 md:p-4 lg:py-0">
+    <div className="container mx-auto p-2 md:p-0 lg:py-0">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
+        className="w-full"
       >
-        <div className="flex gap-2 "></div>
+        <div className="flex flex-wrap gap-2"></div>
         <TicketFilters
           onFilterChange={setFilterText}
           onStatusChange={setSelectedStatus}
-          //Estados para abrir y cerrar el Dialog, y funcion get
           openCreatT={openCreateTicket}
           setOpenCreateT={setOpenCreateTicket}
           getTickets={getTickets}
-          //PARA EL FILTER
           setSelectedAssignee={setSelectedAssignee}
           setSelectedCreator={setSelectedCreator}
         />
       </motion.div>
 
-      <div className="mt-2 grid grid-cols-1 lg:grid-cols-2 gap-4 xl:gap-6">
+      {/* En móvil: vista vertical con altura fija para cada panel */}
+      <div className="mt-2 flex flex-col lg:grid lg:grid-cols-2 gap-3 md:gap-4 xl:gap-6 ">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          className="bg-card rounded-lg shadow"
+          className="bg-card rounded-lg shadow h-[40vh] sm:h-[45vh] md:h-[50vh] lg:h-[calc(100vh-220px)] "
         >
           <TicketList
-            tickets={filterTickets(tickets)} // Tickets
-            selectedTicketId={selectedTicketId} // Solo ID del ticket seleccionado
-            onSelectTicket={(ticket) => setSelectedTicketId(ticket.id)} // Setea solo el ID
+            tickets={filterTickets(tickets)}
+            selectedTicketId={selectedTicketId}
+            onSelectTicket={(ticket) => setSelectedTicketId(ticket.id)}
           />
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-          className="bg-card rounded-lg shadow"
-        >
-          {selectedTicket && (
+        {selectedTicket && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, x: 0 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+            className="bg-card rounded-lg shadow h-[40vh] sm:h-[45vh] md:h-[50vh] lg:h-[calc(100vh-220px)] z-10"
+          >
             <TicketDetail
               ticket={selectedTicket}
               getTickets={getTickets}
               optionsLabels={optionsLabels}
               optionsTecs={optionsTecs}
-              //setl del ticket para preveer error cuando elimine el mismo
               setSelectedTicketId={setSelectedTicketId}
             />
-          )}
-        </motion.div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

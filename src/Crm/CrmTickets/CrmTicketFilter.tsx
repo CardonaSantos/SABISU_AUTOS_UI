@@ -72,7 +72,8 @@ export default function TicketFilters({
           />
         </div>
 
-        <Select onValueChange={onStatusChange}>
+        {/* QUITARLE EL DISABLE CUANDO LO TENGA LISTO */}
+        <Select disabled onValueChange={onStatusChange}>
           <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="Etiquetas" />
           </SelectTrigger>
@@ -84,7 +85,7 @@ export default function TicketFilters({
         </Select>
 
         <Popover>
-          <PopoverTrigger asChild>
+          <PopoverTrigger disabled asChild>
             <Button
               variant="outline"
               className="w-full justify-start text-left font-normal sm:w-[240px]"
@@ -130,34 +131,10 @@ export default function TicketFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="assignedToMe">{`Asignados a mí (${userId})`}</SelectItem>
-            <SelectItem value="createdByMe">{`Creados por mí (${userId})`}</SelectItem>
+            <SelectItem value="assignedToMe">{`Asignados a mí`}</SelectItem>
+            <SelectItem value="createdByMe">{`Creados por mí`}</SelectItem>
           </SelectContent>
         </Select>
-
-        {/* <div className="flex flex-wrap gap-2">
-          <Button className="h-[32px]" onClick={() => onStatusChange("nuevo")}>
-            Nuevo
-          </Button>
-          <Button
-            className="h-[32px]"
-            onClick={() => onStatusChange("abierto")}
-          >
-            Abiertos
-          </Button>
-          <Button
-            className="h-[32px]"
-            onClick={() => onStatusChange("pendiente")}
-          >
-            Pendiente
-          </Button>
-          <Button
-            className="h-[32px]"
-            onClick={() => onStatusChange("solucionado")}
-          >
-            Solucionado
-          </Button>
-        </div> */}
       </div>
     </div>
   );
