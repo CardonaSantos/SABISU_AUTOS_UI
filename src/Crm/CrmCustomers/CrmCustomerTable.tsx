@@ -31,6 +31,7 @@ import ReactSelectComponent from "react-select";
 import { FacturacionZona } from "../CrmFacturacion/FacturacionZonaTypes";
 
 import { useDeferredValue } from "react";
+import { Label } from "@/components/ui/label";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -81,6 +82,16 @@ interface OptionSelect {
   label: string;
 }
 
+interface Departamentos {
+  id: number;
+  nombre: string;
+}
+
+interface Municipios {
+  id: number;
+  nombre: string;
+}
+
 export default function ClientesTable() {
   const [filter, setFilter] = useState("");
   const filtered2 = useDeferredValue(filter);
@@ -88,6 +99,75 @@ export default function ClientesTable() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [sorting, setSorting] = useState<any>([]);
   const [clientes, setClientes] = useState<ClienteDto[]>([]);
+
+  const [departamentos, setDepartamentos] = useState<Departamentos[]>([]);
+  const [municipios, setMunicipios] = useState<Municipios[]>([]);
+
+  const [depaSelected, setDepaSelected] = useState<string | null>("8");
+  const [muniSelected, setMuniSelected] = useState<string | null>(null);
+
+  const handleSelectDepartamento = (selectedOption: OptionSelected | null) => {
+    setDepaSelected(selectedOption ? selectedOption.value : null);
+  };
+
+  // Manejar el cambio en el select de municipio
+  const handleSelectMunicipio = (selectedOption: OptionSelected | null) => {
+    setMuniSelected(selectedOption ? selectedOption.value : null);
+  };
+
+  // Cambiar 'optionsDepartamentos' para mapear los departamentos a 'string' para 'value'
+  const optionsDepartamentos: OptionSelected[] = departamentos.map((depa) => ({
+    value: depa.id.toString(), // Asegúrate de convertir el 'id' a 'string'
+    label: depa.nombre,
+  }));
+
+  const optionsMunis: OptionSelected[] = municipios.map((muni) => ({
+    value: muni.id.toString(),
+    label: muni.nombre,
+  }));
+
+  const getDepartamentos = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/location/get-all-departamentos`
+      );
+
+      if (response.status === 200) {
+        setDepartamentos(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getMunicipios = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/location/get-municipio/${Number(depaSelected)}`
+      );
+
+      if (response.status === 200) {
+        setMunicipios(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    getFacturacionZona();
+    getDepartamentos();
+  }, []);
+
+  // Obtener municipios cuando depaSelected cambia
+  useEffect(() => {
+    if (depaSelected) {
+      getMunicipios();
+    } else {
+      setMunicipios([]);
+      setMuniSelected(null);
+    }
+  }, [depaSelected]);
 
   const [zonasFacturacion, setZonasFacturacion] = useState<FacturacionZona[]>(
     []
@@ -181,44 +261,32 @@ export default function ClientesTable() {
       setSorting([{ id: columnId, desc: direction === "desc" }]);
     }
   };
-
-  const filteredClientes = useMemo(() => {
-    // Convertir el filtro a minúsculas y quitar espacios
-    const search = filtered2.toLowerCase().trim();
-
-    return clientes.filter((cliente) => {
-      const matchesZona = zonasFacturacionSelected
-        ? cliente.facturacionZonaId === Number(zonasFacturacionSelected)
-        : true;
-
-      const fullName = `${cliente.nombreCompleto}`.toLowerCase();
-
-      const telefono = cliente.telefono?.toLowerCase() || "";
-      const ip = cliente.direccionIp?.toLowerCase() || "";
-
-      const matchesSearch =
-        search === "" ||
-        fullName.includes(search) ||
-        telefono.includes(search) ||
-        ip.includes(search);
-
-      return matchesZona && matchesSearch;
-    });
-  }, [clientes, zonasFacturacionSelected, filtered2]);
+  console.log("Cliente son: ", clientes);
+  console.log("El depa seleccionado es: ", depaSelected);
+  console.log("El muniSelected seleccionado es: ", muniSelected);
 
   useEffect(() => {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   }, [zonasFacturacionSelected]); // Resetear a página 1 cuando el filtro cambie
 
   const filteredClientesZona = useMemo(() => {
-    return clientes.filter((cliente) =>
-      zonasFacturacionSelected
-        ? cliente.facturacionZonaId === Number(zonasFacturacionSelected)
-        : true
-    );
-  }, [clientes, zonasFacturacionSelected]);
+    return clientes.filter((cliente) => {
+      const matchesMunicipio = muniSelected
+        ? cliente.municipioId === Number(muniSelected)
+        : true;
 
-  // **Configuración de la tabla**
+      const matchesDepartamento = depaSelected
+        ? cliente.departamentoId === Number(depaSelected)
+        : true;
+
+      const matchesPorZonas = zonasFacturacionSelected
+        ? cliente.facturacionZonaId === Number(zonasFacturacionSelected)
+        : true;
+
+      return matchesMunicipio && matchesDepartamento && matchesPorZonas;
+    });
+  }, [clientes, zonasFacturacionSelected, muniSelected, depaSelected]);
+
   // **Configuración de la tabla**
   const table = useReactTable({
     data: filteredClientesZona, // Cambiar a filteredClientesZona
@@ -253,8 +321,6 @@ export default function ClientesTable() {
     },
   });
 
-  console.log("Los clientes filtrados son: ", filteredClientes);
-
   return (
     <Card className="max-w-full shadow-lg">
       <CardContent>
@@ -271,50 +337,111 @@ export default function ClientesTable() {
         />
 
         {/* **Controles: Selector de Orden y Cantidad de Filas** */}
-        <div className="flex justify-end mb-3 gap-2">
-          <ReactSelectComponent
-            isClearable
-            placeholder="Ordenar por facturación zona"
-            className="w-72 text-black text-sm"
-            options={optionsZonasFacturacion}
-            onChange={handleSelectZonaFacturacion}
-            value={
-              zonasFacturacionSelected
-                ? {
-                    value: zonasFacturacionSelected,
-                    label:
-                      zonasFacturacion.find(
-                        (s) => s.id.toString() === zonasFacturacionSelected
-                      )?.nombre || "",
-                  }
-                : null
-            }
-          />
+        <div className="mb-4">
+          {/* **Controles de filtrado y ordenamiento** */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+            {/* Departamento */}
+            <div className="space-y-1">
+              <Label htmlFor="departamentoId-all">Departamento</Label>
+              <ReactSelectComponent
+                placeholder="Seleccione un departamento"
+                isClearable
+                options={optionsDepartamentos}
+                value={
+                  depaSelected
+                    ? {
+                        value: depaSelected,
+                        label:
+                          departamentos.find(
+                            (depa) => depa.id.toString() === depaSelected
+                          )?.nombre || "",
+                      }
+                    : null
+                }
+                onChange={handleSelectDepartamento}
+                className="text-xs text-black"
+              />
+            </div>
 
-          {/* Sorting select */}
-          <ReactSelectComponent
-            className="w-60 text-black text-sm"
-            options={sortOptions}
-            isClearable={true}
-            onChange={handleSortChange}
-            placeholder="Ordenar por..."
-          />
-          <Select
-            onValueChange={(value) =>
-              setPagination({ ...pagination, pageSize: Number(value) })
-            }
-            defaultValue={String(pagination.pageSize)}
-          >
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Items por página" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="5">5</SelectItem>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-            </SelectContent>
-          </Select>
+            {/* Municipio */}
+            <div className="space-y-1">
+              <Label htmlFor="municipioId-all">Municipio</Label>
+              <ReactSelectComponent
+                placeholder="Seleccione un municipio"
+                isClearable
+                options={optionsMunis}
+                onChange={handleSelectMunicipio}
+                value={
+                  muniSelected
+                    ? {
+                        value: muniSelected,
+                        label:
+                          municipios.find(
+                            (muni) => muni.id.toString() == muniSelected
+                          )?.nombre || "",
+                      }
+                    : null
+                }
+                className="text-xs text-black"
+              />
+            </div>
+
+            {/* Zona de Facturación */}
+            <div className="space-y-1">
+              <Label>Zona de Facturación</Label>
+              <ReactSelectComponent
+                isClearable
+                placeholder="Ordenar por facturación zona"
+                className="text-xs text-black"
+                options={optionsZonasFacturacion}
+                onChange={handleSelectZonaFacturacion}
+                value={
+                  zonasFacturacionSelected
+                    ? {
+                        value: zonasFacturacionSelected,
+                        label:
+                          zonasFacturacion.find(
+                            (s) => s.id.toString() === zonasFacturacionSelected
+                          )?.nombre || "",
+                      }
+                    : null
+                }
+              />
+            </div>
+
+            {/* Ordenamiento */}
+            <div className="space-y-1">
+              <Label>Ordenar por</Label>
+              <ReactSelectComponent
+                className="text-xs text-black"
+                options={sortOptions}
+                isClearable={true}
+                onChange={handleSortChange}
+                placeholder="Ordenar por..."
+              />
+            </div>
+
+            {/* Items por página */}
+            <div className="space-y-1">
+              <Label>Items por página</Label>
+              <Select
+                onValueChange={(value) =>
+                  setPagination({ ...pagination, pageSize: Number(value) })
+                }
+                defaultValue={String(pagination.pageSize)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Items por página" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
 
         {/* **Tabla** */}

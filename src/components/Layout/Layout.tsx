@@ -99,6 +99,8 @@ export default function Layout2({ children }: LayoutProps) {
   const nombreCrm = useStoreCrm((state) => state.nombre);
   const correoCrm = useStoreCrm((state) => state.correo);
   const rol = useStoreCrm((state) => state.rol);
+  console.log("El rol de mi usuario actual es: ", rol);
+
   const empresaID = useStoreCrm((state) => state.empresaId);
   useEffect(() => {
     const storedToken = localStorage.getItem("authTokenPos");

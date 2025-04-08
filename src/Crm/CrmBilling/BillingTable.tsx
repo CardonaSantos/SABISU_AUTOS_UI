@@ -34,6 +34,7 @@ import { FacturacionZona } from "../CrmFacturacion/FacturacionZonaTypes";
 import ReactSelectComponent from "react-select";
 import DatePicker from "react-datepicker";
 import { es } from "date-fns/locale";
+import { Label } from "@/components/ui/label";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -49,6 +50,7 @@ type Factura = {
   metodo: string;
   estado: EstadoFactura;
   cliente: string;
+  clienteObj: clienteOBJECT;
   clienteId: number;
   direccionIp: string;
   cantidad: number;
@@ -58,6 +60,12 @@ type Factura = {
   telefono: number;
   facturacionZonaId?: number;
 };
+
+interface clienteOBJECT {
+  nombre: string;
+  municipio: number;
+  departamento: number;
+}
 
 enum EstadoFactura {
   PENDIENTE = "PENDIENTE",
@@ -84,15 +92,31 @@ const columns: ColumnDef<Factura>[] = [
   { accessorKey: "estado", header: "Estado" },
 ];
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
-interface OptionSelected {
-  value: string;
-  label: string;
+
+interface Departamentos {
+  id: number;
+  nombre: string;
+}
+
+interface Municipios {
+  id: number;
+  nombre: string;
 }
 
 export default function BilingTable() {
   const [filter, setFilter] = useState("");
   const [facturas, setFactuas] = useState<Factura[]>([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 }); // 🔥 FIX: Agregamos pageIndex
+
+  const [departamentos, setDepartamentos] = useState<Departamentos[]>([]);
+  const [municipios, setMunicipios] = useState<Municipios[]>([]);
+
+  const [depaSelected, setDepaSelected] = useState<string | null>("8");
+  const [muniSelected, setMuniSelected] = useState<string | null>(null);
+
+  console.log("el departamento selecionado es: ", depaSelected);
+  console.log("el muniSelected selecionado es: ", muniSelected);
+  console.log("las facturas son : ", facturas);
 
   const [facutracionData, setFacturacionData] = useState<FacturacionData>({
     cobrados: null,
@@ -162,10 +186,75 @@ export default function BilingTable() {
     }
   };
 
+  const getDepartamentos = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/location/get-all-departamentos`
+      );
+
+      if (response.status === 200) {
+        setDepartamentos(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getMunicipios = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/location/get-municipio/${Number(depaSelected)}`
+      );
+
+      if (response.status === 200) {
+        setMunicipios(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleSelectDepartamento = (selectedOption: OptionSelected | null) => {
+    setDepaSelected(selectedOption ? selectedOption.value : null);
+  };
+
+  // Manejar el cambio en el select de municipio
+  const handleSelectMunicipio = (selectedOption: OptionSelected | null) => {
+    setMuniSelected(selectedOption ? selectedOption.value : null);
+  };
+
+  interface OptionSelected {
+    value: string; // Cambiar 'number' a 'string'
+    label: string;
+  }
+
+  // Cambiar 'optionsDepartamentos' para mapear los departamentos a 'string' para 'value'
+  const optionsDepartamentos: OptionSelected[] = departamentos.map((depa) => ({
+    value: depa.id.toString(), // Asegúrate de convertir el 'id' a 'string'
+    label: depa.nombre,
+  }));
+
+  const optionsMunis: OptionSelected[] = municipios.map((muni) => ({
+    value: muni.id.toString(),
+    label: muni.nombre,
+  }));
+
   useEffect(() => {
     getFacturas();
     getFacturacionZona();
+    // getMunicipios();
+    getDepartamentos();
   }, []);
+
+  // Obtener municipios cuando depaSelected cambia
+  useEffect(() => {
+    if (depaSelected) {
+      getMunicipios();
+    } else {
+      setMunicipios([]);
+      setMuniSelected(null);
+    }
+  }, [depaSelected]);
 
   const opcionesEstadoFactura = [
     "TODOS",
@@ -200,6 +289,14 @@ export default function BilingTable() {
         ? factura?.facturacionZonaId === Number(zonasFacturacionSelected)
         : true;
 
+      const matchesMunicipio = muniSelected
+        ? factura?.clienteObj.municipio === Number(muniSelected)
+        : true;
+
+      const matchesDepartamento = depaSelected
+        ? factura?.clienteObj.departamento === Number(depaSelected)
+        : true;
+
       const matchesEstado =
         estadoFactura === "TODOS" || estadoFactura === ""
           ? true
@@ -216,9 +313,22 @@ export default function BilingTable() {
         return invoiceDate >= start && invoiceDate <= end;
       };
 
-      return matchesZona && matchesEstado && matchesDate();
+      return (
+        matchesZona &&
+        matchesEstado &&
+        matchesDepartamento &&
+        matchesMunicipio &&
+        matchesDate()
+      );
     });
-  }, [facturas, zonasFacturacionSelected, estadoFactura, dateRange]); // Añadir dateRange como dependencia
+  }, [
+    facturas,
+    zonasFacturacionSelected,
+    estadoFactura,
+    dateRange,
+    depaSelected,
+    muniSelected,
+  ]); // Añadir dateRange como dependencia
   // **Configuración de la tabla**
   const table = useReactTable({
     data: filteredFacturas,
@@ -285,117 +395,183 @@ export default function BilingTable() {
         />
 
         {/* **Selector de Cantidad de Filas** */}
-        <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
-          {/* Left icons */}
-          <div className="flex flex-wrap items-center font-semibold gap-x-4 gap-y-2">
-            <div className="flex items-center">
-              <File className="h-5 w-5 mr-2 dark:text-white" />
-              <span>Facturados: {facutracionData.facturados}</span>
-            </div>
-            <div className="flex items-center">
-              <CreditCard className="h-5 w-5 mr-2 dark:text-white" />
-              <span>Cobrados: {facutracionData.cobrados}</span>
-            </div>
-            <div className="flex items-center">
-              <FileCheck className="h-5 w-5 mr-2 dark:text-white" />
-              <span>Por Cobrar: {facutracionData.porCobrar}</span>
-            </div>
-          </div>
-
-          {/* Right selects */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Left column - Date filters */}
-            <div className="space-y-2">
-              <label className="text-xs font-medium">Rango de fechas</label>
-              <div className="flex flex-wrap gap-2">
-                <DatePicker
-                  locale={es}
-                  selected={dateRange.startDate || null}
-                  onChange={(date: Date | null) =>
-                    setDateRange((prev) => ({
-                      ...prev,
-                      startDate: date || undefined,
-                    }))
-                  }
-                  selectsStart
-                  startDate={dateRange.startDate}
-                  endDate={dateRange.endDate}
-                  placeholderText="Fecha inicial"
-                  className="h-9 w-full min-w-[140px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  dateFormat="dd/MM/yyyy"
-                  isClearable
-                />
-
-                <DatePicker
-                  selected={dateRange.endDate || null}
-                  onChange={(date: Date | null) =>
-                    setDateRange((prev) => ({
-                      ...prev,
-                      endDate: date || undefined,
-                    }))
-                  }
-                  selectsEnd
-                  startDate={dateRange.startDate}
-                  endDate={dateRange.endDate}
-                  minDate={dateRange.startDate}
-                  placeholderText="Fecha final"
-                  className="h-9 w-full min-w-[140px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  dateFormat="dd/MM/yyyy"
-                  isClearable
-                />
+        <div>
+          {/* **Filtros de Facturación** */}
+          <div className="space-y-4 mb-4">
+            {/* Resumen de facturación */}
+            <div className="flex flex-wrap items-center gap-4 p-2 bg-muted/20 rounded-lg">
+              <div className="flex items-center">
+                <File className="h-5 w-5 mr-2 dark:text-white" />
+                <span className="text-sm font-semibold">
+                  Facturados: {facutracionData.facturados}
+                </span>
+              </div>
+              <div className="flex items-center">
+                <CreditCard className="h-5 w-5 mr-2 dark:text-white" />
+                <span className="text-sm font-semibold">
+                  Cobrados: {facutracionData.cobrados}
+                </span>
+              </div>
+              <div className="flex items-center">
+                <FileCheck className="h-5 w-5 mr-2 dark:text-white" />
+                <span className="text-sm font-semibold">
+                  Por Cobrar: {facutracionData.porCobrar}
+                </span>
               </div>
             </div>
 
-            {/* Select de zonas (React Select) */}
-            <ReactSelectComponent
-              isClearable
-              placeholder="Ordenar por facturación zona"
-              className="w-72 text-black text-sm"
-              options={optionsZonasFacturacion}
-              onChange={handleSelectZonaFacturacion}
-              value={
-                zonasFacturacionSelected
-                  ? {
-                      value: zonasFacturacionSelected,
-                      label:
-                        zonasFacturacion.find(
-                          (s) => s.id.toString() === zonasFacturacionSelected
-                        )?.nombre || "",
+            {/* Filtros */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {/* Rango de fechas */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Rango de fechas</label>
+                <div className="flex gap-2">
+                  <DatePicker
+                    locale={es}
+                    selected={dateRange.startDate || null}
+                    onChange={(date: Date | null) =>
+                      setDateRange((prev) => ({
+                        ...prev,
+                        startDate: date || undefined,
+                      }))
                     }
-                  : null
-              }
-            />
-            {/* Select de ShadCN (Nuevo filtro) */}
-            <Select onValueChange={handleSelectEstadoFactura}>
-              <SelectTrigger className="w-48 text-xs">
-                <SelectValue placeholder="Estado Factura" />
-              </SelectTrigger>
-              <SelectContent>
-                {opcionesEstadoFactura.map((state) => (
-                  <SelectGroup>
-                    <SelectItem value={state}>{state}</SelectItem>
-                  </SelectGroup>
-                ))}
-              </SelectContent>
-            </Select>
+                    selectsStart
+                    startDate={dateRange.startDate}
+                    endDate={dateRange.endDate}
+                    placeholderText="Fecha inicial"
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    dateFormat="dd/MM/yyyy"
+                    isClearable
+                  />
 
-            {/* Select de tamaño de página */}
-            <Select
-              onValueChange={(value) =>
-                setPagination({ ...pagination, pageSize: Number(value) })
-              }
-              defaultValue={String(pagination.pageSize)}
-            >
-              <SelectTrigger className="w-32 text-xs">
-                <SelectValue placeholder="Items por página" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
+                  <DatePicker
+                    selected={dateRange.endDate || null}
+                    onChange={(date: Date | null) =>
+                      setDateRange((prev) => ({
+                        ...prev,
+                        endDate: date || undefined,
+                      }))
+                    }
+                    selectsEnd
+                    startDate={dateRange.startDate}
+                    endDate={dateRange.endDate}
+                    minDate={dateRange.startDate}
+                    placeholderText="Fecha final"
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    dateFormat="dd/MM/yyyy"
+                    isClearable
+                  />
+                </div>
+              </div>
+
+              {/* Departamento */}
+              <div className="space-y-1">
+                <Label htmlFor="departamentoId-all">Departamento</Label>
+                <ReactSelectComponent
+                  placeholder="Seleccione un departamento"
+                  isClearable
+                  options={optionsDepartamentos}
+                  value={
+                    depaSelected
+                      ? {
+                          value: depaSelected,
+                          label:
+                            departamentos.find(
+                              (depa) => depa.id.toString() === depaSelected
+                            )?.nombre || "",
+                        }
+                      : null
+                  }
+                  onChange={handleSelectDepartamento}
+                  className="text-xs text-black"
+                />
+              </div>
+
+              {/* Municipio */}
+              <div className="space-y-1">
+                <Label htmlFor="municipioId-all">Municipio</Label>
+                <ReactSelectComponent
+                  placeholder="Seleccione un municipio"
+                  isClearable
+                  options={optionsMunis}
+                  onChange={handleSelectMunicipio}
+                  value={
+                    muniSelected
+                      ? {
+                          value: muniSelected,
+                          label:
+                            municipios.find(
+                              (muni) => muni.id.toString() == muniSelected
+                            )?.nombre || "",
+                        }
+                      : null
+                  }
+                  className="text-xs text-black"
+                />
+              </div>
+
+              {/* Zona de Facturación */}
+              <div className="space-y-1">
+                <Label>Zona de Facturación</Label>
+                <ReactSelectComponent
+                  isClearable
+                  placeholder="Ordenar por facturación zona"
+                  className="text-xs text-black"
+                  options={optionsZonasFacturacion}
+                  onChange={handleSelectZonaFacturacion}
+                  value={
+                    zonasFacturacionSelected
+                      ? {
+                          value: zonasFacturacionSelected,
+                          label:
+                            zonasFacturacion.find(
+                              (s) =>
+                                s.id.toString() === zonasFacturacionSelected
+                            )?.nombre || "",
+                        }
+                      : null
+                  }
+                />
+              </div>
+
+              {/* Estado Factura */}
+              <div className="space-y-1">
+                <Label>Estado Factura</Label>
+                <Select onValueChange={handleSelectEstadoFactura}>
+                  <SelectTrigger className="text-xs">
+                    <SelectValue placeholder="Estado Factura" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {opcionesEstadoFactura.map((state) => (
+                      <SelectGroup key={state}>
+                        <SelectItem value={state}>{state}</SelectItem>
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Items por página */}
+              <div className="space-y-1">
+                <Label>Items por página</Label>
+                <Select
+                  onValueChange={(value) =>
+                    setPagination({ ...pagination, pageSize: Number(value) })
+                  }
+                  defaultValue={String(pagination.pageSize)}
+                >
+                  <SelectTrigger className="text-xs">
+                    <SelectValue placeholder="Items por página" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </div>
 

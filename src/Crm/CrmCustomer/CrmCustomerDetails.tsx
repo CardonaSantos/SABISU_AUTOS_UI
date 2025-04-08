@@ -27,6 +27,8 @@ import {
   Wallet,
   Receipt,
   MoreHorizontal,
+  Waypoints,
+  UserCog,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -52,10 +54,10 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ClienteDetailsDto } from "./CustomerDetails";
+import { ClienteDetailsDto, FacturaInternet } from "./CustomerDetails";
 import currency from "currency.js";
 
 import dayjs from "dayjs";
@@ -79,6 +81,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import FacturaGenerateDialog from "./Factura/FacturaGenerateDialog";
 import GenerateFacturas from "./Factura/GenerateFacturas";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -260,6 +271,47 @@ export default function CustomerDetails() {
   const [openGenerarFactura, setOpenGenerarFactura] = useState(false);
 
   const [openGenerateFacturas, setOpenGenerateFacturas] = useState(false);
+  //
+  const [openDeleteFactura, setOpenDeleteFactura] = useState(false);
+  const [facturaAction, setFacturaAction] = useState<FacturaInternet | null>(
+    null
+  );
+
+  const handleDeleteFactura = async () => {
+    if (!facturaAction) {
+      toast.warning("No hay factura seleccionada para eliminar");
+      return;
+    }
+
+    const { id, estado, fechaEmision, fechaVencimiento } = facturaAction;
+
+    try {
+      const response: AxiosResponse = await axios.delete(
+        `${VITE_CRM_API_URL}/facturacion/delete-one-factura`,
+        {
+          data: {
+            facturaId: id,
+            estadoFactura: estado,
+            fechaEmision,
+            fechaVencimiento,
+          },
+        }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        toast.success("Factura eliminada correctamente");
+        getClienteDetails();
+        setFacturaAction(null);
+        setOpenDeleteFactura(false);
+      } else {
+        toast.error("No se pudo eliminar la factura");
+      }
+    } catch (error: any) {
+      console.error("Error al eliminar factura:", error);
+      toast.error("Ocurrió un error al intentar eliminar la factura");
+    }
+  };
+  console.log("La factura a eliminar es: ", facturaAction);
 
   return (
     <div className="container mx-auto  py-6">
@@ -291,6 +343,13 @@ export default function CustomerDetails() {
               <Button variant={"outline"} size="sm" className="h-8">
                 <Ticket className="h-4 w-4 mr-1" />
                 Nuevo Ticket
+              </Button>
+            </Link>
+
+            <Link to={`/crm/cliente-edicion/${cliente.id}`}>
+              <Button variant={"outline"} size="sm" className="h-8">
+                <UserCog className="h-4 w-4 mr-1" />
+                Editar
               </Button>
             </Link>
           </div>
@@ -454,7 +513,7 @@ export default function CustomerDetails() {
                         <MessageSquare className="h-3 w-3 mr-1 text-muted-foreground" />
                         Observaciones:
                       </dt>
-                      <dd className="col-span-2 truncate">
+                      <dd className="col-span-2 ">
                         {cliente.observaciones ||
                           "No hay observaciones registradas."}
                       </dd>
@@ -814,14 +873,13 @@ export default function CustomerDetails() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
                           {/* Primera sección */}
-
                           <DropdownMenuGroup>
                             <DropdownMenuItem
                               onClick={() => {
                                 setOpenGenerarFactura(true);
                               }}
                             >
-                              Generar una factura de servicio
+                              Generar factura individual
                             </DropdownMenuItem>
                           </DropdownMenuGroup>
 
@@ -832,15 +890,8 @@ export default function CustomerDetails() {
                             <DropdownMenuItem
                               onClick={() => setOpenGenerateFacturas(true)}
                             >
-                              Generar Varias facturas
+                              Generar múltiples facturas
                             </DropdownMenuItem>
-                          </DropdownMenuGroup>
-
-                          <DropdownMenuSeparator />
-
-                          {/* Tercera sección */}
-                          <DropdownMenuGroup>
-                            <DropdownMenuItem>Otros</DropdownMenuItem>
                           </DropdownMenuGroup>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -942,6 +993,10 @@ export default function CustomerDetails() {
                             <TableHead className="w-[100px] font-medium">
                               Estado
                             </TableHead>
+
+                            <TableHead className="w-[100px] font-medium">
+                              Accion
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -983,6 +1038,33 @@ export default function CustomerDetails() {
                                     >
                                       {factura.estado}
                                     </Badge>
+                                  </TableCell>
+
+                                  <TableCell className="">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger>
+                                        <Button
+                                          variant="ghost"
+                                          className="h-6 w-6 p-0 hover:bg-muted/50 hover:text-primary transition-colors"
+                                          title="Acciones disponibles"
+                                        >
+                                          <Waypoints className="h-4 w-4 dark:text-white" />
+                                          <span className="sr-only">
+                                            Accion
+                                          </span>
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent>
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setOpenDeleteFactura(true);
+                                            setFacturaAction(factura);
+                                          }}
+                                        >
+                                          Eliminar
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
                                   </TableCell>
                                 </TableRow>
 
@@ -1139,6 +1221,46 @@ export default function CustomerDetails() {
         clienteId={cliente.id}
         getClienteDetails={getClienteDetails}
       />
+
+      <Dialog open={openDeleteFactura} onOpenChange={setOpenDeleteFactura}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              Confirmar Eliminación
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              ¿Está seguro que desea eliminar esta factura? Esta acción no se
+              puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Advertencia</AlertTitle>
+              <AlertDescription>
+                El saldo y estado del cliente se verán afectados en función de
+                su saldo actual y su relacion con sus facturas.
+              </AlertDescription>
+            </Alert>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setOpenDeleteFactura(false)}
+              // disabled={isLoading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteFactura}
+              // disabled={isLoading}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
