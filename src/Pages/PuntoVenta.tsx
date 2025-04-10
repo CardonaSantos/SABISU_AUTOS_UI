@@ -117,7 +117,7 @@ interface Venta {
 }
 
 export default function PuntoVenta() {
-  const userId = useStore((state) => state.userId);
+  const userId = useStore((state) => state.userId) ?? 0;
   console.log("El id del user en el punto venta es: ", userId);
 
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -191,6 +191,7 @@ export default function PuntoVenta() {
     setIsDisableButton(true);
 
     const saleData = {
+      usuarioId: userId,
       sucursalId: sucursalId,
       clienteId: selectedCustomerID?.id,
       productos: cart.map((prod) => ({
@@ -211,7 +212,6 @@ export default function PuntoVenta() {
       imei: imei.trim(),
     };
 
-    // Validar si los datos del cliente son obligatorios para ventas mayores a 1000
     const isCustomerInfoProvided =
       saleData.nombre && saleData.telefono && saleData.direccion;
 

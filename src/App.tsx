@@ -82,6 +82,7 @@ import CrmRuta from "./Crm/CrmRutas/CrmRuta";
 import CrmPdfPago from "./Crm/CrmPdfPago/CrmPdfPago";
 import RutaCobro from "./Crm/CrmRutas/CrmRutasCobro/RutaCobro";
 import EditCustomers from "./Crm/CrmCustomerEdition/CrmCustomerEdition";
+import SectorsManagement from "./Crm/CrmSector/SectorsManagement";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
@@ -597,15 +598,6 @@ function App() {
               }
             />
 
-            {/* <Route
-              path="/crm/cliente-detalle"
-              element={
-                <ProtectRouteCrmUser>
-                  <CustomerDetails />
-                </ProtectRouteCrmUser>
-              }
-            /> */}
-
             <Route
               path="/crm/empresa"
               element={
@@ -693,6 +685,15 @@ function App() {
               element={
                 <ProtectRouteCrmUser>
                   <RutaCobro />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm-sectores"
+              element={
+                <ProtectRouteCrmUser>
+                  <SectorsManagement />
                 </ProtectRouteCrmUser>
               }
             />

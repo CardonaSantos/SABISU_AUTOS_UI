@@ -178,10 +178,6 @@ const menuItemsAdmin = [
     label: "Sucursales",
     submenu: [{ icon: Building, label: "Mis Sucursales", href: "/sucursal" }],
   },
-  //ESTO GENERA EL PROBLEMA
-  // // Reportes y Notificaciones
-  // { icon: BarChart2, label: "Reportes", href: "/reportes" },
-
   // Gestión de Garantías y Tickets
   {
     icon: ShieldCheck,
@@ -378,6 +374,11 @@ const routesCrm_Otro = [
     icon: MapPinned,
     label: "Facturación por Zona",
     href: "/crm-facturacion-zona",
+  },
+  {
+    icon: MapPin,
+    label: "Sectores",
+    href: "/crm-sectores",
   },
 
   {

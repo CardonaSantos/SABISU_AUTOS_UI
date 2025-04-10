@@ -419,7 +419,7 @@ export default function RegistroCaja() {
   const getRegistrosVentas = async () => {
     try {
       const response = await axios.get(
-        `${API_URL}/venta/get-ventas-caja/${sucursalId}`
+        `${API_URL}/venta/get-ventas-caja/${sucursalId}/${usuarioId}`
       );
 
       if (response.status === 200) {

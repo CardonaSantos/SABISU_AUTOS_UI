@@ -302,7 +302,7 @@ export default function BilingTable() {
           ? true
           : factura?.estado === estadoFactura;
 
-      // Nuevo filtro de fechas
+      // filtro de fechas
       const matchesDate = () => {
         if (!dateRange.startDate && !dateRange.endDate) return true;
 
