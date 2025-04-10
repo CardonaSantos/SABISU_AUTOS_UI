@@ -302,6 +302,11 @@ const routesCrm_Admin = [
     label: "Facturación por Zona",
     href: "/crm-facturacion-zona",
   },
+  {
+    icon: MapPin,
+    label: "Sectores",
+    href: "/crm-sectores",
+  },
 
   {
     icon: MapIcon,

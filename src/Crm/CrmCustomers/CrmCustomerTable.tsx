@@ -153,10 +153,33 @@ export default function ClientesTable() {
       console.log(error);
     }
   };
+  const [sectores, setSectores] = useState<Sector[]>([]);
+  const [sectorSelected, setSectorSelected] = useState<string | null>(null);
+
+  interface Sector {
+    id: number;
+    nombre: string;
+    clientesCount: number;
+  }
+
+  const getSectores = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/sector/sectores-to-select`
+      );
+
+      if (response.status === 200) {
+        setSectores(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   useEffect(() => {
     getFacturacionZona();
     getDepartamentos();
+    getSectores();
   }, []);
 
   // Obtener municipios cuando depaSelected cambia
@@ -207,6 +230,15 @@ export default function ClientesTable() {
       value: zona.id.toString(),
       label: `${zona.nombre} Clientes: (${zona.clientesCount})`,
     }));
+
+  const optionsSectores: OptionSelected[] = sectores.map((sector) => ({
+    value: sector.id.toString(),
+    label: `${sector.nombre}  Clientes: (${sector.clientesCount})`,
+  }));
+
+  const handleSelectSector = (selectedOption: OptionSelected | null) => {
+    setSectorSelected(selectedOption ? selectedOption.value : null);
+  };
 
   const handleSelectZonaFacturacion = (
     selectedOption: OptionSelected | null
@@ -283,9 +315,24 @@ export default function ClientesTable() {
         ? cliente.facturacionZonaId === Number(zonasFacturacionSelected)
         : true;
 
-      return matchesMunicipio && matchesDepartamento && matchesPorZonas;
+      const matchesPorSector = sectorSelected
+        ? cliente?.sectorId === Number(sectorSelected)
+        : true;
+
+      return (
+        matchesMunicipio &&
+        matchesDepartamento &&
+        matchesPorZonas &&
+        matchesPorSector
+      );
     });
-  }, [clientes, zonasFacturacionSelected, muniSelected, depaSelected]);
+  }, [
+    clientes,
+    zonasFacturacionSelected,
+    muniSelected,
+    depaSelected,
+    sectorSelected,
+  ]);
 
   // **Configuración de la tabla**
   const table = useReactTable({
@@ -386,6 +433,29 @@ export default function ClientesTable() {
               />
             </div>
 
+            {/* Sector */}
+            <div className="space-y-1">
+              <Label htmlFor="municipioId-all">Sector</Label>
+              <ReactSelectComponent
+                placeholder="Seleccione un sector"
+                isClearable
+                options={optionsSectores}
+                onChange={handleSelectSector}
+                value={
+                  sectorSelected
+                    ? {
+                        value: sectorSelected,
+                        label:
+                          sectores.find(
+                            (muni) => muni.id.toString() == sectorSelected
+                          )?.nombre || "",
+                      }
+                    : null
+                }
+                className="text-xs text-black"
+              />
+            </div>
+
             {/* Zona de Facturación */}
             <div className="space-y-1">
               <Label>Zona de Facturación</Label>
@@ -445,24 +515,34 @@ export default function ClientesTable() {
         </div>
 
         {/* **Tabla** */}
-        <div className="overflow-x-auto">
-          <table className="w-full border border-gray-300 text-xs">
-            <thead className="bg-gray-100 dark:bg-gray-800">
+        <div className="overflow-x-auto rounded-md border border-gray-200 shadow-sm dark:border-gray-800 dark:bg-transparent dark:shadow-gray-900/30">
+          <table className="w-full border-collapse text-xs">
+            <thead className="bg-gray-50 dark:bg-transparent dark:border-b dark:border-gray-800">
               <tr>
-                <th className="px-2 py-1 border font-semibold">ID</th>
-                <th className="px-2 py-1 border font-semibold">
+                <th className="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">
+                  ID
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">
                   Nombre Completo
                 </th>
-                <th className="px-2 py-1 border font-semibold">Teléfono</th>
-                <th className="px-2 py-1 border font-semibold">IP</th>
-                <th className="px-2 py-1 border font-semibold">Servicios</th>
-                <th className="px-2 py-1 border font-semibold">
+                <th className="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">
+                  Teléfono
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">
+                  IP
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">
+                  Servicios
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">
                   Zona de Facturación
                 </th>
-                <th className="px-2 py-1 border font-semibold">Acciones</th>
+                <th className="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">
+                  Acciones
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
               {table.getRowModel().rows.map((row) => (
                 <motion.tr
                   key={row.id}
@@ -473,37 +553,45 @@ export default function ClientesTable() {
                     stiffness: 120,
                     damping: 22,
                   }}
-                  className="hover:bg-gray-200 dark:hover:bg-gray-700 border-b border-gray-300"
+                  className="bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-900/20 dark:text-gray-100"
                 >
-                  <td className="px-2 py-1 text-center">{row.original.id}</td>
+                  <td className="px-3 py-2 text-center font-medium">
+                    {row.original.id}
+                  </td>
                   <Link
                     to={`/crm/cliente/${row.original.id}`}
                     className="contents"
                   >
-                    <td className="px-2 py-1 truncate max-w-[120px] hover:underline">
+                    <td className="px-3 py-2 truncate max-w-[120px] hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline">
                       {`${row.original.nombreCompleto}`.trim()}
                     </td>
                   </Link>
-                  <td className="px-2 py-1 truncate max-w-[90px] whitespace-nowrap">
+                  <td className="px-3 py-2 truncate max-w-[90px] whitespace-nowrap text-gray-600 dark:text-gray-400">
                     {row.original.telefono}
                   </td>
-                  <td className="px-2 py-1 truncate max-w-[150px] whitespace-nowrap">
+                  <td className="px-3 py-2 truncate max-w-[150px] whitespace-nowrap text-gray-600 dark:text-gray-400">
                     {row.original.direccionIp}
                   </td>
-                  <td className="px-2 py-1 truncate max-w-[120px] whitespace-nowrap">
+                  <td className="px-3 py-2 truncate max-w-[120px] whitespace-nowrap text-gray-600 dark:text-gray-400">
                     {row.original.servicios
                       .map((s) => s.nombreServicio)
                       .join(", ")}
                   </td>
-                  <td className="px-2 py-1 truncate max-w-[100px] whitespace-nowrap">
+                  <td className="px-3 py-2 truncate max-w-[100px] whitespace-nowrap text-gray-600 dark:text-gray-400">
                     {row.original.facturacionZona}
                   </td>
-                  <td className="px-2 py-1 flex justify-center items-center">
-                    <Link to={`/crm/cliente-edicion/${row.original.id}`}>
-                      <Button variant="outline" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </Link>
+                  <td className="px-3 py-2">
+                    <div className="flex justify-center">
+                      <Link to={`/crm/cliente-edicion/${row.original.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800/30 dark:text-gray-300"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
                   </td>
                 </motion.tr>
               ))}
@@ -512,23 +600,27 @@ export default function ClientesTable() {
         </div>
 
         {/* **Controles de Paginación** */}
-        <div className="flex justify-between items-center mt-3">
+        <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-3 text-xs dark:border-gray-800 dark:bg-transparent dark:text-gray-300 mt-0 rounded-b-md">
           <Button
             variant="outline"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            className="h-8 rounded-md border-gray-300 px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50 dark:border-gray-700 dark:bg-transparent dark:text-gray-300 dark:hover:bg-gray-800/30"
           >
             Anterior
           </Button>
 
-          <span>
-            Página {pagination.pageIndex + 1} de {table.getPageCount()}
+          <span className="text-sm text-gray-700 dark:text-gray-300">
+            Página{" "}
+            <span className="font-medium">{pagination.pageIndex + 1}</span> de{" "}
+            <span className="font-medium">{table.getPageCount()}</span>
           </span>
 
           <Button
             variant="outline"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            className="h-8 rounded-md border-gray-300 px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50 dark:border-gray-700 dark:bg-transparent dark:text-gray-300 dark:hover:bg-gray-800/30"
           >
             Siguiente
           </Button>

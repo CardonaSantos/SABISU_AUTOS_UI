@@ -37,16 +37,17 @@ import {
 import axios from "axios";
 import EditSectorDialog from "./EditSectorDialog";
 import { Departamentos } from "../CrmCustomerEdition/types";
+import DeleteDialog from "./DeleteDialog";
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
 dayjs.locale("es");
 
-// const formatearFecha = (fecha: string) => {
-//   // Formateo en UTC sin conversión a local
-//   return dayjs(fecha).format("DD/MM/YYYY");
-// };
+interface Municipio {
+  id: number;
+  nombre: string;
+}
 
 const columns: ColumnDef<Sector>[] = [
   { accessorKey: "clientesLenght", header: "Clientes" },
@@ -64,8 +65,15 @@ export default function SectorsManagement() {
   const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
   const [editSector, setEditSector] = useState<Sector | null>(null);
   const [openEditSecto, setOpenEditSector] = useState(false);
-
+  const [departamentos, setDepartamentos] = useState<Departamentos[]>([]);
+  // const [municipios, setMunicipios] = useState<Municipios[]>([]);
+  const [depaSelected, setDepaSelected] = useState<string | null>("8");
+  const [muniSelected, setMuniSelected] = useState<string | null>(null);
+  console.log(muniSelected);
   // const [isLoading, setIsLoading] = useState(false);
+  const [openDelete, setOpenDelete] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sectorDeleteId, setSectorDeleteId] = useState<number | null>(null);
 
   useEffect(() => {
     loadData();
@@ -90,8 +98,9 @@ export default function SectorsManagement() {
         `${VITE_CRM_API_URL}/sector`,
         newSector
       );
-      if (response.status === 200) {
+      if (response.status === 201) {
         toast.success("El sector ha sido creado exitosamente");
+        await loadData();
       }
 
       setIsCreateDialogOpen(false);
@@ -99,17 +108,6 @@ export default function SectorsManagement() {
       toast("No se pudo crear el sector. Intente nuevamente.");
     }
   };
-  interface Municipio {
-    id: number;
-    nombre: string;
-  }
-
-  const [departamentos, setDepartamentos] = useState<Departamentos[]>([]);
-  // const [municipios, setMunicipios] = useState<Municipios[]>([]);
-
-  const [depaSelected, setDepaSelected] = useState<string | null>("8");
-  const [muniSelected, setMuniSelected] = useState<string | null>(null);
-  console.log(muniSelected);
 
   const getDepartamentos = async () => {
     try {
@@ -205,6 +203,25 @@ export default function SectorsManagement() {
     }
   };
 
+  const handleDeleteSector = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.delete(
+        `${VITE_CRM_API_URL}/sector/${sectorDeleteId}`
+      );
+      if (response.status === 200) {
+        toast.success("El sector ha sido eliminado exitosamente");
+        await loadData();
+        setOpenDelete(false);
+        setSectorDeleteId(null);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -286,74 +303,92 @@ export default function SectorsManagement() {
               ))}
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-              {table.getRowModel().rows.map((row) => (
-                <motion.tr
-                  key={row.id}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 120,
-                    damping: 22,
-                  }}
-                  className="bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-900/20 dark:text-gray-100"
-                >
-                  <td className="px-3 py-2 text-center font-medium">
-                    {row.original.clientes?.length}
-                  </td>
+              {table
+                .getRowModel()
+                .rows.sort(
+                  (a, b) =>
+                    new Date(b.original.creadoEn).getTime() -
+                    new Date(a.original.creadoEn).getTime()
+                )
+                .map((row) => (
+                  <motion.tr
+                    key={row.id}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 120,
+                      damping: 22,
+                    }}
+                    className="bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-900/20 dark:text-gray-100"
+                  >
+                    <td className="px-3 py-2 text-center font-medium">
+                      {row.original.clientes?.length}
+                    </td>
 
-                  <td className="px-3 py-2 truncate max-w-[100px] hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline">
-                    {row.original.nombre}
-                  </td>
+                    <td className="px-3 py-2 truncate max-w-[100px] hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline">
+                      {row.original.nombre}
+                    </td>
 
-                  <td className="px-3 py-2 truncate max-w-[100px] text-gray-600 dark:text-gray-400">
-                    {row.original.descripcion}
-                  </td>
+                    <td className="px-3 py-2 truncate max-w-[100px] text-gray-600 dark:text-gray-400">
+                      {row.original.descripcion}
+                    </td>
 
-                  <td className="px-3 py-2 truncate max-w-[50px] whitespace-nowrap text-gray-600 dark:text-gray-400">
-                    {row.original.municipio?.nombre || "Sin municipio"}
-                  </td>
+                    <td className="px-3 py-2 truncate max-w-[50px] whitespace-nowrap text-gray-600 dark:text-gray-400">
+                      {row.original.municipio?.nombre || "Sin municipio"}
+                    </td>
 
-                  <td className="px-3 py-2">
-                    <div className="flex justify-center">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800/30 dark:text-gray-300"
+                    <td className="px-3 py-2">
+                      <div className="flex justify-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800/30 dark:text-gray-300"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="w-40 dark:bg-gray-900/90 dark:border-gray-800 dark:text-gray-200"
                           >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-40 dark:bg-gray-900/90 dark:border-gray-800 dark:text-gray-200"
-                        >
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedSector(row.original);
-                            }}
-                            className="cursor-pointer dark:hover:bg-gray-800/50 dark:focus:bg-gray-800/50"
-                          >
-                            Ver detalles
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator className="dark:bg-gray-800" />
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setOpenEditSector(true);
-                              setEditSector(row.original);
-                            }}
-                            className="cursor-pointer dark:hover:bg-gray-800/50 dark:focus:bg-gray-800/50"
-                          >
-                            Editar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedSector(row.original);
+                              }}
+                              className="cursor-pointer dark:hover:bg-gray-800/50 dark:focus:bg-gray-800/50"
+                            >
+                              Ver detalles
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="dark:bg-gray-800" />
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setOpenEditSector(true);
+                                setEditSector(row.original);
+                              }}
+                              className="cursor-pointer dark:hover:bg-gray-800/50 dark:focus:bg-gray-800/50"
+                            >
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="dark:bg-gray-800" />
+
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setOpenDelete(true);
+                                setSectorDeleteId(row.original.id);
+                              }}
+                              className="cursor-pointer dark:hover:bg-gray-800/50 dark:focus:bg-gray-800/50"
+                            >
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
             </tbody>
           </table>
 
@@ -411,6 +446,13 @@ export default function SectorsManagement() {
         setMunicipios={setMunicipios}
         setDepaSelected={setDepaSelected}
         depaSelected={depaSelected}
+      />
+
+      <DeleteDialog
+        openDeleteSector={openDelete}
+        setOpenDeleteSector={setOpenDelete}
+        handleSubmitDelete={handleDeleteSector}
+        isloading={isLoading}
       />
 
       {selectedSector && (

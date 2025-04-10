@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useEffect } from "react";
 import { MapPin, Save, AlertCircle } from "lucide-react";
 import {
@@ -17,7 +16,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 import type { Sector, Municipio } from "./types";
-
 import ReactSelectComponent from "react-select";
 import { OptionSelected } from "../ReactSelectComponent/OptionSelected";
 import { Departamento } from "@/Types/SalesHistory/HistorialVentas";
@@ -28,15 +26,14 @@ interface EditSectorDialogProps {
   setOpenEditSector: (value: boolean) => void;
   handleSubmitEdit: (updatedSector: Partial<Sector>) => void;
   municipios: Municipio[];
-  departamentos: Departamento[]; // Asegúrate de que este tipo esté definido correctamente
-  getMunicipios: () => void; // Función para obtener municipios
-  setMunicipios: (municipios: Municipio[]) => void; // Función para establecer municipios
-
+  departamentos: Departamento[];
+  getMunicipios: () => void;
+  setMunicipios: (municipios: Municipio[]) => void;
   setDepaSelected: (value: string | null) => void;
-  depaSelected: string | null; // Estado para el departamento seleccionado
+  depaSelected: string | null;
 }
 
-function EditSectorDialog({
+const EditSectorDialog = ({
   handleSubmitEdit,
   openEditSecto,
   sector,
@@ -47,7 +44,7 @@ function EditSectorDialog({
   setMunicipios,
   setDepaSelected,
   depaSelected,
-}: EditSectorDialogProps) {
+}: EditSectorDialogProps) => {
   const [formData, setFormData] = useState({
     nombre: "",
     descripcion: "",
@@ -56,20 +53,18 @@ function EditSectorDialog({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Opciones para ReactSelect (Municipios y Departamentos)
   const optionsMunicipios = municipios.map((muni) => ({
     value: muni.id.toString(),
     label: muni.nombre,
   }));
 
-  const handleSelectMunicipio = (optionSelected: OptionSelected | null) => {
-    if (optionSelected) {
-      setFormData((previaData) => ({
-        ...previaData,
-        municipioId: optionSelected.value,
-      }));
-    }
-  };
+  const optionsDepartamentos: OptionSelected[] = departamentos.map((depa) => ({
+    value: depa.id.toString(),
+    label: depa.nombre,
+  }));
 
+  // Efecto para cargar los datos del sector al abrir el diálogo
   useEffect(() => {
     if (sector) {
       setFormData({
@@ -77,14 +72,36 @@ function EditSectorDialog({
         descripcion: sector.descripcion || "",
         municipioId: sector.municipioId?.toString() || "",
       });
-      // Limpiar errores al cargar nuevos datos
       setErrors({});
     }
   }, [sector]);
 
+  // Efecto para obtener los municipios cuando cambia el departamento seleccionado
+  useEffect(() => {
+    if (depaSelected) {
+      getMunicipios();
+    } else {
+      setMunicipios([]);
+    }
+  }, [depaSelected]);
+
+  // Manejadores de selección para municipio y departamento
+  const handleSelectMunicipio = (optionSelected: OptionSelected | null) => {
+    if (optionSelected) {
+      setFormData((prevData) => ({
+        ...prevData,
+        municipioId: optionSelected.value,
+      }));
+    }
+  };
+
+  const handleSelectDepartamento = (selectedOption: OptionSelected | null) => {
+    setDepaSelected(selectedOption ? selectedOption.value : null);
+  };
+
+  // Manejo de cambios en los campos del formulario
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Limpiar error cuando se edita el campo
     if (errors[field]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -94,23 +111,20 @@ function EditSectorDialog({
     }
   };
 
-  console.log("EditSectorDialog", formData);
-
+  // Validación del formulario
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
     if (!formData.nombre.trim()) {
       newErrors.nombre = "El nombre es obligatorio";
     }
-
     if (!formData.municipioId) {
       newErrors.municipioId = "Debe seleccionar un municipio";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // Manejo del envío del formulario
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -124,9 +138,7 @@ function EditSectorDialog({
         descripcion: formData.descripcion.trim() || null,
         municipioId: Number(formData.municipioId),
       };
-
       await handleSubmitEdit(updatedSector);
-
       setOpenEditSector(false);
     } catch (error) {
       console.error("Error al actualizar el sector:", error);
@@ -135,25 +147,9 @@ function EditSectorDialog({
     }
   };
 
+  // Si no hay sector, no renderizar nada
   if (!sector) return null;
 
-  const optionsDepartamentos: OptionSelected[] = departamentos.map((depa) => ({
-    value: depa.id.toString(), // Asegúrate de convertir el 'id' a 'string'
-    label: depa.nombre,
-  }));
-
-  const handleSelectDepartamento = (selectedOption: OptionSelected | null) => {
-    setDepaSelected(selectedOption ? selectedOption.value : null);
-  };
-
-  useEffect(() => {
-    if (depaSelected) {
-      getMunicipios();
-    } else {
-      setMunicipios([]);
-      // setMuniSelected(null);
-    }
-  }, [depaSelected]);
   return (
     <Dialog open={openEditSecto} onOpenChange={setOpenEditSector}>
       <DialogContent className="sm:max-w-[500px]">
@@ -195,6 +191,7 @@ function EditSectorDialog({
             )}
           </div>
 
+          {/* Departamento */}
           <div className="space-y-2">
             <ReactSelectComponent
               placeholder="Seleccione un departamento"
@@ -214,7 +211,10 @@ function EditSectorDialog({
               onChange={handleSelectDepartamento}
               className="text-xs text-black"
             />
+          </div>
 
+          {/* Municipio */}
+          <div className="space-y-2">
             <Label htmlFor="edit-municipio" className="flex items-center">
               Municipio <span className="text-destructive ml-1">*</span>
             </Label>
@@ -265,6 +265,7 @@ function EditSectorDialog({
             />
           </div>
 
+          {/* Botones de acción */}
           <DialogFooter className="mt-6 gap-2 sm:gap-0">
             <Button
               type="button"
@@ -293,6 +294,6 @@ function EditSectorDialog({
       </DialogContent>
     </Dialog>
   );
-}
+};
 
 export default EditSectorDialog;

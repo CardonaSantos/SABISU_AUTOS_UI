@@ -65,6 +65,8 @@ interface clienteOBJECT {
   nombre: string;
   municipio: number;
   departamento: number;
+  sector: number;
+  sectorId: number;
 }
 
 enum EstadoFactura {
@@ -89,6 +91,9 @@ const columns: ColumnDef<Factura>[] = [
   { accessorKey: "cantidad", header: "Cantidad" },
   { accessorKey: "fechaCreado", header: "Fecha Creado" },
   { accessorKey: "fechaPago", header: "Fecha de Pago" },
+
+  { accessorKey: "telefono", header: "Tel." },
+
   { accessorKey: "estado", header: "Estado" },
 ];
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
@@ -113,6 +118,19 @@ export default function BilingTable() {
 
   const [depaSelected, setDepaSelected] = useState<string | null>("8");
   const [muniSelected, setMuniSelected] = useState<string | null>(null);
+
+  const [sectores, setSectores] = useState<Sector[]>([]);
+  const [sectorSelected, setSectorSelected] = useState<string | null>(null);
+
+  interface Sector {
+    id: number;
+    nombre: string;
+    clientesCount: number;
+  }
+
+  const handleSelectSector = (selectedOption: OptionSelected | null) => {
+    setSectorSelected(selectedOption ? selectedOption.value : null);
+  };
 
   console.log("el departamento selecionado es: ", depaSelected);
   console.log("el muniSelected selecionado es: ", muniSelected);
@@ -168,6 +186,20 @@ export default function BilingTable() {
     } catch (error) {
       console.log(error);
       toast.error("Error al conseguir facturación");
+    }
+  };
+
+  const getSectores = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/sector/sectores-to-select`
+      );
+
+      if (response.status === 200) {
+        setSectores(response.data);
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -239,11 +271,17 @@ export default function BilingTable() {
     label: muni.nombre,
   }));
 
+  const optionsSectores: OptionSelected[] = sectores.map((sector) => ({
+    value: sector.id.toString(),
+    label: `${sector.nombre}  Clientes: (${sector.clientesCount})`,
+  }));
+
   useEffect(() => {
     getFacturas();
     getFacturacionZona();
     // getMunicipios();
     getDepartamentos();
+    getSectores();
   }, []);
 
   // Obtener municipios cuando depaSelected cambia
@@ -302,15 +340,27 @@ export default function BilingTable() {
           ? true
           : factura?.estado === estadoFactura;
 
+      const matchesSector = sectorSelected
+        ? factura.clienteObj.sectorId === Number(sectorSelected)
+        : true;
+
       // filtro de fechas
       const matchesDate = () => {
         if (!dateRange.startDate && !dateRange.endDate) return true;
 
-        const invoiceDate = new Date(factura.fechaPago); // Asegúrate que factura.fecha sea un Date válido
-        const start = dateRange.startDate ?? new Date(0);
-        const end = dateRange.endDate ?? new Date();
+        const ticketDate = new Date(factura.fechaPago);
 
-        return invoiceDate >= start && invoiceDate <= end;
+        const start = dateRange.startDate
+          ? new Date(dateRange.startDate)
+          : new Date(0);
+        start.setHours(0, 0, 0, 0);
+
+        const end = dateRange.endDate
+          ? new Date(dateRange.endDate)
+          : new Date();
+        end.setHours(23, 59, 59, 999);
+
+        return ticketDate >= start && ticketDate <= end;
       };
 
       return (
@@ -318,6 +368,7 @@ export default function BilingTable() {
         matchesEstado &&
         matchesDepartamento &&
         matchesMunicipio &&
+        matchesSector &&
         matchesDate()
       );
     });
@@ -328,6 +379,7 @@ export default function BilingTable() {
     dateRange,
     depaSelected,
     muniSelected,
+    sectorSelected,
   ]); // Añadir dateRange como dependencia
   // **Configuración de la tabla**
   const table = useReactTable({
@@ -424,7 +476,9 @@ export default function BilingTable() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {/* Rango de fechas */}
               <div className="space-y-1">
-                <label className="text-xs font-medium">Rango de fechas</label>
+                <label className="text-xs font-medium">
+                  Rango de fechas pago
+                </label>
                 <div className="flex gap-2">
                   <DatePicker
                     locale={es}
@@ -510,6 +564,29 @@ export default function BilingTable() {
                 />
               </div>
 
+              {/* Sector */}
+              <div className="space-y-1">
+                <Label htmlFor="sectorid-all">Sector</Label>
+                <ReactSelectComponent
+                  placeholder="Seleccione un sector"
+                  isClearable
+                  options={optionsSectores}
+                  onChange={handleSelectSector}
+                  value={
+                    sectorSelected
+                      ? {
+                          value: sectorSelected,
+                          label:
+                            sectores.find(
+                              (muni) => muni.id.toString() == sectorSelected
+                            )?.nombre || "",
+                        }
+                      : null
+                  }
+                  className="text-xs text-black"
+                />
+              </div>
+
               {/* Zona de Facturación */}
               <div className="space-y-1">
                 <Label>Zona de Facturación</Label>
@@ -576,15 +653,15 @@ export default function BilingTable() {
         </div>
 
         {/* **Tabla** */}
-        <div className="overflow-x-auto">
-          <table className="w-full border border-gray-300 text-xs">
-            <thead className="bg-gray-100 dark:bg-gray-800">
+        <div className="overflow-x-auto rounded-md border border-gray-200 shadow-sm dark:border-gray-800 dark:bg-transparent dark:shadow-gray-900/30">
+          <table className="w-full border-collapse text-xs">
+            <thead className="bg-gray-50 dark:bg-transparent dark:border-b dark:border-gray-800">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-2 py-1 border font-semibold"
+                      className="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300"
                     >
                       {flexRender(
                         header.column.columnDef.header,
@@ -595,41 +672,49 @@ export default function BilingTable() {
                 </tr>
               ))}
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
               {table.getRowModel().rows.map((row) => (
                 <motion.tr
                   key={row.id}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   transition={{ type: "spring", stiffness: 120, damping: 22 }}
-                  className="hover:bg-gray-200 dark:hover:bg-gray-700 border-b border-gray-300"
+                  className="bg-white hover:bg-gray-50 dark:bg-transparent dark:hover:bg-gray-900/20 dark:text-gray-100"
                 >
-                  <td className="px-2 py-1 text-center">{row.original.id}</td>
-                  {/* <td className="px-2 py-1 truncate max-w-[120px] whitespace-nowrap">
-                    {row.original.metodo}
-                  </td> */}
+                  <td className="px-3 py-2 text-center font-medium">
+                    {row.original.id}
+                  </td>
+
                   <Link
                     to={`/crm/cliente/${row.original.clienteId}`}
                     className="contents"
                   >
-                    <td className="px-2 py-1 truncate max-w-[100px] hover:underline">
+                    <td className="px-3 py-2 truncate max-w-[100px] hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline">
                       {row.original.cliente}
                     </td>
                   </Link>
-                  <td className="px-2 py-1 truncate max-w-[150px] whitespace-nowrap">
+
+                  <td className="px-3 py-2 truncate max-w-[150px] whitespace-nowrap text-gray-600 dark:text-gray-400">
                     {row.original.cantidad}
                   </td>
-                  <td className="px-2 py-1 truncate max-w-[120px] whitespace-nowrap">
+
+                  <td className="px-3 py-2 truncate max-w-[120px] whitespace-nowrap text-gray-600 dark:text-gray-400">
                     {formatearFecha(row.original.fechaCreado)}
                   </td>
 
                   <Link to={`/crm/facturacion/pago-factura/${row.original.id}`}>
-                    <td className="px-2 py-1 truncate max-w-[120px] whitespace-nowrap hover:underline">
+                    <td className="px-3 py-2 truncate max-w-[120px] whitespace-nowrap hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline">
                       {formatearFecha(row.original.fechaPago)}
                     </td>
                   </Link>
 
-                  <td className="px-2 py-1 truncate max-w-[100px] whitespace-nowrap">
+                  <td className="px-3 py-2 truncate max-w-[100px] whitespace-nowrap text-gray-600 dark:text-gray-400">
+                    {row.original.telefono
+                      ? row.original.telefono
+                      : "Sin telefono"}
+                  </td>
+
+                  <td className="px-3 py-2 truncate max-w-[100px] whitespace-nowrap text-gray-600 dark:text-gray-400">
                     {row.original.por ? row.original.estado : "Sin cobrar"}
                   </td>
                 </motion.tr>
@@ -639,25 +724,27 @@ export default function BilingTable() {
         </div>
 
         {/* **Controles de Paginación** */}
-        <div className="flex justify-between items-center mt-3 text-xs">
+        <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-3 text-xs dark:border-gray-800 dark:bg-transparent dark:text-gray-300 mt-0 rounded-b-md">
           <Button
             variant="outline"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            className="px-2 py-1"
+            className="h-8 rounded-md border-gray-300 px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50 dark:border-gray-700 dark:bg-transparent dark:text-gray-300 dark:hover:bg-gray-800/30"
           >
             Anterior
           </Button>
 
-          <span>
-            Página {pagination.pageIndex + 1} de {table.getPageCount()}
+          <span className="text-sm text-gray-700 dark:text-gray-300">
+            Página{" "}
+            <span className="font-medium">{pagination.pageIndex + 1}</span> de{" "}
+            <span className="font-medium">{table.getPageCount()}</span>
           </span>
 
           <Button
             variant="outline"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            className="px-2 py-1"
+            className="h-8 rounded-md border-gray-300 px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50 dark:border-gray-700 dark:bg-transparent dark:text-gray-300 dark:hover:bg-gray-800/30"
           >
             Siguiente
           </Button>

@@ -15,6 +15,7 @@ export interface ClienteDetailsDto {
   asesor: Asesor | null;
   servicio: Servicio | null; // Relación 1:1, solo un servicio
   municipio: Municipio;
+  sector: Sector;
   departamento: Departamento;
   empresa: Empresa;
   IP: IP;
@@ -25,6 +26,11 @@ export interface ClienteDetailsDto {
   ticketSoporte: TicketSoporte[];
   facturaInternet: FacturaInternet[];
   clienteServicio: ClienteServicio[];
+}
+
+interface Sector {
+  id: number;
+  nombre: string;
 }
 
 interface Asesor {

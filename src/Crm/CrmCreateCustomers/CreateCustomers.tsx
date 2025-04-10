@@ -42,6 +42,7 @@ import {
 
 interface FormData {
   // Datos básicos
+  sectorId?: string;
   nombre: string;
   coordenadas: string;
   ip: string;
@@ -105,6 +106,11 @@ interface contradoID {
   observaciones: string;
 }
 
+interface Sector {
+  id: number;
+  nombre: string;
+}
+
 function CreateCustomers() {
   const [openConfirm, setOpenConfirm] = useState(false);
   const [departamentos, setDepartamentos] = useState<Departamentos[]>([]);
@@ -113,6 +119,8 @@ function CreateCustomers() {
   const [zonasFacturacion, setZonasFacturacion] = useState<FacturacionZona[]>(
     []
   );
+
+  const [sectores, setSectores] = useState<Sector[]>([]);
   const [serviciosWifi, setServiciosWifi] = useState<ServiciosInternet[]>([]);
 
   const [fechaInstalacion, setFechaInstalacion] = useState<Date | null>(
@@ -128,6 +136,8 @@ function CreateCustomers() {
   const [zonasFacturacionSelected, setZonasFacturacionSelected] = useState<
     string | null
   >(null);
+
+  const [sectorSelected, setSectorSelected] = useState<string | null>(null);
 
   const getDepartamentos = async () => {
     try {
@@ -202,6 +212,20 @@ function CreateCustomers() {
     }
   };
 
+  const getSectores = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/sector/sectores-to-select`
+      );
+
+      if (response.status === 200) {
+        setSectores(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   console.log("depas", departamentos);
 
   useEffect(() => {
@@ -209,6 +233,7 @@ function CreateCustomers() {
     getServicios();
     getServiciosWifi();
     getFacturacionZona();
+    getSectores();
   }, []);
 
   // Obtener municipios cuando depaSelected cambia
@@ -257,6 +282,11 @@ function CreateCustomers() {
     })
   );
 
+  const optionsSectores: OptionSelected[] = sectores.map((sector) => ({
+    value: sector.id.toString(),
+    label: sector.nombre,
+  }));
+
   const optionsZonasFacturacion: OptionSelected[] = zonasFacturacion
     .sort((a, b) => {
       const numA = parseInt(a.nombre.match(/\d+/)?.[0] || "0");
@@ -276,6 +306,10 @@ function CreateCustomers() {
   // Manejar el cambio en el select de municipio
   const handleSelectMunicipio = (selectedOption: OptionSelected | null) => {
     setMuniSelected(selectedOption ? selectedOption.value : null);
+  };
+
+  const handleSelectSector = (selectedOption: OptionSelected | null) => {
+    setSectorSelected(selectedOption ? selectedOption.value : null);
   };
   //manejar cambio en el select de mis servicios
   const handleSelectService = (
@@ -321,6 +355,7 @@ function CreateCustomers() {
     municipioId: "",
     departamentoId: "",
     empresaId: "",
+    sectorId: "",
   });
 
   const [formDataContrado, setFormDataContrato] = useState<contradoID>({
@@ -380,6 +415,7 @@ function CreateCustomers() {
       // servicioId: null,
       municipioId: Number(muniSelected) || null, // Convertir a número
       departamentoId: Number(depaSelected) || null, // Convertir a número
+      sectorId: Number(sectorSelected) || null, // Convertir a número
       empresaId: 1,
       // Asegúrate de que coordenadas sea un valor correcto, evitando cadenas vacías
       coordenadas:
@@ -477,6 +513,7 @@ function CreateCustomers() {
     // Resetear los selects
     setDepaSelected(null);
     setMuniSelected(null);
+    setSectorSelected(null);
     setSeriviceSelected([]);
     setSeriviceWifiSelected(null);
     setZonasFacturacionSelected(null);
@@ -739,6 +776,29 @@ function CreateCustomers() {
                         className="text-sm text-black"
                       />
                     </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="municipioId-all">Sectores</Label>
+                      <ReactSelectComponent
+                        isClearable
+                        options={optionsSectores}
+                        onChange={handleSelectSector}
+                        value={
+                          sectorSelected
+                            ? {
+                                value: sectorSelected,
+                                label:
+                                  sectores.find(
+                                    (muni) =>
+                                      muni.id.toString() == sectorSelected
+                                  )?.nombre || "",
+                              }
+                            : null
+                        }
+                        className="text-xs text-black"
+                      />
+                    </div>
+
                     <div className="space-y-1">
                       <Label htmlFor="contactoReferenciaNombre-all">
                         Nombre Referencia

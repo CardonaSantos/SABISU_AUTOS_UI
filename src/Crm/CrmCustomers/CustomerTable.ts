@@ -15,6 +15,14 @@ export interface ClienteDto {
   servicios: ServicioInternetDto[];
   facturacionZona: string;
   facturacionZonaId: number;
+  sector: Sector;
+  sectorId: number;
+}
+
+interface Sector {
+  id: number;
+  nombre: string;
+  clientesCount: number;
 }
 
 export interface ServicioInternetDto {

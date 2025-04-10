@@ -29,6 +29,7 @@ import {
   MoreHorizontal,
   Waypoints,
   UserCog,
+  LandPlot,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -112,6 +113,10 @@ export default function CustomerDetails() {
   const { id } = useParams();
   const [cliente, setCliente] = useState<ClienteDetailsDto>({
     id: 0,
+    sector: {
+      id: 1,
+      nombre: "",
+    },
     nombre: "",
     apellidos: "",
     telefono: "",
@@ -406,7 +411,7 @@ export default function CustomerDetails() {
               <Card className="border border-gray-300">
                 <CardHeader className="pb-1">
                   <CardTitle className="text-sm flex items-center">
-                    <User className="h-3.5 w-3.5 mr-2 text-primary" />
+                    <User className="h-3.5 w-3.5 mr-2 text-primary dark:text-white" />
                     Información Personal & Contacto de Referencia
                   </CardTitle>
                 </CardHeader>
@@ -475,7 +480,7 @@ export default function CustomerDetails() {
               <Card className="border border-gray-300">
                 <CardHeader className="pb-1">
                   <CardTitle className="text-sm flex items-center">
-                    <Building className="h-3.5 w-3.5 mr-2 text-primary" />
+                    <Building className="h-3.5 w-3.5 mr-2 text-primary dark:text-white" />
                     Empresa, Ubicación & Sistema
                   </CardTitle>
                 </CardHeader>
@@ -499,6 +504,17 @@ export default function CustomerDetails() {
                         {cliente.municipio?.nombre || "No especificado"}
                       </dd>
                     </div>
+
+                    <div className="grid grid-cols-3 items-center">
+                      <dt className="font-medium text-muted-foreground flex items-center">
+                        <LandPlot className="h-3 w-3 mr-1 text-muted-foreground" />
+                        Sector:
+                      </dt>
+                      <dd className="col-span-2 truncate">
+                        {cliente.sector?.nombre || "No especificado"}
+                      </dd>
+                    </div>
+
                     <div className="grid grid-cols-3 items-center">
                       <dt className="font-medium text-muted-foreground flex items-center">
                         <Map className="h-3 w-3 mr-1 text-muted-foreground" />
@@ -694,7 +710,11 @@ export default function CustomerDetails() {
                   Ubicación del Cliente
                 </CardTitle>
                 <CardDescription>
-                  {cliente.direccion || "Dirección no especificada"}
+                  Dirección: {cliente.direccion || "Dirección no especificada"}
+                </CardDescription>
+
+                <CardDescription>
+                  Sector: {cliente.sector?.nombre || "Sector no especificada"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
