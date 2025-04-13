@@ -83,6 +83,7 @@ import CrmPdfPago from "./Crm/CrmPdfPago/CrmPdfPago";
 import RutaCobro from "./Crm/CrmRutas/CrmRutasCobro/RutaCobro";
 import EditCustomers from "./Crm/CrmCustomerEdition/CrmCustomerEdition";
 import SectorsManagement from "./Crm/CrmSector/SectorsManagement";
+import PlantillasMensajes from "./Crm/CrmMensajes/PlantillasMensajes";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
@@ -694,6 +695,15 @@ function App() {
               element={
                 <ProtectRouteCrmUser>
                   <SectorsManagement />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm-mensajes-automaticos"
+              element={
+                <ProtectRouteCrmUser>
+                  <PlantillasMensajes />
                 </ProtectRouteCrmUser>
               }
             />

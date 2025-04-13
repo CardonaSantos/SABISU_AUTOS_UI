@@ -27,6 +27,7 @@ import {
   MapIcon,
   MapPinned,
   MapPin,
+  MessagesSquare,
 } from "lucide-react";
 
 import {
@@ -306,6 +307,12 @@ const routesCrm_Admin = [
     icon: MapPin,
     label: "Sectores",
     href: "/crm-sectores",
+  },
+
+  {
+    icon: MessagesSquare,
+    label: "Mensajes Automaticos",
+    href: "/crm-mensajes-automaticos",
   },
 
   {

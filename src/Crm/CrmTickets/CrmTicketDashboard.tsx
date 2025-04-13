@@ -47,15 +47,15 @@ export default function TicketDashboard() {
         : true;
 
       const matchesAssignee = selectedAssignee
-        ? ticket.assignee && String(ticket.assignee.id) === selectedAssignee
+        ? ticket.assignee && String(ticket?.assignee.id) === selectedAssignee
         : true;
 
       const matchesCreator = selectedCreator
-        ? ticket.creator && String(ticket.creator.id) === selectedCreator
+        ? ticket.creator && String(ticket?.creator.id) === selectedCreator
         : true;
 
       const matchesTecnico = tecnicoSelected
-        ? ticket.assignee.id.toString() === tecnicoSelected
+        ? ticket.assignee && ticket?.assignee.id.toString() === tecnicoSelected
         : true;
 
       const matchesEtiquetas =
@@ -196,14 +196,13 @@ export default function TicketDashboard() {
   };
 
   return (
-    <div className="container mx-auto p-2 md:p-0 lg:py-0">
+    <div className="">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         className="w-full"
       >
-        <div className="flex flex-wrap gap-2"></div>
         <TicketFilters
           onFilterChange={setFilterText}
           onStatusChange={setSelectedStatus}
@@ -225,14 +224,12 @@ export default function TicketDashboard() {
           setDateRange={setDateRange}
         />
       </motion.div>
-
-      {/* En móvil: vista vertical con altura fija para cada panel */}
-      <div className="mt-2 flex flex-col lg:grid lg:grid-cols-2 gap-3 md:gap-4 xl:gap-6 ">
+      <div className="mt-2 flex flex-col lg:grid lg:grid-cols-2 gap-3 md:gap-4 xl:gap-6 relative">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          className="bg-card rounded-lg shadow h-[40vh] sm:h-[45vh] md:h-[50vh] lg:h-[calc(100vh-220px)] "
+          className="bg-card rounded-lg shadow h-[40vh] sm:h-[45vh] md:h-[50vh] lg:h-[calc(100vh-220px)] overflow-hidden"
         >
           <TicketList
             tickets={filterTickets(tickets)}
@@ -246,7 +243,7 @@ export default function TicketDashboard() {
             initial={{ opacity: 0, y: 20, x: 0 }}
             animate={{ opacity: 1, y: 0, x: 0 }}
             transition={{ duration: 0.3, delay: 0.2 }}
-            className="bg-card rounded-lg shadow h-[40vh] sm:h-[45vh] md:h-[50vh] lg:h-[calc(100vh-220px)] z-10"
+            className="bg-card rounded-lg shadow h-[40vh] sm:h-[45vh] md:h-[50vh] lg:h-[calc(100vh-220px)] overflow-hidden"
           >
             <TicketDetail
               ticket={selectedTicket}

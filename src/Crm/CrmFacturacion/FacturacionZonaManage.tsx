@@ -34,6 +34,7 @@ const FacturacionZonaManage: React.FC = () => {
   const [searchZona, setSearchZona] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  console.log("mi zona de facturacion es: ", zonas);
 
   const empresaId = useStoreCrm((state) => state.empresaId) ?? 0;
 
@@ -216,7 +217,7 @@ const FacturacionZonaManage: React.FC = () => {
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-lg font-bold tracking-tight">
               Zonas de Facturación
             </h1>
             <p className="text-muted-foreground">
@@ -249,7 +250,7 @@ const FacturacionZonaManage: React.FC = () => {
           {/* Formulario para crear zonas de facturación */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 Nueva Zona de Facturación
               </CardTitle>
               <CardDescription>

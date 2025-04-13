@@ -120,7 +120,7 @@ export default function TicketFilters({
 
         {/* Rango de fechas */}
         <div className="space-y-1">
-          <div className="flex gap-2">
+          <div className="flex gap-2 relative z-10">
             <DatePicker
               locale={es}
               selected={dateRange.startDate || null}
@@ -134,7 +134,7 @@ export default function TicketFilters({
               startDate={dateRange.startDate}
               endDate={dateRange.endDate}
               placeholderText="Fecha inicial"
-              className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring z-50 relative"
               dateFormat="dd/MM/yyyy"
               isClearable
             />
@@ -152,14 +152,13 @@ export default function TicketFilters({
               endDate={dateRange.endDate}
               minDate={dateRange.startDate}
               placeholderText="Fecha final"
-              className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring z-50 relative"
               dateFormat="dd/MM/yyyy"
               isClearable
             />
           </div>
         </div>
 
-        {/* QUITARLE EL DISABLE CUANDO LO TENGA LISTO */}
         <ReactSelectComponent
           placeholder="Filtrar por etiquetas"
           className="w-full sm:w-[300px] text-black text-xs"

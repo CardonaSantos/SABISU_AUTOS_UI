@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import utc from "dayjs/plugin/utc";
 import localizedFormat from "dayjs/plugin/localizedFormat";
+import { Link } from "react-router-dom";
 // const API_URL = import.meta.env.VITE_API_URL;
 
 dayjs.extend(utc);
@@ -31,9 +32,9 @@ function MyTickets({ tickets }: myTicketsProps) {
       <CardContent>
         <div className="flex justify-between items-center mb-2 ">
           <p className="font-semibold text-base my-2">Mis Tickets</p>
-          <a href="#" className="text-blue-600 text-sm font-medium">
+          <Link to={`tickets`} className="text-blue-600 text-sm font-medium">
             Ver todos
-          </a>
+          </Link>
         </div>
 
         {/* Contenedor con scroll */}
