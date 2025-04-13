@@ -197,9 +197,10 @@ export default function PlantillasMensajesView() {
 
       if (response.status === 201) {
         toast.success("Plantilla creada exitosamente");
+        loadPlantillas();
+        setIsCreateDialogOpen(false);
+        resetForm();
       }
-      setIsCreateDialogOpen(false);
-      resetForm();
     } catch (error) {
       toast("No se pudo crear la plantilla. Intente nuevamente.");
     } finally {
