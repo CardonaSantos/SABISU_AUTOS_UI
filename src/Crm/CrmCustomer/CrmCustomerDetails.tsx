@@ -30,6 +30,9 @@ import {
   Waypoints,
   UserCog,
   LandPlot,
+  FilePenLine,
+  FilePlus,
+  Printer,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -91,11 +94,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
 dayjs.locale("es");
-
+dayjs.extend(timezone);
 const formatearFecha = (fecha: string) => {
   return dayjs(fecha).format("DD/MM/YYYY");
 };
@@ -108,8 +114,18 @@ const formatearMoneda = (monto: number) => {
     precision: 2,
   }).format();
 };
+interface PlantillasInterface {
+  id: number;
+  nombre: string;
+  body: string;
+  empresaId: number;
+  creadoEn: string;
+  actualizadoEn: string;
+}
 
 export default function CustomerDetails() {
+  const [plantillas, setPlantillas] = useState<PlantillasInterface[]>([]);
+
   const { id } = useParams();
   const [cliente, setCliente] = useState<ClienteDetailsDto>({
     id: 0,
@@ -160,6 +176,7 @@ export default function CustomerDetails() {
     ticketSoporte: [],
     facturaInternet: [],
     clienteServicio: [],
+    contratoServicioInternet: null,
   });
 
   // AJUSTAR EL SERVICIO DE GENERAR UNA FACTURA, QUE LA FECHA DE VENCIMIENTO, COINCIDA CON EL MES ASIGNADO, Y CREAREMOS OTROS
@@ -181,8 +198,22 @@ export default function CustomerDetails() {
     }
   };
 
+  const getPlantillas = async () => {
+    try {
+      const response = await axios.get(
+        `${VITE_CRM_API_URL}/contrato-cliente/plantillas-contrato`
+      );
+      if (response.status === 200) {
+        setPlantillas(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   useEffect(() => {
     getClienteDetails();
+    getPlantillas();
   }, []);
 
   // Estado para controlar la pestaña activa
@@ -282,6 +313,49 @@ export default function CustomerDetails() {
     null
   );
 
+  interface Contrato {
+    clienteId: number;
+    fechaInstalacionProgramada: string;
+    costoInstalacion: number;
+    fechaPago: string;
+    observaciones: string;
+    ssid: string;
+    wifiPassword: string;
+  }
+
+  const [openCreateContrato, setOpenCreateContrato] = useState(false);
+  const [dataContrato, setDataContrato] = useState<Contrato>({
+    clienteId: id ? Number(id) : 0,
+    fechaInstalacionProgramada: "",
+    costoInstalacion: 0,
+    fechaPago: "",
+    observaciones: "",
+    ssid: "",
+    wifiPassword: "",
+  });
+
+  console.log("el objeto dataContrato es: ", dataContrato);
+
+  const handleInputChangeContrato = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = event.target;
+
+    let newValue: any;
+
+    if (name === "fechaPago" || name === "fechaInstalacionProgramada") {
+      newValue = dayjs(value).tz("America/Guatemala").format();
+      console.log("Fecha de pago:", newValue);
+    } else {
+      newValue = value;
+    }
+
+    setDataContrato((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
   const handleDeleteFactura = async () => {
     if (!facturaAction) {
       toast.warning("No hay factura seleccionada para eliminar");
@@ -317,6 +391,38 @@ export default function CustomerDetails() {
     }
   };
   console.log("La factura a eliminar es: ", facturaAction);
+  const [isLoading, setIsLoading] = useState(false);
+  const handleCreateContrato = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (
+        !dataContrato.clienteId &&
+        dataContrato.costoInstalacion &&
+        !dataContrato.fechaPago &&
+        !dataContrato.fechaInstalacionProgramada
+      ) {
+        toast.error("Por favor, completa todos los campos requeridos.");
+        return;
+      }
+
+      setIsLoading(true);
+      const response = await axios.post(
+        `${VITE_CRM_API_URL}/contrato-cliente`,
+        dataContrato
+      );
+
+      if (response.status === 201) {
+        toast.success("Contrato creado correctamente");
+        setOpenCreateContrato(false);
+        getClienteDetails();
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.log(error);
+      setIsLoading(false);
+    }
+    setIsLoading(false);
+  };
 
   return (
     <div className="container mx-auto  py-6">
@@ -344,15 +450,59 @@ export default function CustomerDetails() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {cliente.contratoServicioInternet ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8">
+                    <FilePenLine className="h-4 w-4 mr-1" />
+                    Contrato
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem
+                    className="flex items-center gap-2"
+                    onClick={() => setOpenCreateContrato(true)}
+                  >
+                    <FilePenLine className="h-4 w-4" />
+                    Editar Contrato
+                  </DropdownMenuItem>
+
+                  {plantillas.map((plantilla) => (
+                    <DropdownMenuItem asChild key={plantilla.id}>
+                      <Link
+                        to={`/crm/contrato/${
+                          cliente.contratoServicioInternet!.id
+                        }/vista?plantilla=${plantilla.id}`}
+                        className="flex items-center gap-2 w-full"
+                      >
+                        <Printer className="h-4 w-4" />
+                        Imprimir: {plantilla.nombre}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={() => setOpenCreateContrato(true)}
+              >
+                <FilePlus className="h-4 w-4 mr-1" />
+                Generar Contrato
+              </Button>
+            )}
+
             <Link to={`/crm/tickets`}>
-              <Button variant={"outline"} size="sm" className="h-8">
+              <Button variant="outline" size="sm" className="h-8">
                 <Ticket className="h-4 w-4 mr-1" />
                 Nuevo Ticket
               </Button>
             </Link>
 
             <Link to={`/crm/cliente-edicion/${cliente.id}`}>
-              <Button variant={"outline"} size="sm" className="h-8">
+              <Button variant="outline" size="sm" className="h-8">
                 <UserCog className="h-4 w-4 mr-1" />
                 Editar
               </Button>
@@ -534,6 +684,21 @@ export default function CustomerDetails() {
                           "No hay observaciones registradas."}
                       </dd>
                     </div>
+
+                    <div className="grid grid-cols-3 items-center">
+                      <dt className="font-medium text-muted-foreground flex items-center">
+                        <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
+                        Fecha Instalación:
+                      </dt>
+                      <dd className="col-span-2 truncate">
+                        {cliente.fechaInstalacion
+                          ? format(new Date(cliente.fechaInstalacion), "PPP", {
+                              locale: es,
+                            })
+                          : "No disponible"}
+                      </dd>
+                    </div>
+
                     <div className="grid grid-cols-3 items-center border-t pt-2">
                       <dt className="font-medium text-muted-foreground flex items-center">
                         <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
@@ -547,6 +712,7 @@ export default function CustomerDetails() {
                           : "No disponible"}
                       </dd>
                     </div>
+
                     <div className="grid grid-cols-3 items-center">
                       <dt className="font-medium text-muted-foreground flex items-center">
                         <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
@@ -1279,6 +1445,92 @@ export default function CustomerDetails() {
               Eliminar
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={openCreateContrato} onOpenChange={setOpenCreateContrato}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Crear Nuevo Contrato</DialogTitle>
+            <DialogDescription>
+              Complete la información para generar un nuevo contrato para el
+              cliente.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateContrato}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fechaInstalacionProgramada">
+                    Fecha de Instalación
+                  </Label>
+                  <Input
+                    id="fechaInstalacionProgramada"
+                    name="fechaInstalacionProgramada"
+                    type="date"
+                    value={dataContrato.fechaInstalacionProgramada}
+                    onChange={handleInputChangeContrato}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fechaPago">Fecha de Pago</Label>
+                  <Input
+                    id="fechaPago"
+                    name="fechaPago"
+                    type="date"
+                    value={dataContrato.fechaPago}
+                    onChange={handleInputChangeContrato}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="costoInstalacion">Costo de Instalación</Label>
+                <div className="relative">
+                  <span className="absolute left-2 top-2.5 text-muted-foreground">
+                    $
+                  </span>
+                  <Input
+                    id="costoInstalacion"
+                    name="costoInstalacion"
+                    type="number"
+                    className="pl-6"
+                    placeholder="0.00"
+                    value={dataContrato.costoInstalacion}
+                    onChange={handleInputChangeContrato}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="observaciones">Observaciones</Label>
+                <Textarea
+                  id="observaciones"
+                  name="observaciones"
+                  placeholder="Observaciones adicionales sobre el contrato..."
+                  rows={3}
+                  value={dataContrato.observaciones}
+                  onChange={handleInputChangeContrato}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpenCreateContrato(false)}
+              >
+                Cancelar
+              </Button>
+              <Button disabled={isLoading} type="submit">
+                Crear Contrato
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

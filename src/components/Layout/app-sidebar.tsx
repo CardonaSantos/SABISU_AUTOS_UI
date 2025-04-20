@@ -316,6 +316,12 @@ const routesCrm_Admin = [
   },
 
   {
+    icon: FileText,
+    label: "Plantillas contratos",
+    href: "/contrato-plantilla",
+  },
+
+  {
     icon: MapIcon,
     label: "Rutas Cobro",
     submenu: [

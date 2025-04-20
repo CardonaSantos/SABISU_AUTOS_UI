@@ -65,20 +65,6 @@ export const isEditFormValid = (
   );
 };
 
-// Convert notification methods from booleans to string format for API
-export const notificationMethodsToString = (
-  zona: NuevaFacturacionZona | FacturacionZona
-): string => {
-  const methods = [];
-  if (zona.whatsapp) methods.push("WhatsApp");
-  if (zona.email) methods.push("Email");
-  if (zona.sms) methods.push("SMS");
-  if (zona.llamada) methods.push("Llamada");
-  if (zona.telegram) methods.push("Telegram");
-
-  return methods.join(", ");
-};
-
 // Convert notification methods from string to boolean format
 export const stringToNotificationMethods = (
   mediosString: string

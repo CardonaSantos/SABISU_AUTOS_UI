@@ -9,43 +9,41 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import ZonaForm from "./ZonaForm";
-import type { FacturacionZona } from "./FacturacionZonaTypes";
+import type { NuevaFacturacionZona } from "./FacturacionZonaTypes";
 
-interface EditZonaDialogProps {
+interface CreateZonaDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  zona: FacturacionZona | null;
-  onSave: (updatedZona: FacturacionZona) => Promise<void>;
+  initialData: NuevaFacturacionZona;
+  onSubmit: (data: NuevaFacturacionZona) => Promise<void>;
   isLoading: boolean;
 }
 
-const EditZonaDialog: React.FC<EditZonaDialogProps> = ({
+const CreateZonaDialog: React.FC<CreateZonaDialogProps> = ({
   isOpen,
   onOpenChange,
-  zona,
-  onSave,
+  initialData,
+  onSubmit,
   isLoading,
 }) => {
-  if (!zona) return null;
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Zona de Facturación</DialogTitle>
+          <DialogTitle>Nueva Zona de Facturación</DialogTitle>
           <DialogDescription>
-            Modifique los parámetros de la zona de facturación
+            Configure los parámetros para una nueva zona de facturación
           </DialogDescription>
         </DialogHeader>
         <ZonaForm
-          initialData={zona}
-          onSubmit={onSave}
+          initialData={initialData}
+          onSubmit={onSubmit}
           isLoading={isLoading}
-          isEditing={true}
+          isEditing={false}
         />
       </DialogContent>
     </Dialog>
   );
 };
 
-export default EditZonaDialog;
+export default CreateZonaDialog;

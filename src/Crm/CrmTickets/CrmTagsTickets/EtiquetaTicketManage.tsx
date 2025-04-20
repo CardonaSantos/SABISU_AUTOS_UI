@@ -6,7 +6,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -49,13 +48,15 @@ import {
   Loader2,
   Ticket,
   Check,
+  FileText,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
-const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
-// Types
 
+const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
+
+// Types
 interface EtiquetaTicket {
   id: number;
   nombre: string;
@@ -81,21 +82,25 @@ const EtiquetaTicketManage: React.FC = () => {
     nombre: "",
   });
 
-  // State para edición
+  // State para diálogos
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  // const [isTicketsDialogOpen, setIsTicketsDialogOpen] = useState(false);
+
+  // State para edición y eliminación
   const [editingEtiqueta, setEditingEtiqueta] = useState<EtiquetaTicket | null>(
     null
   );
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
-  // State para eliminación
   const [deleteEtiquetaId, setDeleteEtiquetaId] = useState<number | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  // const [selectedEtiqueta, setSelectedEtiqueta] =
+  //   useState<EtiquetaTicket | null>(null);
 
-  // State para ver tickets relacionados
-  const [selectedEtiqueta, setSelectedEtiqueta] =
-    useState<EtiquetaTicket | null>(null);
-  const [isTicketsDialogOpen, setIsTicketsDialogOpen] = useState(false);
-  console.log(selectedEtiqueta, isTicketsDialogOpen);
+  // Estadísticas
+  const [stats, setStats] = useState({
+    totalEtiquetas: 0,
+    totalTickets: 0,
+  });
 
   // Cargar datos
   useEffect(() => {
@@ -111,6 +116,18 @@ const EtiquetaTicketManage: React.FC = () => {
       const response = await axios.get(`${VITE_CRM_API_URL}/tags-ticket`);
       if (response.status === 200) {
         setEtiquetas(response.data);
+
+        // Calcular estadísticas
+        const totalTickets = response.data.reduce(
+          (acc: number, curr: EtiquetaTicket) => acc + (curr.ticketsCount || 0),
+          0
+        );
+
+        setStats({
+          totalEtiquetas: response.data.length,
+          totalTickets,
+        });
+
         setIsLoading(false);
       }
     } catch (err) {
@@ -118,6 +135,11 @@ const EtiquetaTicketManage: React.FC = () => {
       setError("Error al cargar las etiquetas. Intente nuevamente.");
       setIsLoading(false);
     }
+  };
+
+  // Resetear formulario
+  const resetForm = () => {
+    setNuevaEtiqueta({ nombre: "" });
   };
 
   // Handlers para formulario
@@ -165,16 +187,17 @@ const EtiquetaTicketManage: React.FC = () => {
       );
 
       if (response.status === 201) {
-        toast.success("Etiqueta Creada");
-        fetchEtiquetas();
-        setIsLoading(false);
-        setNuevaEtiqueta({ nombre: "" });
+        toast.success("Etiqueta creada exitosamente");
+        await fetchEtiquetas();
+        resetForm();
+        setIsCreateDialogOpen(false);
       }
     } catch (err: any) {
       console.error("Error al crear etiqueta:", err);
       setError(
         err.message || "Error al crear la etiqueta. Intente nuevamente."
       );
+    } finally {
       setIsLoading(false);
     }
   };
@@ -225,12 +248,7 @@ const EtiquetaTicketManage: React.FC = () => {
         setEditingEtiqueta(null);
         setIsLoading(false);
 
-        setSuccess("Etiqueta actualizada correctamente");
-
-        // Limpiar mensaje de éxito después de 3 segundos
-        setTimeout(() => {
-          setSuccess(null);
-        }, 3000);
+        toast.success("Etiqueta actualizada correctamente");
       }, 600);
     } catch (err: any) {
       console.error("Error al actualizar etiqueta:", err);
@@ -254,28 +272,24 @@ const EtiquetaTicketManage: React.FC = () => {
     setError(null);
 
     try {
-      // En un entorno real, esto sería una llamada a la API
       const response = await axios.delete(
         `${VITE_CRM_API_URL}/tags-ticket/delete-ticket/${deleteEtiquetaId}`
       );
 
       if (response.status === 200) {
-        toast.success("Tag eliminada");
-        fetchEtiquetas();
+        toast.success("Etiqueta eliminada exitosamente");
+        await fetchEtiquetas();
         setIsDeleteDialogOpen(false);
       }
     } catch (err) {
       console.error("Error al eliminar etiqueta:", err);
       setError("Error al eliminar la etiqueta. Intente nuevamente.");
+    } finally {
       setIsLoading(false);
     }
   };
 
   // Ver tickets relacionados
-  const handleViewTickets = (etiqueta: EtiquetaTicket) => {
-    setSelectedEtiqueta(etiqueta);
-    setIsTicketsDialogOpen(true);
-  };
 
   // Filter etiquetas based on search
   const filteredEtiquetas = etiquetas.filter((etiqueta) =>
@@ -299,19 +313,38 @@ const EtiquetaTicketManage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-4">
+    <div className="container mx-auto py-6 space-y-6">
+      {/* Encabezado */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Tag className="h-5 w-5" />
             Etiquetas de Tickets
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground">
             Gestione las etiquetas para categorizar sus tickets de soporte
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          <div className="relative w-full md:w-auto">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar etiquetas..."
+              className="pl-8 w-full md:w-[250px]"
+              value={searchEtiqueta}
+              onChange={(e) => setSearchEtiqueta(e.target.value)}
+            />
+          </div>
+
+          <Button className="gap-1" onClick={() => setIsCreateDialogOpen(true)}>
+            <PlusCircle className="h-4 w-4" />
+            <span className="hidden md:inline">Nueva Etiqueta</span>
+            <span className="md:hidden">Nueva</span>
+          </Button>
+        </div>
       </div>
 
+      {/* Mensajes de error y éxito */}
       {error && (
         <Alert variant="destructive" className="max-w-md">
           <AlertCircle className="h-4 w-4" />
@@ -328,20 +361,180 @@ const EtiquetaTicketManage: React.FC = () => {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Formulario para crear etiquetas */}
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <PlusCircle className="h-4 w-4" />
-              Nueva Etiqueta
-            </CardTitle>
+      {/* Tarjetas de estadísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-medium text-muted-foreground">
+                Total Etiquetas
+              </p>
+              <div className="flex items-baseline gap-2">
+                <h3 className="text-3xl font-bold">{stats.totalEtiquetas}</h3>
+                <p className="text-sm text-muted-foreground">
+                  Etiquetas configuradas
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-medium text-muted-foreground">
+                Total Tickets
+              </p>
+              <div className="flex items-baseline gap-2">
+                <h3 className="text-3xl font-bold">{stats.totalTickets}</h3>
+                <p className="text-sm text-muted-foreground">
+                  Tickets etiquetados
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabla de etiquetas */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div>
+            <CardTitle className="text-xl">Etiquetas Existentes</CardTitle>
             <CardDescription>
-              Cree una nueva etiqueta para categorizar tickets
+              Lista de etiquetas disponibles para tickets
             </CardDescription>
-          </CardHeader>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading && etiquetas.length === 0 ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : etiquetas.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-8">
+              <FileText className="h-10 w-10 text-muted-foreground opacity-50" />
+              <p className="text-muted-foreground">
+                No hay etiquetas configuradas
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => setIsCreateDialogOpen(true)}
+              >
+                Crear nueva etiqueta
+              </Button>
+            </div>
+          ) : (
+            <div className="rounded-md border overflow-hidden">
+              <ScrollArea className="h-[calc(100vh-400px)] min-h-[300px] rounded-md">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Etiqueta</TableHead>
+                        <TableHead className="text-center">Tickets</TableHead>
+                        <TableHead className="w-[100px] text-right">
+                          Acciones
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredEtiquetas.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={3}
+                            className="text-center text-muted-foreground py-6"
+                          >
+                            No se encontraron resultados para "{searchEtiqueta}"
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredEtiquetas.map((etiqueta) => (
+                          <TableRow key={etiqueta.id}>
+                            <TableCell>
+                              <Badge
+                                className={`font-medium ${getTagColor(
+                                  etiqueta.id
+                                )}`}
+                              >
+                                <Tag className="mr-1 h-3 w-3" />
+                                {etiqueta.nombre}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 flex items-center gap-1"
+                                // onClick={() => handleViewTickets(etiqueta)}
+                                disabled={!etiqueta.ticketsCount}
+                              >
+                                <Ticket className="h-3.5 w-3.5" />
+                                <span>{etiqueta.ticketsCount || 0}</span>
+                              </Button>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                    <span className="sr-only">Abrir menú</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    className="flex items-center gap-2"
+                                    onClick={() => handleEditClick(etiqueta)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                    <span>Editar</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="flex items-center gap-2 text-destructive"
+                                    onClick={() =>
+                                      handleDeleteClick(etiqueta.id)
+                                    }
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    <span>Eliminar</span>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Diálogo para Crear Etiqueta */}
+      <Dialog
+        open={isCreateDialogOpen}
+        onOpenChange={(open) => {
+          setIsCreateDialogOpen(open);
+          if (!open) resetForm();
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Crear Nueva Etiqueta</DialogTitle>
+            <DialogDescription>
+              Ingrese un nombre único para la nueva etiqueta de tickets.
+            </DialogDescription>
+          </DialogHeader>
           <form onSubmit={handleSubmitEtiqueta}>
-            <CardContent>
+            <div className="grid gap-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="nombre">Nombre de la Etiqueta</Label>
                 <div className="relative">
@@ -360,11 +553,17 @@ const EtiquetaTicketManage: React.FC = () => {
                   El nombre debe ser único y descriptivo
                 </p>
               </div>
-            </CardContent>
-            <CardFooter>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCreateDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
               <Button
                 type="submit"
-                className="w-full"
                 disabled={isLoading || !nuevaEtiqueta.nombre.trim()}
               >
                 {isLoading ? (
@@ -373,145 +572,13 @@ const EtiquetaTicketManage: React.FC = () => {
                     Creando...
                   </>
                 ) : (
-                  <>Crear Etiqueta</>
+                  "Crear Etiqueta"
                 )}
               </Button>
-            </CardFooter>
+            </DialogFooter>
           </form>
-        </Card>
-
-        {/* Tabla de etiquetas */}
-        <Card className="md:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <div>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Tag className="h-4 w-4" />
-                Etiquetas Existentes
-              </CardTitle>
-              <CardDescription>
-                Lista de etiquetas disponibles para tickets
-              </CardDescription>
-            </div>
-            <div className="relative w-full max-w-[200px]">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar etiquetas..."
-                className="pl-8 w-full"
-                value={searchEtiqueta}
-                onChange={(e) => setSearchEtiqueta(e.target.value)}
-              />
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading && etiquetas.length === 0 ? (
-              <div className="flex justify-center items-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : etiquetas.length === 0 ? (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>No hay etiquetas</AlertTitle>
-                <AlertDescription>
-                  No se encontraron etiquetas. Cree una nueva utilizando el
-                  formulario.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <div className="rounded-md border overflow-hidden">
-                <ScrollArea className="h-96 rounded-md border">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Etiqueta</TableHead>
-                          <TableHead className="text-center">Tickets</TableHead>
-                          <TableHead className="w-[100px] text-right">
-                            Acciones
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredEtiquetas.length === 0 ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={3}
-                              className="text-center text-muted-foreground py-6"
-                            >
-                              No se encontraron resultados para "
-                              {searchEtiqueta}"
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          filteredEtiquetas.map((etiqueta) => (
-                            <TableRow key={etiqueta.id}>
-                              <TableCell>
-                                <Badge
-                                  className={`font-medium ${getTagColor(
-                                    etiqueta.id
-                                  )}`}
-                                >
-                                  <Tag className="mr-1 h-3 w-3" />
-                                  {etiqueta.nombre}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 flex items-center gap-1"
-                                  onClick={() => handleViewTickets(etiqueta)}
-                                  disabled={!etiqueta.ticketsCount}
-                                >
-                                  <Ticket className="h-3.5 w-3.5" />
-                                  <span>{etiqueta.ticketsCount || 0}</span>
-                                </Button>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                    >
-                                      <MoreVertical className="h-4 w-4" />
-                                      <span className="sr-only">
-                                        Abrir menú
-                                      </span>
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      className="flex items-center gap-2"
-                                      onClick={() => handleEditClick(etiqueta)}
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                      <span>Editar</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="flex items-center gap-2 text-destructive"
-                                      onClick={() =>
-                                        handleDeleteClick(etiqueta.id)
-                                      }
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                      <span>Eliminar</span>
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </ScrollArea>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -612,80 +679,6 @@ const EtiquetaTicketManage: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* View Tickets Dialog */}
-      {/* <Dialog open={isTicketsDialogOpen} onOpenChange={setIsTicketsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Ticket className="h-4 w-4" />
-              Tickets con etiqueta:
-              {selectedEtiqueta && (
-                <Badge
-                  className={`ml-2 font-medium ${
-                    selectedEtiqueta ? getTagColor(selectedEtiqueta.id) : ""
-                  }`}
-                >
-                  <Tag className="mr-1 h-3 w-3" />
-                  {selectedEtiqueta?.nombre}
-                </Badge>
-              )}
-            </DialogTitle>
-            <DialogDescription>
-              Lista de tickets que utilizan esta etiqueta.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            {selectedEtiqueta?.tickets &&
-            selectedEtiqueta.tickets.length > 0 ? (
-              <div className="rounded-md border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Título</TableHead>
-                      <TableHead className="w-[60px] text-right">Ver</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedEtiqueta.tickets.map((ticketEtiqueta) => (
-                      <TableRow key={ticketEtiqueta.id}>
-                        <TableCell className="font-medium">
-                          #{ticketEtiqueta.ticket.id}
-                        </TableCell>
-                        <TableCell>{ticketEtiqueta.ticket.titulo}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
-                            <LinkIcon className="h-4 w-4" />
-                            <span className="sr-only">Ver ticket</span>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>No hay tickets</AlertTitle>
-                <AlertDescription>
-                  No se encontraron tickets asociados a esta etiqueta.
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setIsTicketsDialogOpen(false)}>
-              Cerrar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog> */}
     </div>
   );
 };

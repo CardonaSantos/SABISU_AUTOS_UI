@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Clock,
   Ellipsis,
+  FileText,
   Flag,
   RotateCcw,
   Send,
@@ -380,6 +381,11 @@ export default function TicketDetail({
                 >
                   Actualizar Ticket <RotateCcw className="h-5 w-5 mx-2" />
                 </DropdownMenuCheckboxItem>
+                <Link to={`/boleta-ticket-soporte/${ticket.id}`}>
+                  <DropdownMenuCheckboxItem>
+                    Imprimir Boleta Ticket <FileText className="h-5 w-5 mx-2" />
+                  </DropdownMenuCheckboxItem>
+                </Link>
 
                 <DropdownMenuCheckboxItem
                   onClick={() => {

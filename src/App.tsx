@@ -84,6 +84,9 @@ import RutaCobro from "./Crm/CrmRutas/CrmRutasCobro/RutaCobro";
 import EditCustomers from "./Crm/CrmCustomerEdition/CrmCustomerEdition";
 import SectorsManagement from "./Crm/CrmSector/SectorsManagement";
 import PlantillasMensajes from "./Crm/CrmMensajes/PlantillasMensajes";
+import BoletaTicket from "./Crm/CrmTickets/CrmTicketsBoleta/BoletaTicket";
+import PlantillaContratoManage from "./Crm/CrmPlantillaContrato/CrmPlantillaContratoManage";
+import ContratoServicioPDF from "./Crm/CrmPlantillaContrato/CrmContratoPdf";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
@@ -704,6 +707,33 @@ function App() {
               element={
                 <ProtectRouteCrmUser>
                   <PlantillasMensajes />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/boleta-ticket-soporte/:ticketId"
+              element={
+                <ProtectRouteCrmUser>
+                  <BoletaTicket />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/contrato-plantilla"
+              element={
+                <ProtectRouteCrmUser>
+                  <PlantillaContratoManage />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm/contrato/:id/vista"
+              element={
+                <ProtectRouteCrmUser>
+                  <ContratoServicioPDF />
                 </ProtectRouteCrmUser>
               }
             />

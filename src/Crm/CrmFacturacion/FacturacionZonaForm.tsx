@@ -300,26 +300,10 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({
             <Label>Medios de Notificación</Label>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center space-x-2">
-                <Switch
-                  id="whatsapp"
-                  checked={formData.whatsapp || false}
-                  onCheckedChange={(checked) =>
-                    handleSwitchChange("whatsapp", checked)
-                  }
-                  disabled={!formData.enviarRecordatorio}
-                />
                 <Label htmlFor="whatsapp">WhatsApp</Label>
               </div>
 
               <div className="flex items-center space-x-2">
-                <Switch
-                  id="email"
-                  checked={formData.email || false}
-                  onCheckedChange={(checked) =>
-                    handleSwitchChange("email", checked)
-                  }
-                  disabled={!formData.enviarRecordatorio}
-                />
                 <Label htmlFor="email">Email</Label>
               </div>
 
@@ -336,14 +320,6 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({
               </div> */}
 
               <div className="flex items-center space-x-2">
-                <Switch
-                  id="llamada"
-                  checked={formData.llamada || false}
-                  onCheckedChange={(checked) =>
-                    handleSwitchChange("llamada", checked)
-                  }
-                  disabled={!formData.enviarRecordatorio}
-                />
                 <Label htmlFor="llamada">Llamada</Label>
               </div>
 

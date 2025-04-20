@@ -14,18 +14,11 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import utc from "dayjs/plugin/utc";
 import localizedFormat from "dayjs/plugin/localizedFormat";
-// const API_URL = import.meta.env.VITE_API_URL;
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
 dayjs.locale("es");
 
-// const formatearFecha = (fecha: string) => {
-//   // Formateo en UTC sin conversión a local
-//   return dayjs(fecha).format("DD/MM/YYYY hh:mm A");
-// };
-
-// Configurar el worker de PDF.js
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
@@ -309,10 +302,6 @@ function CrmPdfPago() {
                   </p>
                 </div>
                 <div>
-                  {/* <p className="text-gray-600">
-                    ID Cliente:{" "}
-                    <span className="font-semibold">{factura.cliente.id}</span>
-                  </p> */}
                   <p className="text-gray-600">
                     Fecha de pago esperada:{" "}
                     <span className="font-semibold">

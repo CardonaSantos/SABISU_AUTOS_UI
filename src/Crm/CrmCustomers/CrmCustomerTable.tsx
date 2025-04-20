@@ -91,6 +91,22 @@ interface Municipios {
   id: number;
   nombre: string;
 }
+interface OptionSelected {
+  value: string; // Cambiar 'number' a 'string'
+  label: string;
+}
+
+// O si quieres mantener los textos descriptivos pero de forma más limpia:
+const estadosConDescripcion = [
+  { value: "ACTIVO", label: "ACTIVO " },
+  { value: "PENDIENTE_ACTIVO", label: "PENDIENTE ACTIVO " },
+  { value: "PAGO_PENDIENTE", label: "PAGO PENDIENTE " },
+  { value: "MOROSO", label: "MOROSO " },
+  { value: "ATRASADO", label: "ATRASADO " },
+  { value: "SUSPENDIDO", label: "SUSPENDIDO " },
+  { value: "DESINSTALADO", label: "DESINSTALADO" },
+  { value: "EN_INSTALACION", label: "EN INSTALACION" },
+];
 
 export default function ClientesTable() {
   const [filter, setFilter] = useState("");
@@ -155,6 +171,11 @@ export default function ClientesTable() {
   };
   const [sectores, setSectores] = useState<Sector[]>([]);
   const [sectorSelected, setSectorSelected] = useState<string | null>(null);
+  const [estadoSelected, setEstadoSelected] = useState<string | null>(null);
+
+  const handleSelectEstado = (selectedOption: OptionSelected | null) => {
+    setEstadoSelected(selectedOption ? selectedOption.value : null);
+  };
 
   interface Sector {
     id: number;
@@ -214,11 +235,6 @@ export default function ClientesTable() {
       toast.info("Error al conseguir servicios wifi");
     }
   };
-
-  interface OptionSelected {
-    value: string; // Cambiar 'number' a 'string'
-    label: string;
-  }
 
   const optionsZonasFacturacion: OptionSelected[] = zonasFacturacion
     .sort((a, b) => {
@@ -319,10 +335,15 @@ export default function ClientesTable() {
         ? cliente?.sectorId === Number(sectorSelected)
         : true;
 
+      const matchesPorEstado = estadoSelected
+        ? cliente?.estado === estadoSelected
+        : true;
+
       return (
         matchesMunicipio &&
         matchesDepartamento &&
         matchesPorZonas &&
+        matchesPorEstado &&
         matchesPorSector
       );
     });
@@ -332,6 +353,7 @@ export default function ClientesTable() {
     muniSelected,
     depaSelected,
     sectorSelected,
+    estadoSelected,
   ]);
 
   // **Configuración de la tabla**
@@ -452,6 +474,23 @@ export default function ClientesTable() {
                       }
                     : null
                 }
+                className="text-xs text-black"
+              />
+            </div>
+
+            {/* ESTADO CLIENTE */}
+            <div className="space-y-1">
+              <Label htmlFor="municipioId-all">Estado</Label>
+              <ReactSelectComponent
+                placeholder="Seleccione un estado"
+                options={estadosConDescripcion}
+                onChange={handleSelectEstado}
+                value={
+                  estadosConDescripcion.find(
+                    (opt) => opt.value === estadoSelected
+                  ) || null
+                }
+                isClearable
                 className="text-xs text-black"
               />
             </div>

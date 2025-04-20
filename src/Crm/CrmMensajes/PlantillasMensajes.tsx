@@ -564,9 +564,10 @@ export default function PlantillasMensajesView() {
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  Al crear su factura, puede usar variables como{" "}
-                  {"[nombre_cliente]"}, {"[fecha_vencimiento]"},
-                  {"[fecha_vencimiento]"}.
+                  Al crear su mensaje, puede utilizar variables como:
+                  [nombre_cliente], [fecha_pago], [monto_pago],
+                  [nombre_servicio], [detalle_factura] y [empresa_nombre] para
+                  personalizar y optimizar el contenido del texto.
                 </p>
               )}
             </div>

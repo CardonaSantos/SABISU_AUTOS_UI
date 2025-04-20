@@ -26,6 +26,18 @@ export interface ClienteDetailsDto {
   ticketSoporte: TicketSoporte[];
   facturaInternet: FacturaInternet[];
   clienteServicio: ClienteServicio[];
+  contratoServicioInternet: ContratoServicioInternet | null;
+}
+
+interface ContratoServicioInternet {
+  id: number;
+  creadoEn: string; // ISO string
+  actualizadoEn: string; // ISO string
+  costoInstalacion: number;
+  fechaInstalacionProgramada: string; // ISO string
+  fechaPago: string; // ISO string
+  ssid: string;
+  wifiPassword: string;
 }
 
 interface Sector {

@@ -1,8 +1,6 @@
 "use client";
 
 import type React from "react";
-
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,17 +9,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface DeleteZonaDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirmDelete: () => void;
+  onConfirmDelete: () => Promise<void>;
   isLoading: boolean;
 }
 
-export const DeleteZonaDialog: React.FC<DeleteZonaDialogProps> = ({
+const DeleteZonaDialog: React.FC<DeleteZonaDialogProps> = ({
   isOpen,
   onOpenChange,
   onConfirmDelete,
@@ -76,3 +75,5 @@ export const DeleteZonaDialog: React.FC<DeleteZonaDialogProps> = ({
     </Dialog>
   );
 };
+
+export default DeleteZonaDialog;

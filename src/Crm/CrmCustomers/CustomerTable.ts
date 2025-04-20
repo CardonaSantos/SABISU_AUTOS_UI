@@ -2,6 +2,7 @@ export interface ClienteDto {
   id: number;
   nombreCompleto: string;
   // nombreCompleto: string;
+  estado: EstadoCliente;
   telefono: string;
   dpi: string;
   direccion: string;
@@ -19,6 +20,16 @@ export interface ClienteDto {
   sectorId: number;
 }
 
+export enum EstadoCliente {
+  ACTIVO = "ACTIVO", // Pago al día
+  PENDIENTE_ACTIVO = "PENDIENTE_ACTIVO", // Tiene un recibo pendiente
+  PAGO_PENDIENTE = "PAGO_PENDIENTE", // Tiene un pago pendiente vencido
+  MOROSO = "MOROSO", // Más de 3 meses sin pagar y cortado
+  ATRASADO = "ATRASADO", // Dos facturas
+  SUSPENDIDO = "SUSPENDIDO", // Servicio cortado
+  DESINSTALADO = "DESINSTALADO", // Desintalado
+  EN_INSTALACION = "EN_INSTALACION",
+}
 interface Sector {
   id: number;
   nombre: string;
