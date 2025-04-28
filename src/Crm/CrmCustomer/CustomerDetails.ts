@@ -109,7 +109,7 @@ export interface FacturaInternet {
   fechaVencimiento: string; // ISO string
   pagada: boolean;
   estado: string;
-  pagos: Pagos;
+  pagos: Pagos[];
 }
 
 interface Cobrador {

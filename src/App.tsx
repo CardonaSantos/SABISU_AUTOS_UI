@@ -87,6 +87,7 @@ import PlantillasMensajes from "./Crm/CrmMensajes/PlantillasMensajes";
 import BoletaTicket from "./Crm/CrmTickets/CrmTicketsBoleta/BoletaTicket";
 import PlantillaContratoManage from "./Crm/CrmPlantillaContrato/CrmPlantillaContratoManage";
 import ContratoServicioPDF from "./Crm/CrmPlantillaContrato/CrmContratoPdf";
+import { RutasCobroEdit } from "./Crm/CrmRutas/RutasCobroEdit";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
@@ -734,6 +735,15 @@ function App() {
               element={
                 <ProtectRouteCrmUser>
                   <ContratoServicioPDF />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm/rutas-cobro/edit/:id"
+              element={
+                <ProtectRouteCrmUser>
+                  <RutasCobroEdit />
                 </ProtectRouteCrmUser>
               }
             />

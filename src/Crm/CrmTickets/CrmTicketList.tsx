@@ -131,7 +131,6 @@ export default function TicketList({
     const newColorMap: Record<string, string> = { ...colorMap }; // Hacer una copia del colorMap actual
 
     tickets.forEach((ticket) => {
-      // Si el ticket aún no tiene color asignado, asigna un color aleatorio
       if (!newColorMap[ticket.id]) {
         newColorMap[ticket.id] = getRandomColor();
       }

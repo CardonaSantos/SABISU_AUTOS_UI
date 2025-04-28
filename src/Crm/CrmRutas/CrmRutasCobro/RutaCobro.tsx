@@ -249,7 +249,6 @@ function RutaCobro() {
     setIsSubmitting(true);
 
     try {
-      // Validaciones
       if (nuevoPago.montoPagado <= 0) {
         throw new Error("El monto pagado debe ser mayor a cero");
       }
@@ -257,8 +256,6 @@ function RutaCobro() {
       if (!nuevoPago.cobradorId) {
         throw new Error("Debe seleccionar un cobrador");
       }
-
-      //   REVISAR EL MAPEO DE PAGOS, Y EL ESTADO DE LA FACTURA
 
       const dataToSend = {
         facturaInternetId: Number(facturaSelected),
@@ -272,10 +269,7 @@ function RutaCobro() {
       setOpenConfirm(true);
 
       console.log("La data enviada: ", dataToSend);
-      // setTimeout(() => {
 
-      // }, 1000);
-      // En un entorno real, esto sería una llamada a la API
       const response = await axios.post(
         `${VITE_CRM_API_URL}/facturacion/create-new-payment-for-ruta`,
         dataToSend
@@ -296,7 +290,6 @@ function RutaCobro() {
         });
         setOpenConfirm(false);
         setSelectedClientId(null);
-        // setFacturaSelected(null);
         getRuta();
         setOpenPdfPago(true);
       }
@@ -480,6 +473,9 @@ function RutaCobro() {
                                     </div>
                                     <div className="mt-2">
                                       <Button
+                                        disabled={
+                                          factura.estadoFactura === "PAGADA"
+                                        }
                                         size="sm"
                                         className="w-full"
                                         onClick={() => {
@@ -504,7 +500,12 @@ function RutaCobro() {
                               </div>
                             ) : (
                               <div className="text-sm text-muted-foreground">
-                                No hay facturas pendientes
+                                No hay facturas pendientes.{" "}
+                                <Link to={`/crm/cliente/${cliente.id}`}>
+                                  <span className="text-blue-500 hover:underline underline">
+                                    Ver Facturación
+                                  </span>
+                                </Link>
                               </div>
                             )}
                           </div>
@@ -538,13 +539,6 @@ function RutaCobro() {
               <CardTitle className="text-lg">
                 Mapa de clientes en ruta
               </CardTitle>
-              {/* <CardDescription>
-                {selectedClientId ? (
-                  <span>Mostrando ubicación del cliente seleccionado</span>
-                ) : (
-                  <span>Mostrando todos los clientes en la ruta</span>
-                )}
-              </CardDescription> */}
             </CardHeader>
             <CardContent className="flex-1 p-0">
               <div className="h-full w-full">

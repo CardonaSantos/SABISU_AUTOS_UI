@@ -147,7 +147,6 @@ interface PagoFacturaInternet {
   cobrador: string;
   creadoEn: string;
 }
-
 interface FacturaInternet {
   id: number;
   fechaPagoEsperada: string | null;
