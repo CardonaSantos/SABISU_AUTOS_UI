@@ -192,7 +192,8 @@ function FacturaEdit() {
       // La API devuelve 200 OK (no 201)
       if (response.status === 200) {
         toast.success("Factura actualizada con éxito");
-        navigate(-1); // vuelve atrás
+        // navigate(); // vuelve atrás
+        navigate(`/crm/cliente/${factura?.cliente.id}?tab=facturacion`);
       } else {
         toast.info("No se pudo actualizar la factura");
       }
