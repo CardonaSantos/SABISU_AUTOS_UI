@@ -61,12 +61,22 @@ import {
   Download,
   BadgeCheck,
   Printer,
+  EllipsisVertical,
+  FilePenLine,
+  Trash2,
 } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStoreCrm } from "@/Crm/ZustandCrm/ZustandCrmContext";
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 // Enums
 enum EstadoFacturaInternet {
@@ -181,6 +191,8 @@ interface NuevoPago {
 
 // Componente principal
 const CrmPaymentFactura: React.FC = () => {
+  const navigate = useNavigate();
+
   const { facturaId } = useParams();
   console.log("el id es: ", facturaId);
   const userId = useStoreCrm((state) => state.userIdCRM) ?? 0;
@@ -458,6 +470,43 @@ const CrmPaymentFactura: React.FC = () => {
   const facturasPendientesx = factura?.facturasPendientes;
   console.log("Las facturas pendientes son: ", facturasPendientesx);
 
+  // const [ticketDeleteId, setTicketDeleteId] = useState<number | null>(null);
+  const [openDelete, setOpenDelete] = useState(false);
+  const [factudaIdDelete, setFacturaIdDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteFactura = async () => {
+    if (!factudaIdDelete) {
+      toast.warning("No hay factura seleccionada para eliminar");
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      const response: AxiosResponse = await axios.delete(
+        `${VITE_CRM_API_URL}/facturacion/delete-one-factura`,
+        {
+          data: {
+            facturaId: factudaIdDelete,
+          },
+        }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        toast.success("Factura eliminada correctamente");
+        setOpenDelete(false);
+        setIsDeleting(false);
+        navigate(`/crm/cliente/${factura?.clienteId}?tab=facturacion`);
+      } else {
+        toast.error("No se pudo eliminar la factura");
+      }
+    } catch (error: any) {
+      console.error("Error al eliminar factura:", error);
+      toast.error("Ocurrió un error al intentar eliminar la factura");
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6 print:py-0">
       {/* Botón de volver y título */}
@@ -521,6 +570,45 @@ const CrmPaymentFactura: React.FC = () => {
                   {getEstadoIcon(factura.estadoFacturaInternet)}
                   {factura.estadoFacturaInternet}
                 </Badge>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-full hover:bg-muted dark:hover:bg-gray-800"
+                    >
+                      <EllipsisVertical className="h-3.5 w-3.5" />
+                      <span className="sr-only">Acciones</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent align="end" className="w-36">
+                    <DropdownMenuLabel className="text-sm">
+                      Acciones
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        to={`/editar?factura=${factura.id}`}
+                        className="flex items-center text-green-600 dark:text-green-400 focus:text-green-700 dark:focus:text-green-300"
+                      >
+                        <FilePenLine className="h-3.5 w-3.5 mr-2" />
+                        Editar
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setFacturaIdDelete(factura.id);
+                        setOpenDelete(true);
+                      }}
+                      className="text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-2" />
+                      Eliminar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </CardHeader>
             <CardContent className="space-y-6 ">
@@ -541,16 +629,6 @@ const CrmPaymentFactura: React.FC = () => {
                         ({factura.cliente.servicioInternet.velocidad})
                       </span>
                     )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Empresa
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Building className="h-4 w-4 text-primary dark:text-white" />
-                    <span>{factura.empresa.nombre}</span>
                   </div>
                 </div>
 
@@ -581,7 +659,7 @@ const CrmPaymentFactura: React.FC = () => {
 
                 <div className="space-y-2">
                   <div className="text-sm font-medium text-muted-foreground">
-                    Fecha de Pago
+                    Fecha Pagada
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-primary dark:text-white " />
@@ -948,14 +1026,15 @@ const CrmPaymentFactura: React.FC = () => {
                 <Button
                   onClick={() => setOpenConfirm(true)}
                   type="button"
-                  className="w-full md:w-auto"
+                  // variant={"outline"}
+                  className="w-full md:w-auto bg-zinc-900 hover:bg-zinc-800"
                   disabled={
                     isSubmitting ||
                     !nuevoPago.montoPagado ||
                     Number(nuevoPago.montoPagado) <= 0
                   }
                 >
-                  <Save className="mr-2 h-4 w-4" />
+                  <Save className="mr-2 h-4 w-4 " />
                   Registrar
                 </Button>
               </CardFooter>
@@ -1064,46 +1143,54 @@ const CrmPaymentFactura: React.FC = () => {
       </Dialog>
 
       <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
-        <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-lg border-0 shadow-lg">
-          {/* Header with icon */}
-          <DialogHeader className="pt-6 px-6 pb-2">
-            <DialogTitle
-              className="flex items-center gap-3 text-xl font-semibold
-              justify-center 
-              "
-            >
-              <div className="bg-amber-100 dark:bg-gray-900 p-2 rounded-full">
-                <AlertCircle className="h-5 w-5 text-rose-500" />
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-xl border-0 shadow-xl">
+          {/* Warning icon */}
+          <div className="flex justify-center mt-6">
+            <div className="rounded-full p-3 shadow-lg border-4 border-white">
+              <div className="bg-amber-100 p-3 rounded-full animate-pulse">
+                <AlertCircle className="h-8 w-8 text-amber-600" />
               </div>
+            </div>
+          </div>
+
+          {/* Header */}
+          <DialogHeader className="pt-8 px-6 pb-2">
+            <DialogTitle className="text-xl font-semibold text-center text-gray-800 dark:text-gray-400">
               Confirmación de Pago
             </DialogTitle>
+            <p className="text-center text-gray-600 text-sm mt-1 dark:text-gray-400">
+              Por favor revise los datos antes de continuar
+            </p>
           </DialogHeader>
 
           <div className="px-6 py-4">
-            <div className="border border-gray-200 dark:border-gray-800 rounded-md p-4 mb-5 bg-gray-50 dark:bg-gray-800 ">
-              <h3 className="font-medium mb-2 text-gray-900 dark:text-gray-100 text-center">
+            {/* Question card */}
+            <div className="border border-gray-200 rounded-lg p-5 mb-5 bg-gray-50 shadow-inner dark:bg-stone-950">
+              <h3 className="font-medium mb-2 text-gray-800 text-center dark:text-gray-400">
                 ¿Estás seguro de que deseas registrar este pago con estos datos?
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+              <p className="text-sm text-gray-600 text-center dark:text-gray-400">
                 Por favor, revisa cuidadosamente los datos antes de proceder.
               </p>
             </div>
 
-            <div className="h-px bg-gray-200 dark:bg-gray-800 my-4"></div>
+            {/* Divider */}
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent my-5"></div>
 
+            {/* Action buttons */}
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2 pb-2">
               <Button
-                variant={"outline"}
+                variant="outline"
                 onClick={() => setOpenConfirm(false)}
-                className="border w-full bg-red-500 text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-600 rounded-lg py-2 hover:text-white "
+                className="border border-gray-200 w-full bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 rounded-lg py-2.5 transition-all duration-200"
               >
                 <X className="mr-2 h-4 w-4" />
                 Cancelar
               </Button>
               <Button
-                variant={"outline"}
+                type="button"
                 onClick={handleSubmitPago}
-                className="bg-teal-600 text-white w-full hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 rounded-lg py-2 hover:text-white"
+                className="w-full bg-zinc-900 text-white hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-gray-800 rounded-lg py-2.5 shadow-sm transition-all duration-200"
               >
                 {isSubmitting ? (
                   <>
@@ -1123,54 +1210,123 @@ const CrmPaymentFactura: React.FC = () => {
       </Dialog>
 
       <Dialog open={openPdfPago} onOpenChange={setOpenPdfPago}>
-        <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-lg border-0 shadow-lg">
-          {/* Header with icon */}
-          <DialogHeader className="pt-6 px-6 pb-2">
-            <DialogTitle
-              className="flex items-center gap-3 text-xl font-semibold
-              justify-center 
-              "
-            >
-              <div className="bg-blue-100 dark:bg-gray-900 p-2 rounded-full">
-                <BadgeCheck className="h-5 w-5 text-green-500" />
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-xl border-0 shadow-xl hite">
+          {/* Success icon */}
+          <div className="flex justify-center mt-6">
+            <div className="rounded-full p-3 shadow-lg border-4 border-white">
+              <div className="bg-emerald-100 p-3 rounded-full animate-pulse">
+                <BadgeCheck className="h-8 w-8 text-emerald-600" />
               </div>
+            </div>
+          </div>
+
+          {/* Header */}
+          <DialogHeader className="pt-8 px-6 pb-2">
+            <DialogTitle className="text-xl font-semibold text-center text-gray-800 dark:text-gray-400">
               Pago registrado exitosamente
             </DialogTitle>
+            <p
+              className="text-center text-gray-600 text-sm mt-1 
+            dark:text-gray-400
+            "
+            >
+              Su transacción ha sido procesada correctamente
+            </p>
           </DialogHeader>
 
           <div className="px-6 py-4">
-            <div className="border border-gray-200 dark:border-gray-800 rounded-md p-4 mb-5 bg-gray-50 dark:bg-gray-800 ">
-              <h3 className="font-medium mb-2 text-gray-900 dark:text-gray-100 text-center">
+            {/* Question card */}
+            <div
+              className="border border-gray-200 rounded-lg p-5 mb-5 bg-gray-50 shadow-inner
+            dark:bg-stone-950
+            "
+            >
+              <h3
+                className="font-medium mb-2 text-gray-800 text-center
+            dark:text-gray-400
+              
+              "
+              >
                 ¿Desea imprimir su comprobante?
               </h3>
-              {/* <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                Por favor, revisa cuidadosamente los datos antes de proceder.
-              </p> */}
+              <p
+                className="text-sm text-gray-600 text-center
+            dark:text-gray-400
+              
+              "
+              >
+                Puede descargar el comprobante ahora o acceder a él más tarde
+                desde su historial.
+              </p>
             </div>
 
-            <div className="h-px bg-gray-200 dark:bg-gray-800 my-4"></div>
+            {/* Divider */}
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent my-5"></div>
 
+            {/* Action buttons */}
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2 pb-2">
               <Button
-                variant={"outline"}
+                variant="outline"
                 onClick={() => setOpenPdfPago(false)}
-                className="border w-full bg-red-500 text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-600 rounded-lg py-2 hover:text-white "
+                className="border border-gray-200 w-full bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 rounded-lg py-2.5 transition-all duration-200"
               >
                 <X className="mr-2 h-4 w-4" />
-                Mantenerse
+                Cerrar
               </Button>
-              <Link to={`/crm/factura-pago/pago-servicio-pdf/${facturaId}`}>
+              <Link
+                to={`/crm/factura-pago/pago-servicio-pdf/${facturaId}`}
+                className="w-full sm:w-auto"
+              >
                 <Button
                   onClick={() => setOpenPdfPago(false)}
-                  variant={"outline"}
-                  className="bg-teal-600 text-white w-full hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 rounded-lg py-2 hover:text-white"
+                  className="w-full bg-zinc-900  hover:bg-zinc-800 text-white focus:outline-none focus:ring-2 focus:ring-gray-800 rounded-lg py-2.5 shadow-sm transition-all duration-200"
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Conseguir comprobante
+                  Descargar comprobante
                 </Button>
               </Link>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={openDelete} onOpenChange={setOpenDelete}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              Confirmar Eliminación
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              ¿Está seguro que desea eliminar esta factura? Esta acción no se
+              puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Advertencia</AlertTitle>
+              <AlertDescription>
+                El saldo y estado del cliente se verán afectados en función de
+                su saldo actual y su relacion con sus facturas.
+              </AlertDescription>
+            </Alert>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setOpenDelete(false)}
+              // disabled={isLoading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteFactura}
+              disabled={isDeleting}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

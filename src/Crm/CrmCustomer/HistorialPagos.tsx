@@ -8,7 +8,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard, EllipsisVertical, Trash2 } from "lucide-react";
+import {
+  CreditCard,
+  EllipsisVertical,
+  FilePenLine,
+  Trash2,
+} from "lucide-react";
 import type { FacturaInternet } from "./CustomerDetails"; // Asumiendo que tienes tus interfaces en este archivo
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -16,6 +21,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
@@ -237,7 +243,21 @@ export function HistorialPagos({
                           <span className="sr-only">Acciones</span>
                         </Button>
                       </DropdownMenuTrigger>
+
                       <DropdownMenuContent align="end" className="w-36">
+                        <DropdownMenuLabel className="text-sm">
+                          Acciones
+                        </DropdownMenuLabel>
+                        <DropdownMenuItem asChild>
+                          <Link
+                            to={`/editar?factura=${t.id}`}
+                            className="flex items-center text-green-600 dark:text-green-400 focus:text-green-700 dark:focus:text-green-300"
+                          >
+                            <FilePenLine className="h-3.5 w-3.5 mr-2" />
+                            Editar
+                          </Link>
+                        </DropdownMenuItem>
+
                         <DropdownMenuItem
                           onClick={() => {
                             const facturaSeleccionada = {

@@ -67,6 +67,8 @@ function GenerateFacturas({
     }
   };
 
+  const [isSubmiting, setIsSubmitting] = useState(false);
+
   const handleSubmit = async () => {
     if (!clienteId || clienteId === 0) {
       toast.error("No se ha proporcionado un cliente válido.");
@@ -88,6 +90,7 @@ function GenerateFacturas({
     console.log("La data generada es: ", data);
 
     try {
+      setIsSubmitting(true);
       const response = await axios.post(
         `${VITE_CRM_API_URL}/facturacion/generate-factura-internet-multiple`,
         data
@@ -98,86 +101,116 @@ function GenerateFacturas({
         setOpenGenerateFacturas(false);
         setFechaInicio(null);
         setFechaFin(null);
+        setIsSubmitting(false);
         await getClienteDetails();
       }
     } catch (error) {
       console.log(error);
       toast.error("Error al generar facturas");
+      setIsSubmitting(false);
     }
   };
 
   return (
     <Dialog open={openGenerateFacturas} onOpenChange={setOpenGenerateFacturas}>
-      <DialogContent className="max-w-md">
-        <DialogHeader className="pb-4 border-b">
-          <DialogTitle className="text-center flex items-center justify-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            <span>Generar facturas por adelantado</span>
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-xl border-0 shadow-xl">
+        {/* Icon with animation */}
+
+        {/* Header */}
+        <DialogHeader className="pt-8 px-6 pb-2">
+          <DialogTitle className="text-xl font-semibold text-center text-gray-800 dark:text-gray-400">
+            Generar facturas por adelantado
           </DialogTitle>
-          <DialogDescription className="text-center pt-2">
+          <DialogDescription className="text-center text-gray-600 text-sm mt-1 dark:text-gray-400">
             Genere múltiples facturas para los meses seleccionados
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4 space-y-1.5">
-          <Label htmlFor="fechaInicio" className="text-sm font-medium">
-            Mes de inicio
-          </Label>
-          <div className="relative">
-            <DatePicker
-              id="fechaInicio"
-              locale={es}
-              selected={fechaInicio || null}
-              onChange={(date) => handleDateChange("inicio", date)}
-              selectsStart
-              placeholderText="Seleccione mes de inicio"
-              className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring pr-10"
-              dateFormat="MM/yyyy"
-              isClearable={true}
-              showMonthYearPicker
-            />
-            <CalendarIcon className="absolute right-3 top-2.5 h-5 w-5 text-muted-foreground" />
+        <div className="px-6 py-4">
+          {/* Form content */}
+          <div className="border border-gray-200 rounded-lg p-5 mb-5 bg-gray-50 shadow-inner dark:bg-stone-950">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="fechaInicio"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-400"
+                >
+                  Mes de inicio
+                </Label>
+                <div className="relative">
+                  <DatePicker
+                    id="fechaInicio"
+                    locale={es}
+                    selected={fechaInicio || null}
+                    onChange={(date) => handleDateChange("inicio", date)}
+                    selectsStart
+                    placeholderText="Seleccione mes de inicio"
+                    className="h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 pr-10 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300"
+                    dateFormat="MM/yyyy"
+                    isClearable={true}
+                    showMonthYearPicker
+                  />
+                  <CalendarIcon className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="fechaFin"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-400"
+                >
+                  Mes de fin
+                </Label>
+                <div className="relative">
+                  <DatePicker
+                    id="fechaFin"
+                    locale={es}
+                    selected={fechaFin || null}
+                    onChange={(date) => handleDateChange("fin", date)}
+                    selectsEnd
+                    placeholderText="Seleccione mes de fin"
+                    className="h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 pr-10 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300"
+                    dateFormat="MM/yyyy"
+                    isClearable={true}
+                    showMonthYearPicker
+                  />
+                  <CalendarIcon className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div className="py-4 space-y-1.5">
-          <Label htmlFor="fechaFin" className="text-sm font-medium">
-            Mes de fin
-          </Label>
-          <div className="relative">
-            <DatePicker
-              id="fechaFin"
-              locale={es}
-              selected={fechaFin || null}
-              onChange={(date) => handleDateChange("fin", date)}
-              selectsEnd
-              placeholderText="Seleccione mes de fin"
-              className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring pr-10"
-              dateFormat="MM/yyyy"
-              isClearable={true}
-              showMonthYearPicker
-            />
-            <CalendarIcon className="absolute right-3 top-2.5 h-5 w-5 text-muted-foreground" />
+          {/* Divider */}
+          <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent my-5"></div>
+
+          {/* Action buttons */}
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2 pb-2">
+            <Button
+              variant="outline"
+              onClick={() => setOpenGenerateFacturas(false)}
+              className="border border-gray-200 w-full bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 rounded-lg py-2.5 transition-all duration-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-800"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Cerrar
+            </Button>
+            <Button
+              disabled={isSubmiting}
+              onClick={handleSubmit}
+              className="w-full bg-gray-800 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-800 rounded-lg py-2.5 shadow-sm transition-all duration-200"
+            >
+              {isSubmiting ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Generar Facturas
+                </>
+              )}
+            </Button>
           </div>
-        </div>
-
-        <div className="flex gap-3 pt-2">
-          <Button
-            variant="outline"
-            className="w-full flex items-center justify-center gap-2"
-            onClick={() => setOpenGenerateFacturas(false)}
-          >
-            <X className="h-4 w-4" />
-            <span>Cerrar</span>
-          </Button>
-
-          <Button
-            className="w-full flex items-center justify-center gap-2"
-            onClick={handleSubmit}
-          >
-            <FileText className="h-4 w-4" />
-            <span>Generar Facturas</span>
-          </Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import TicketList from "./CrmTicketList";
 import TicketDetail from "./CrmTicketDetails";
@@ -195,6 +195,18 @@ export default function TicketDashboard() {
     setLabelsSelecteds(selectedIds);
   };
 
+  const detailRef = useRef<HTMLDivElement>(null);
+
+  function handleSelectTicket(ticket: Ticket) {
+    setSelectedTicketId(ticket.id);
+
+    // give React a tick to mount the detail pane,
+    // then smooth-scroll it into view
+    setTimeout(() => {
+      detailRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
+  }
+
   return (
     <div className="">
       <motion.div
@@ -204,6 +216,7 @@ export default function TicketDashboard() {
         className="w-full"
       >
         <TicketFilters
+          tickets={filterTickets(tickets)}
           onFilterChange={setFilterText}
           onStatusChange={setSelectedStatus}
           openCreatT={openCreateTicket}
@@ -224,28 +237,37 @@ export default function TicketDashboard() {
           setDateRange={setDateRange}
         />
       </motion.div>
-      <div className="mt-2 flex flex-col lg:grid lg:grid-cols-2 gap-3 md:gap-4 xl:gap-6 relative">
+      <div className="mt-2 grid grid-cols-1 lg:grid-cols-2 gap-4 h-[calc(100vh-220px)]">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          className="bg-card rounded-lg shadow h-[40vh] sm:h-[45vh] md:h-[50vh] lg:h-[calc(100vh-220px)] overflow-hidden"
+          className="min-h-0 h-full overflow-hidden"
         >
-          <TicketList
-            tickets={filterTickets(tickets)}
-            selectedTicketId={selectedTicketId}
-            onSelectTicket={(ticket) => setSelectedTicketId(ticket.id)}
-          />
+          <div className="flex flex-col h-full">
+            <TicketList
+              // FUNCION PARA ATRAER AL TICKET
+              onSelectTicket={handleSelectTicket}
+              tickets={filterTickets(tickets)}
+              selectedTicketId={selectedTicketId}
+              onSelectTicketDown={(ticket) => setSelectedTicketId(ticket.id)}
+            />
+          </div>
         </motion.div>
 
+        {/* ── RIGHT COLUMN: ticket detail */}
         {selectedTicket && (
           <motion.div
-            initial={{ opacity: 0, y: 20, x: 0 }}
-            animate={{ opacity: 1, y: 0, x: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-            className="bg-card rounded-lg shadow h-[40vh] sm:h-[45vh] md:h-[50vh] lg:h-[calc(100vh-220px)] overflow-hidden"
+            key="ticket-detail"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="bg-card rounded-lg shadow min-h-0 h-full overflow-hidden"
+            ref={detailRef}
           >
             <TicketDetail
+              // setSelectedTicketId={setSelectedTicketId}
               ticket={selectedTicket}
               getTickets={getTickets}
               optionsLabels={optionsLabels}

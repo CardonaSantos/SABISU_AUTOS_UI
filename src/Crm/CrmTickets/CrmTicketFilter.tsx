@@ -18,6 +18,8 @@ import { useStoreCrm } from "../ZustandCrm/ZustandCrmContext";
 import ReactSelectComponent, { MultiValue } from "react-select";
 import { OptionSelected } from "../ReactSelectComponent/OptionSelected";
 import DatePicker from "react-datepicker";
+import { Ticket } from "./ticketTypes";
+import { Ticket as TicketIcon } from "lucide-react";
 
 interface Tecnicos {
   id: number;
@@ -35,6 +37,8 @@ type DateRange = {
 };
 
 interface TicketFiltersProps {
+  tickets: Ticket[];
+  //tickets filtrados
   onFilterChange: (value: string) => void;
   onStatusChange: (value: string | null) => void;
   //Para el modal
@@ -61,6 +65,8 @@ interface TicketFiltersProps {
 }
 
 export default function TicketFilters({
+  tickets,
+  //tickets filtrados
   onFilterChange,
   // onStatusChange,
   //Propiedades del create ticket
@@ -218,6 +224,15 @@ export default function TicketFilters({
               : null
           }
         />
+        <div className="flex items-center gap-2 text-sm text-gray-700">
+          <TicketIcon className="h-5 w-5 text-gray-500 dark:text-gray-300" />
+          <span className="font-medium dark:text-gray-300">
+            Coincidencias encontradas
+          </span>
+          <span className="ml-1 inline-flex items-center justify-center bg-gray-100 text-gray-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+            {tickets.length}
+          </span>
+        </div>
       </div>
     </div>
   );

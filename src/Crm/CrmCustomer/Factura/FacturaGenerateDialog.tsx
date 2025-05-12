@@ -67,6 +67,8 @@ function FacturaGenerateDialog({
     }
   };
 
+  const [isSubmiting, setIsSubmitting] = useState(false);
+
   const handleSubmit = async () => {
     if (!clienteId || clienteId === 0) {
       toast.error("No se ha proporcionado un cliente válido.");
@@ -85,6 +87,7 @@ function FacturaGenerateDialog({
     };
 
     try {
+      setIsSubmitting(true);
       const response = await axios.post(
         `${VITE_CRM_API_URL}/facturacion/generate-factura-internet`,
         data
@@ -94,11 +97,13 @@ function FacturaGenerateDialog({
         toast.success("Factura Generada");
         setOpenGenerarFactura(false);
         setFechaSeleccionada(null);
+        setIsSubmitting(false);
         await getClienteDetails();
       }
     } catch (error) {
       console.log(error);
       toast.error("Error al generar factura");
+      setIsSubmitting(false);
     }
   };
 
@@ -150,6 +155,7 @@ function FacturaGenerateDialog({
           </Button>
 
           <Button
+            disabled={isSubmiting}
             className="w-full flex items-center justify-center gap-2"
             onClick={handleSubmit}
           >

@@ -57,7 +57,7 @@ import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 import axios, { AxiosResponse } from "axios";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ClienteDetailsDto } from "./CustomerDetails";
 import currency from "currency.js";
@@ -118,6 +118,11 @@ interface PlantillasInterface {
 }
 
 export default function CustomerDetails() {
+  const [searchParams] = useSearchParams();
+  // read the “tab” param, fall back to “general” if missing
+  const defaultTab = searchParams.get("tab") || "general";
+  // Estado para controlar la pestaña activa
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [plantillas, setPlantillas] = useState<PlantillasInterface[]>([]);
 
   const { id } = useParams();
@@ -209,9 +214,6 @@ export default function CustomerDetails() {
     getClienteDetails();
     getPlantillas();
   }, []);
-
-  // Estado para controlar la pestaña activa
-  const [activeTab, setActiveTab] = useState("general");
 
   // Función para abrir Google Maps con la ubicación
   const abrirGoogleMaps = () => {

@@ -24,6 +24,7 @@ export interface ClienteContrato {
   apellidos: string | null;
   telefono?: string | null;
   direccion?: string | null;
+  plan?: string | null;
 }
 
 export interface ContratoServicio {
@@ -233,10 +234,6 @@ function ContratoServicioPDF() {
                     {contrato.cliente.telefono || "N/A"}
                   </span>
                 </p>
-                <p className="text-gray-600">
-                  ID Cliente:{" "}
-                  <span className="font-semibold">{contrato.cliente.id}</span>
-                </p>
               </div>
             </div>
           </div>
@@ -265,6 +262,12 @@ function ContratoServicioPDF() {
                   Fecha de pago mensual:{" "}
                   <span className="font-semibold">
                     {formatDate(contrato.fechaPago)}
+                  </span>
+                </p>
+                <p className="text-gray-600">
+                  Plan seleccionado:{" "}
+                  <span className="font-semibold">
+                    {contrato.cliente.plan || "N/A"}
                   </span>
                 </p>
               </div>

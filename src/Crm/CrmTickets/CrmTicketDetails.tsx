@@ -18,6 +18,7 @@ import {
   Tag,
   TicketSlash,
   UserIcon,
+  X,
 } from "lucide-react";
 import type { Ticket } from "./ticketTypes";
 
@@ -317,6 +318,10 @@ export default function TicketDetail({
     }
   };
 
+  const handleClose = () => {
+    setSelectedTicketId(null);
+  };
+
   return (
     <div className="flex flex-col h-full p-2 rounded-sm">
       <div className="border-b px-0">
@@ -330,18 +335,12 @@ export default function TicketDetail({
               </AvatarFallback>
             </Avatar>
             <div>
-              <div className="text-[12px]  text-blue-500">
+              <div className="text-[12px] text-blue-600 font-semibold">
                 <Link to={`/crm/cliente/${ticket.customer.id}`}>
-                  #{ticket.id} ·{" "}
                   {ticket.assignee ? ticket.customer.name : "No asignado"} ·{" "}
                   {formatearFecha(new Date(ticket.date).toISOString())}
                 </Link>
               </div>
-            </div>
-            <div className="text-[11px] text-muted-foreground">
-              {ticket.creator.name} para{" "}
-              {ticket.assignee ? ticket.assignee.name : "No asignado"}{" "}
-              {/* Si hay técnico, mostramos su nombre, sino "No asignado" */}
             </div>
           </div>
 
@@ -397,6 +396,14 @@ export default function TicketDetail({
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            <button
+              onClick={handleClose}
+              className="p-2 hover:bg-gray-100 rounded-full"
+              aria-label="Close details"
+            >
+              <X className="h-4 w-4  text-red-500 font-bold" />
+            </button>
           </div>
         </div>
 
