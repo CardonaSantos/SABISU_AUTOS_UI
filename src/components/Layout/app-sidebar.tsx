@@ -416,6 +416,7 @@ const routesCrm_Otro = [
     ],
   },
   { icon: Building, label: "Empresa", href: "/crm/empresa" },
+  { icon: User, label: "Perfil", href: "/crm/perfil" },
 ];
 
 export function AppSidebar() {
