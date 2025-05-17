@@ -48,6 +48,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useNavigate, useParams } from "react-router-dom";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface FormData {
   // Datos básicos
@@ -75,6 +84,18 @@ interface FormData {
 
   mascara: string;
   gateway: string;
+  estado: EstadoCliente;
+}
+
+export enum EstadoCliente {
+  ACTIVO = "ACTIVO",
+  PENDIENTE_ACTIVO = "PENDIENTE_ACTIVO",
+  PAGO_PENDIENTE = "PAGO_PENDIENTE",
+  MOROSO = "MOROSO",
+  ATRASADO = "ATRASADO",
+  SUSPENDIDO = "SUSPENDIDO",
+  DESINSTALADO = "DESINSTALADO",
+  EN_INSTALACION = "EN_INSTALACION",
 }
 
 interface Departamentos {
@@ -206,6 +227,7 @@ function EditCustomers() {
     municipioId: "",
     departamentoId: "",
     empresaId: "",
+    estado: EstadoCliente.ACTIVO,
   });
 
   const [formDataContrato, setFormDataContrato] = useState<ContratoID>({
@@ -264,6 +286,7 @@ function EditCustomers() {
           municipioId: customerData.municipio?.id?.toString() || "",
           departamentoId: customerData.departamento?.id?.toString() || "",
           empresaId: "1",
+          estado: EstadoCliente.ACTIVO,
         });
 
         // Set contract data if exists
@@ -563,6 +586,7 @@ function EditCustomers() {
       fechaFirma: formDataContrato.fechaFirma,
       archivoContrato: formDataContrato.archivoContrato,
       observacionesContrato: formDataContrato.observaciones,
+      estado: formData.estado,
     };
 
     console.log("La data enviandose es: ", formDataToSend);
@@ -625,6 +649,17 @@ function EditCustomers() {
     }
   };
 
+  const handleSelectEstadoCliente = (value: EstadoCliente) => {
+    setFormData((prev) =>
+      prev
+        ? {
+            ...prev,
+            estado: value,
+          }
+        : prev
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -668,7 +703,7 @@ function EditCustomers() {
                 {/* Personal Information */}
                 <div className="space-y-4">
                   <h3 className="font-medium flex items-center gap-2">
-                    <User className="h-4 w-4 text-primary" />
+                    <User className="h-4 w-4 text-primary dark:text-white" />
                     Información Personal
                   </h3>
                   <div className="space-y-3">
@@ -736,7 +771,7 @@ function EditCustomers() {
                 {/* Service Information */}
                 <div className="space-y-4">
                   <h3 className="font-medium flex items-center gap-2">
-                    <Wifi className="h-4 w-4 text-primary" />
+                    <Wifi className="h-4 w-4 text-primary dark:text-white" />
                     Información del Servicio
                   </h3>
                   <div className="space-y-3">
@@ -846,7 +881,7 @@ function EditCustomers() {
                 {/* Location Information */}
                 <div className="space-y-4">
                   <h3 className="font-medium flex items-center gap-2">
-                    <Map className="h-4 w-4 text-primary" />
+                    <Map className="h-4 w-4 text-primary dark:text-white" />
                     Ubicación y Contacto
                   </h3>
                   <div className="space-y-3">
@@ -948,6 +983,52 @@ function EditCustomers() {
                       />
                     </div>
                   </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="estadoCliente"
+                    className="font-medium col-span-3 md:col-span-1"
+                  >
+                    Estado del cliente
+                  </Label>
+                  <Select
+                    defaultValue={formData.estado}
+                    onValueChange={handleSelectEstadoCliente}
+                  >
+                    <SelectTrigger id="estadoCliente" className="w-[250px]">
+                      <SelectValue placeholder="Selecciona un estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Estados disponibles</SelectLabel>
+                        <SelectItem value={EstadoCliente.ACTIVO}>
+                          ACTIVO
+                        </SelectItem>
+                        <SelectItem value={EstadoCliente.ATRASADO}>
+                          ATRASADO
+                        </SelectItem>
+                        <SelectItem value={EstadoCliente.DESINSTALADO}>
+                          DESINSTALADO
+                        </SelectItem>
+                        <SelectItem value={EstadoCliente.EN_INSTALACION}>
+                          EN INSTALACIÓN
+                        </SelectItem>
+                        <SelectItem value={EstadoCliente.MOROSO}>
+                          MOROSO
+                        </SelectItem>
+                        <SelectItem value={EstadoCliente.PAGO_PENDIENTE}>
+                          PAGO PENDIENTE
+                        </SelectItem>
+                        <SelectItem value={EstadoCliente.PENDIENTE_ACTIVO}>
+                          ATRASADO
+                        </SelectItem>
+                        <SelectItem value={EstadoCliente.SUSPENDIDO}>
+                          SUSPENDIDO
+                        </SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="md:col-span-3 space-y-6">
@@ -1106,7 +1187,7 @@ function EditCustomers() {
                 {/* Observations - Full width */}
                 <div className="md:col-span-3 space-y-2">
                   <h3 className="font-medium flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <MessageSquare className="h-4 w-4 text-primary dark:text-white" />
                     Observaciones
                   </h3>
                   <Textarea

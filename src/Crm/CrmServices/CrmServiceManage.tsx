@@ -38,7 +38,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   PlusCircle,
-  Package,
   MoreVertical,
   Edit,
   Trash2,
@@ -49,7 +48,6 @@ import {
   Coins,
   AlertCircle,
   RefreshCw,
-  Filter,
   FileText,
 } from "lucide-react";
 import { useStoreCrm } from "../ZustandCrm/ZustandCrmContext";
@@ -104,9 +102,7 @@ const CrmServiceManage = () => {
     }
   );
 
-  // Estados para búsqueda
   const [searchServicio, setSearchServicio] = useState("");
-
   // Estados para diálogos
   const [openEdit, setOpenEdit] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
@@ -486,34 +482,6 @@ const CrmServiceManage = () => {
         {/* Contenido principal */}
         {/* Contenido principal sin Tabs */}
         <div className="w-full">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-            <div className="flex items-center gap-4 mb-4 md:mb-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Package className="h-4 w-4" />
-                <span>Servicios</span>
-              </Button>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="gap-1">
-                <Filter className="h-4 w-4" />
-                <span>Filtrar</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1"
-                onClick={fetchData}
-              >
-                <RefreshCw className="h-4 w-4" />
-                <span>Actualizar</span>
-              </Button>
-            </div>
-          </div>
-
           {/* Contenido de Servicios */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -523,13 +491,6 @@ const CrmServiceManage = () => {
                   Lista de servicios disponibles en el sistema
                 </CardDescription>
               </div>
-              <Button
-                onClick={() => setOpenCreateServicio(true)}
-                className="gap-1"
-              >
-                <PlusCircle className="h-4 w-4" />
-                <span>Nuevo Servicio</span>
-              </Button>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border overflow-hidden">

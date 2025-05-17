@@ -28,6 +28,7 @@ import {
   MapPinned,
   MapPin,
   MessagesSquare,
+  User,
 } from "lucide-react";
 
 import {
@@ -333,6 +334,10 @@ const routesCrm_Admin = [
     ],
   },
   { icon: Building, label: "Empresa", href: "/crm/empresa" },
+
+  { icon: User, label: "Perfil", href: "/crm/perfil" },
+
+  { icon: Users, label: "Usuarios", href: "/crm/usuarios" },
 ];
 //rutas para otro rol del
 const routesCrm_Otro = [

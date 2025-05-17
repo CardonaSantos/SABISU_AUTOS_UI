@@ -1,24 +1,23 @@
-// Definición de la interfaz para un pago
+// Pago de factura principal
 export interface Pago {
   id: number;
   metodoPago: string;
   montoPagado: number;
   fechaPago: string;
   creadoEn: string;
-
   numeroBoleta: string;
 }
 
-// Definición de la interfaz para la información del cliente
-interface Cliente {
+// Información del cliente
+export interface Cliente {
   id: number;
   nombre: string;
   apellidos: string;
   dpi: string;
 }
 
-// Definición de la interfaz para la información de la empresa
-interface Empresa {
+// Información de la empresa
+export interface Empresa {
   id: number;
   nombre: string;
   direccion: string;
@@ -29,10 +28,34 @@ interface Empresa {
   nit: string;
 }
 
-// Definición de la interfaz principal para la factura de Internet
+// Un servicio “individual” dentro de un servicio adicional
+export interface ServicioDetalle {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  precio: number;
+}
+
+// El pago mínimo que recibe cada servicio adicional
+export interface PagoServicio {
+  id: number;
+  montoPagado: number;
+}
+
+// Cada “línea” de servicio adicional ligada a la factura de internet
+export interface ServicioAdicional {
+  facturaId: number;
+  nombre: string;
+  monto: number;
+  pagado: number;
+  fecha: string;
+  estado: string;
+}
+
+// La factura principal de internet, ahora con el nuevo array
 export interface FacturaInternet {
   id: number;
-  estadoFacturaInternet: string;
+  estadoFacturaInternet: string; // e.g. 'PAGADA' | 'PENDIENTE' | …
   montoPago: number;
   detalleFactura: string;
   creadoEn: string;
@@ -41,4 +64,5 @@ export interface FacturaInternet {
   cliente: Cliente;
   empresa: Empresa;
   pagos: Pago[];
+  servicios: ServicioAdicional[];
 }

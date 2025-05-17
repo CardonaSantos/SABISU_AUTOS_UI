@@ -115,9 +115,13 @@ export default function CrmPdfPago() {
       </div>
     );
   }
+  const totalServicios = factura.servicios.reduce(
+    (acc, total) => acc + total.pagado,
+    0
+  );
 
   const totalPagado = factura.pagos.reduce(
-    (sum, pago) => sum + pago.montoPagado,
+    (sum, pago) => sum + pago.montoPagado + totalServicios,
     0
   );
 
@@ -135,7 +139,7 @@ export default function CrmPdfPago() {
           <div className="flex items-center">
             <div className="w-24 h-24  border-gray-200  overflow-hidden mr-4">
               <img
-                src={logoCrm}
+                src={logoCrm || "/placeholder.svg"}
                 alt="Logo"
                 className="w-full h-full object-contain"
               />
@@ -187,10 +191,6 @@ export default function CrmPdfPago() {
                 <span className="font-medium">Nombre:</span>{" "}
                 {factura.cliente.nombre} {factura.cliente.apellidos}
               </p>
-              <p>
-                <span className="font-medium">DPI:</span>{" "}
-                {factura.cliente.dpi ? factura.cliente.dpi : "N/A"}
-              </p>
             </div>
             <div>
               <p>
@@ -227,19 +227,37 @@ export default function CrmPdfPago() {
                 </tr>
               </thead>
               <tbody>
-                {factura.pagos.map((pago, idx) => (
+                {factura.pagos.map((pago, idx, arr) => (
                   <tr
                     key={pago.id}
                     className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"}
                   >
-                    <td className="py-1.5 px-3 border-b">{idx + 1}</td>
-                    <td className="py-1.5 px-3 border-b font-medium">
+                    <td
+                      className={`py-1.5 px-3 ${
+                        idx !== arr.length - 1 ? "border-b" : ""
+                      }`}
+                    >
+                      {idx + 1}
+                    </td>
+                    <td
+                      className={`py-1.5 px-3 font-medium ${
+                        idx !== arr.length - 1 ? "border-b" : ""
+                      }`}
+                    >
                       {pago.metodoPago}
                     </td>
-                    <td className="py-1.5 px-3 border-b">
+                    <td
+                      className={`py-1.5 px-3 ${
+                        idx !== arr.length - 1 ? "border-b" : ""
+                      }`}
+                    >
                       {formatCurrency(pago.montoPagado)}
                     </td>
-                    <td className="py-1.5 px-3 border-b">
+                    <td
+                      className={`py-1.5 px-3 ${
+                        idx !== arr.length - 1 ? "border-b" : ""
+                      }`}
+                    >
                       {formatDate(pago.fechaPago)}
                     </td>
                   </tr>
@@ -248,6 +266,59 @@ export default function CrmPdfPago() {
             </table>
           </div>
         </div>
+
+        {/* Servicios Adicionales */}
+        {factura.servicios?.length > 0 && (
+          <div className="mb-5 text-xs">
+            <h2 className="font-medium text-gray-700 mb-2">
+              Servicios Adicionales
+            </h2>
+            <div className="overflow-x-auto rounded-md border border-gray-200">
+              <table className="min-w-full bg-white">
+                <thead>
+                  <tr className="bg-gray-50 text-gray-700">
+                    <th className="py-1.5 px-3 border-b text-left">Nombre</th>
+                    <th className="py-1.5 px-3 border-b text-left">
+                      Fecha Emisión
+                    </th>
+                    <th className="py-1.5 px-3 border-b text-left">Monto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {factura.servicios &&
+                    factura.servicios.map((serv, idx, arr) => (
+                      <tr
+                        key={serv.facturaId || idx}
+                        className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"}
+                      >
+                        <td
+                          className={`py-1.5 px-3 ${
+                            idx !== arr.length - 1 ? "border-b" : ""
+                          }`}
+                        >
+                          {serv.nombre}
+                        </td>
+                        <td
+                          className={`py-1.5 px-3 ${
+                            idx !== arr.length - 1 ? "border-b" : ""
+                          }`}
+                        >
+                          {formatDate(serv.fecha)}
+                        </td>
+                        <td
+                          className={`py-1.5 px-3 ${
+                            idx !== arr.length - 1 ? "border-b" : ""
+                          }`}
+                        >
+                          {formatCurrency(serv.monto)}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Resumen */}
         <div className="bg-gray-50 p-3 rounded-md border border-gray-200 mb-5 text-xs">

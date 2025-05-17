@@ -69,8 +69,6 @@ interface Notificacion {
 }
 
 export default function Layout2({ children }: LayoutProps) {
-  // const [tokenUser, setTokenUser] = useState<UserToken | null>(null);
-  // const [tokenUserCrm, setTokenUserCrm] = useState<UserCrmToken | null>(null);
   const setUserNombre = useStore((state) => state.setUserNombre);
   const setUserCorreo = useStore((state) => state.setUserCorreo);
   const setUserId = useStore((state) => state.setUserId);
@@ -101,7 +99,6 @@ export default function Layout2({ children }: LayoutProps) {
   const rol = useStoreCrm((state) => state.rol);
   console.log("El rol de mi usuario actual es: ", rol);
 
-  const empresaID = useStoreCrm((state) => state.empresaId);
   useEffect(() => {
     const storedToken = localStorage.getItem("authTokenPos");
     const storedTokenCRM = localStorage.getItem("tokenAuthCRM");
@@ -135,13 +132,7 @@ export default function Layout2({ children }: LayoutProps) {
       }
     }
   }, []);
-  console.log("mi nombre crm es: ", nombreCrm);
-  console.log("mi rol crm es: ", rol);
-  console.log("mi empresa id es: ", empresaID);
 
-  const storedTokenCRM = localStorage.getItem("tokenAuthCRM");
-
-  console.log("mi token crm es: ", storedTokenCRM);
   const isCrmLocation = useLocation().pathname.startsWith("/crm");
   // Determinar qué datos usar según la URL
   const nombreUsuario = isCrmLocation ? nombreCrm : nombrePos;

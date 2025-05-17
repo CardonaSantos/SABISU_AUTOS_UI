@@ -89,6 +89,8 @@ import PlantillaContratoManage from "./Crm/CrmPlantillaContrato/CrmPlantillaCont
 import ContratoServicioPDF from "./Crm/CrmPlantillaContrato/CrmContratoPdf";
 import { RutasCobroEdit } from "./Crm/CrmRutas/RutasCobroEdit";
 import FacturaEdit from "./Crm/CrmFacturacion/FacturaEdicion/FacturaEdit";
+import CrmProfileConfig from "./Crm/CrmProfile/CrmProfileConfig";
+import CrmUsers from "./Crm/CrmProfile/CrmUsers";
 // import { RedirectToDashboard } from "./components/Auth/RedirectToDashboard";
 
 function App() {
@@ -551,6 +553,15 @@ function App() {
             />
 
             <Route
+              path="/crm/perfil-config"
+              element={
+                <ProtectRouteCrmUser>
+                  <CrmDashboard />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
               path="/crm-clientes"
               element={
                 <ProtectRouteCrmUser>
@@ -754,6 +765,24 @@ function App() {
               element={
                 <ProtectRouteCrmUser>
                   <RutasCobroEdit />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm/perfil"
+              element={
+                <ProtectRouteCrmUser>
+                  <CrmProfileConfig />
+                </ProtectRouteCrmUser>
+              }
+            />
+
+            <Route
+              path="/crm/usuarios"
+              element={
+                <ProtectRouteCrmUser>
+                  <CrmUsers />
                 </ProtectRouteCrmUser>
               }
             />

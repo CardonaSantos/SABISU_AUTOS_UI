@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 // import { useRouter, useSearchParams } from "next/navigation"
 import {
   Card,
@@ -64,6 +64,7 @@ import {
   EllipsisVertical,
   FilePenLine,
   Trash2,
+  Globe,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStoreCrm } from "@/Crm/ZustandCrm/ZustandCrmContext";
@@ -77,6 +78,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 const VITE_CRM_API_URL = import.meta.env.VITE_CRM_API_URL;
 // Enums
 enum EstadoFacturaInternet {
@@ -189,21 +197,31 @@ interface NuevoPago {
   numeroBoleta: string;
 }
 
-// Componente principal
-const CrmPaymentFactura: React.FC = () => {
-  const navigate = useNavigate();
+interface Servicios {
+  id: number;
+  nombre: string;
+  precio: number;
+  descripcion: string;
+  estado: "ACTIVO" | "INACTIVO";
+  tipoServicioId: number | null;
+  creadoEn: string;
+  actualizadoEn: string;
+}
 
-  const { facturaId } = useParams();
-  console.log("el id es: ", facturaId);
-  const userId = useStoreCrm((state) => state.userIdCRM) ?? 0;
+const CrmPaymentFactura: React.FC = () => {
   // Estados
+
+  const navigate = useNavigate();
+  const { facturaId } = useParams();
+  const userId = useStoreCrm((state) => state.userIdCRM) ?? 0;
   const [factura, setFactura] = useState<FacturaInternet | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  console.log(setSuccess);
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const [openDelete, setOpenDelete] = useState(false);
+  const [factudaIdDelete, setFacturaIdDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // const [cobradores, setCobradores] = useState<Usuario[]>([]);
   const [facturasPendientes, setFacturasPendientes] = useState<
     FacturaInternet[]
   >([]);
@@ -212,7 +230,6 @@ const CrmPaymentFactura: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showHistorial, setShowHistorial] = useState(false);
 
-  // Estado para el formulario de pago
   const [nuevoPago, setNuevoPago] = useState<NuevoPago>({
     facturaInternetId: Number(facturaId) || 1,
     clienteId: Number(factura?.clienteId),
@@ -221,71 +238,66 @@ const CrmPaymentFactura: React.FC = () => {
     cobradorId: userId,
     numeroBoleta: "",
   });
+  const [serviciosSeleccionados, setServiciosSeleccionados] =
+    useState<number[]>();
 
   const [openPdfPago, setOpenPdfPago] = useState(false);
-  console.log("EL nuevo pago es: ", nuevoPago);
+
+  const [servicios, setServicios] = useState<Servicios[]>([]);
+
+  const fetchFactura = useCallback(async (id: number) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await axios.get<FacturaInternet>(
+        `${VITE_CRM_API_URL}/facturacion/get-facturacion-with-payments/${id}`
+      );
+      setFactura(res.data);
+      setFacturasPendientes(res.data.facturasPendientes || []);
+    } catch (err) {
+      console.error(err);
+      setError("Error al cargar la factura.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Fetch other services for invoice
+  const fetchOtrosServicios = useCallback(async (clienteId: number) => {
+    try {
+      const res = await axios.get<Servicios[]>(
+        `${VITE_CRM_API_URL}/servicio/get-servicios-to-invoice/${clienteId}`
+      );
+      setServicios(res.data);
+    } catch (err) {
+      console.error("Error cargando servicios:", err);
+    }
+  }, []);
 
   // Cargar datos de la factura
+  // Initial load
   useEffect(() => {
     if (!facturaId) {
-      setError("No se proporcionó un ID de factura válido");
+      setError("ID de factura inválido");
       setIsLoading(false);
       return;
     }
-
     fetchFactura(Number(facturaId));
-    // fetchCobradores();
-  }, [facturaId]);
+  }, [facturaId, fetchFactura]);
 
+  // When factura changes, init form and load services
   useEffect(() => {
-    if (factura?.clienteId) {
-      fetchFacturasPendientes(factura.clienteId);
-      // Inicializar el formulario de pago con datos de la factura
-      setNuevoPago((prev) => ({
-        ...prev,
-        clienteId: factura.clienteId,
-        montoPagado: factura.saldoPendiente || factura.montoPago || 0,
-      }));
-    }
-  }, [factura]);
+    if (!factura) return;
 
-  const fetchFactura = async (id: number) => {
-    setIsLoading(true);
-    setError(null);
+    setNuevoPago((prev) => ({
+      ...prev,
+      clienteId: factura.clienteId,
+      montoPagado: factura.saldoPendiente ?? factura.montoPago ?? 0,
+    }));
 
-    try {
-      // En un entorno real, esto sería una llamada a la API
-      const response = await axios.get(
-        `${VITE_CRM_API_URL}/facturacion/get-facturacion-with-payments/${id}`
-      );
-      if (response.status === 200) {
-        setFactura(response.data);
-        setFacturasPendientes(response.data.facturasPendientes);
-        setIsLoading(false);
-      }
-    } catch (err) {
-      console.error("Error al cargar la factura:", err);
-      setError("Error al cargar los datos de la factura. Intente nuevamente.");
-      setIsLoading(false);
-    }
-  };
+    fetchOtrosServicios(factura.clienteId);
+  }, [factura, fetchOtrosServicios]);
 
-  console.log("La factura recuperada es: ", factura);
-
-  // Función para cargar facturas pendientes del cliente
-  const fetchFacturasPendientes = async (clienteId: number) => {
-    try {
-      console.log(clienteId);
-
-      // En un entorno real, esto sería una llamada a la API
-      // const response = await axios.get(`/api/clientes/${clienteId}/facturas-pendientes`)
-      // setFacturasPendientes(response.data)
-    } catch (err) {
-      console.error("Error al cargar facturas pendientes:", err);
-    }
-  };
-
-  // Handlers para formulario
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
 
@@ -308,7 +320,6 @@ const CrmPaymentFactura: React.FC = () => {
     setError(null);
 
     try {
-      // Validaciones
       if (nuevoPago.montoPagado <= 0) {
         throw new Error("El monto pagado debe ser mayor a cero");
       }
@@ -323,8 +334,6 @@ const CrmPaymentFactura: React.FC = () => {
         );
       }
 
-      //   REVISAR EL MAPEO DE PAGOS, Y EL ESTADO DE LA FACTURA
-
       const dataToSend = {
         facturaInternetId: Number(facturaId),
         clienteId: Number(factura?.clienteId),
@@ -332,9 +341,9 @@ const CrmPaymentFactura: React.FC = () => {
         metodoPago: nuevoPago.metodoPago,
         cobradorId: Number(userId),
         numeroBoleta: nuevoPago.numeroBoleta,
+        serviciosAdicionales: serviciosSeleccionados?.map((s) => s),
       };
 
-      // En un entorno real, esto sería una llamada a la API
       const response = await axios.post(
         `${VITE_CRM_API_URL}/facturacion/create-new-payment`,
         dataToSend
@@ -359,8 +368,6 @@ const CrmPaymentFactura: React.FC = () => {
           cobradorId: userId,
           numeroBoleta: "",
         });
-
-        // setPagoPdfId(response.data.dataToPdfSucces);
       }
     } catch (err: any) {
       console.error("Error al registrar pago:", err);
@@ -372,7 +379,6 @@ const CrmPaymentFactura: React.FC = () => {
     }
   };
 
-  // Función para formatear fechas
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "No disponible";
 
@@ -383,14 +389,12 @@ const CrmPaymentFactura: React.FC = () => {
     });
   };
 
-  // Función para formatear montos
   const formatMoney = (amount: number | null) => {
     if (amount === null) return "Q0.00";
 
     return `Q${amount.toFixed(2)}`;
   };
 
-  // Obtener el color del badge según el estado
   const getEstadoBadgeColor = (estado: EstadoFacturaInternet) => {
     switch (estado) {
       case EstadoFacturaInternet.PAGADA:
@@ -408,7 +412,6 @@ const CrmPaymentFactura: React.FC = () => {
     }
   };
 
-  // Obtener el icono según el estado
   const getEstadoIcon = (estado: EstadoFacturaInternet) => {
     switch (estado) {
       case EstadoFacturaInternet.PAGADA:
@@ -426,7 +429,6 @@ const CrmPaymentFactura: React.FC = () => {
     }
   };
 
-  // Obtener el icono según el método de pago
   const getMetodoPagoIcon = (metodoPago: MetodoPagoFacturaInternet) => {
     switch (metodoPago) {
       case MetodoPagoFacturaInternet.EFECTIVO:
@@ -442,7 +444,6 @@ const CrmPaymentFactura: React.FC = () => {
     }
   };
 
-  // Verificar si la factura está vencida
   const isFacturaVencida = () => {
     if (!factura?.fechaPagoEsperada) return false;
 
@@ -455,7 +456,6 @@ const CrmPaymentFactura: React.FC = () => {
     );
   };
 
-  // Verificar si se puede pagar la factura
   const canPayFactura = () => {
     return (
       factura &&
@@ -465,15 +465,6 @@ const CrmPaymentFactura: React.FC = () => {
       (factura.saldoPendiente || factura.montoPago) !== 0
     );
   };
-  const [openConfirm, setOpenConfirm] = useState(false);
-
-  const facturasPendientesx = factura?.facturasPendientes;
-  console.log("Las facturas pendientes son: ", facturasPendientesx);
-
-  // const [ticketDeleteId, setTicketDeleteId] = useState<number | null>(null);
-  const [openDelete, setOpenDelete] = useState(false);
-  const [factudaIdDelete, setFacturaIdDelete] = useState<number | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteFactura = async () => {
     if (!factudaIdDelete) {
@@ -507,6 +498,18 @@ const CrmPaymentFactura: React.FC = () => {
     }
   };
 
+  const handleCheckedServicio = (checked: boolean, idServicio: number) => {
+    const isInArray = serviciosSeleccionados?.includes(idServicio);
+
+    if (checked && !isInArray) {
+      setServiciosSeleccionados((prev) => [...(prev || []), idServicio]);
+    } else {
+      setServiciosSeleccionados((datosPrevios) =>
+        datosPrevios?.filter((id) => id !== idServicio)
+      );
+    }
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6 print:py-0">
       {/* Botón de volver y título */}
@@ -524,14 +527,6 @@ const CrmPaymentFactura: React.FC = () => {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {success && (
-        <Alert className="bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-900/30 print:hidden">
-          <CheckCircle className="h-4 w-4" />
-          <AlertTitle>Éxito</AlertTitle>
-          <AlertDescription>{success}</AlertDescription>
         </Alert>
       )}
 
@@ -750,29 +745,74 @@ const CrmPaymentFactura: React.FC = () => {
                 </div>
               )}
 
-              {/* Recordatorios */}
-              {factura.RecordatorioPago.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Recordatorios Enviados
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {factura.RecordatorioPago.map((recordatorio) => (
-                      <Badge
-                        key={recordatorio.id}
-                        variant="outline"
-                        className="flex items-center gap-1"
+              {/* Otros servicios adquiridos */}
+              {/* {servicios && servicios.length > 0 && ( */}
+              <Card className="w-full shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Otros servicios adquiridos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    {servicios.map((servicio) => (
+                      <div
+                        key={servicio.id}
+                        className="flex items-center justify-between rounded-md border border-border/60 bg-card/50 p-2.5 hover:bg-accent/5 transition-colors"
                       >
-                        <Clock className="h-3 w-3" />
-                        {new Date(
-                          recordatorio.fechaEnvio
-                        ).toLocaleDateString()}{" "}
-                        ({recordatorio.medioEnvio})
-                      </Badge>
+                        <div className="flex items-start gap-2">
+                          <Badge
+                            variant="outline"
+                            className="flex h-6 items-center gap-1 bg-background"
+                          >
+                            <Globe className="h-3 w-3" />
+                            <span className="text-xs font-medium">
+                              {servicio.nombre}
+                            </span>
+                          </Badge>
+
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-semibold">
+                                {formatMoney(servicio.precio)}
+                              </span>
+
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                                  </TooltipTrigger>
+                                  <TooltipContent
+                                    side="top"
+                                    className="max-w-[200px] text-xs"
+                                  >
+                                    <p>{servicio.descripcion}</p>
+                                    <p className="mt-1 text-muted-foreground">
+                                      Adquirido: {formatDate(servicio.creadoEn)}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Switch
+                          checked={serviciosSeleccionados?.includes(
+                            servicio.id
+                          )}
+                          onCheckedChange={(checked) => {
+                            handleCheckedServicio(checked, servicio.id);
+                          }}
+                          aria-label={`Agregar ${servicio.nombre} a la factura`}
+                        />
+                      </div>
                     ))}
                   </div>
-                </div>
-              )}
+                </CardContent>
+              </Card>
+
+              {/* )} */}
             </CardContent>
           </Card>
 

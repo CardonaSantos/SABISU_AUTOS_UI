@@ -91,6 +91,10 @@ export default function TicketFilters({
   // const [date, setDate] = useState<Date | undefined>(undefined);
   const userId = useStoreCrm((state) => state.userIdCRM) ?? 0;
 
+  const coincidencias = tickets.filter(
+    (ticket) => ticket.status !== "RESUELTA"
+  );
+
   const handleFilterChange = (value: string) => {
     if (value === "assignedToMe") {
       setSelectedAssignee(String(userId)); // Establece el ID del usuario asignado a ti
@@ -230,7 +234,7 @@ export default function TicketFilters({
             Coincidencias encontradas
           </span>
           <span className="ml-1 inline-flex items-center justify-center bg-gray-100 text-gray-700 text-xs font-semibold px-2 py-0.5 rounded-full">
-            {tickets.length}
+            {coincidencias.length}
           </span>
         </div>
       </div>
