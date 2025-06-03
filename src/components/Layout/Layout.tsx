@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Link, Outlet } from "react-router-dom";
 import { ModeToggle } from "../mode-toggle";
-import nv2 from "@/assets/LOGOPNG.png";
+import nv2 from "@/assets/FerePng.png";
 
 import {
   DropdownMenu,
@@ -108,7 +108,7 @@ export default function Layout2({ children }: LayoutProps) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
 
   // Clases de logo
-  const logoClasses = "h-16 w-16 md:h-10 md:w-16";
+  const logoClasses = "h-20 w-20 md:h-24 md:w-24";
 
   // Decodificar y setear datos del POS al iniciar
   useEffect(() => {
