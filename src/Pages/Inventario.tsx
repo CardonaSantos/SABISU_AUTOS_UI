@@ -1,8 +1,32 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import {
+  AlertCircle,
+  Ban,
+  Building2,
+  Calendar,
+  CalendarDays,
+  Clock,
+  InfinityIcon,
+  MapPin,
+  PlusCircle,
+  Search,
+  Store,
+  TagIcon,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Boxes } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import SelectM, { MultiValue } from "react-select"; // Importación correcta de react-select
+import SelectM from "react-select"; // Importación correcta de react-select
 import {
   Select,
   SelectContent,
@@ -71,6 +95,9 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import utc from "dayjs/plugin/utc";
 import localizedFormat from "dayjs/plugin/localizedFormat";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { ImageCropperUploader } from "./Cropper";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -86,15 +113,26 @@ interface ProductCreate {
   descripcion: string;
   categorias: number[];
   codigoProducto: string;
+  codigoProveedor: string;
+
   precioVenta: number[];
   creadoPorId: number | null;
   precioCostoActual: number | null;
+  stockMinimo: number | null;
+  imagenes: number[];
 }
 
 interface Categorias {
   id: number;
   nombre: string;
 }
+
+type CroppedImage = {
+  fileName: string;
+  blob: Blob;
+  url: string;
+  originalIndex: number;
+};
 
 export default function Inventario() {
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -103,15 +141,19 @@ export default function Inventario() {
   const [sortBy, setSortBy] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const userId = useStore((state) => state.userId);
+  const [croppedImages, setCroppedImages] = useState<CroppedImage[]>([]);
 
   const [productCreate, setProductCreate] = useState<ProductCreate>({
     precioCostoActual: null,
     codigoProducto: "",
+    codigoProveedor: "",
     categorias: [],
     descripcion: "",
     nombre: "",
     precioVenta: [],
     creadoPorId: userId,
+    stockMinimo: null,
+    imagenes: [],
   });
 
   const handleSort = (column: string) => {
@@ -123,7 +165,6 @@ export default function Inventario() {
     }
   };
 
-  // CREAR NUEVO PRODUCTO
   const handleAddProduct = async () => {
     console.log("Enviando...");
 
@@ -144,22 +185,48 @@ export default function Inventario() {
       toast.warning("Falta informacion del usuario");
     }
 
+    const formData = new FormData();
+    formData.append("nombre", productCreate.nombre);
+    formData.append("descripcion", productCreate.descripcion || "");
+    formData.append("codigoProducto", productCreate.codigoProducto);
+    formData.append("codigoProveedor", productCreate.codigoProveedor || "");
+    formData.append(
+      "stockMinimo",
+      productCreate.stockMinimo?.toString() ?? "0"
+    );
+    formData.append(
+      "precioCostoActual",
+      productCreate.precioCostoActual!.toString()
+    );
+
+    formData.append("categorias", JSON.stringify(productCreate.categorias));
+    formData.append("precioVenta", JSON.stringify(productCreate.precioVenta));
+
+    // 3) Añadimos las imágenes
+    croppedImages.forEach((img) => {
+      const file = new File([img.blob], img.fileName, { type: img.blob.type });
+      formData.append("images", file);
+    });
     try {
-      const response = await axios.post(`${API_URL}/products`, {
-        ...productCreate,
+      const response = await axios.post(`${API_URL}/products`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       if (response.status === 201) {
         toast.success("Producto creado");
         setProductCreate({
           codigoProducto: "",
+          codigoProveedor: "",
           categorias: [],
           descripcion: "",
           nombre: "",
           precioCostoActual: null,
           precioVenta: [],
           creadoPorId: userId,
+          stockMinimo: null,
+          imagenes: [],
         });
+        setCroppedImages([]);
         getProductosInventario();
       }
     } catch (error) {
@@ -339,252 +406,368 @@ export default function Inventario() {
   return (
     <div className="container mx-auto p-4 shadow-xl">
       <h1 className="text-2xl font-bold mb-4">Administrador de inventario</h1>
-      <div className="bg-muted p-4 rounded-lg mb-4 ">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-4">
-          <div className="text-xl font-semibold">
-            Inventario Total: {totalInventoryCount} items
+      <div className="bg-muted/50 p-6 rounded-xl mb-6 shadow-sm border border-border/40 backdrop-blur-sm">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
+          <div className="flex items-center space-x-2 mb-4 md:mb-0">
+            <Boxes className="h-6 w-6 text-primary dark:text-white" />
+            <div className="text-xl font-semibold">
+              Inventario Total:{" "}
+              <span className="text-primary font-bold dark:text-white">
+                {totalInventoryCount}
+              </span>{" "}
+              items
+            </div>
           </div>
           <div className="flex space-x-2">
             <Dialog>
               <DialogTrigger>
-                <Button>Añadir Producto</Button>
+                <Button className="flex items-center space-x-2 transition-all hover:shadow-md">
+                  <PlusCircle className="h-4 w-4" />
+                  <span>Añadir Producto</span>
+                </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-4xl max-h-[95vh] w-full">
                 <DialogHeader>
                   <DialogTitle className="text-center">
                     Añadir nuevo producto
                   </DialogTitle>
                 </DialogHeader>
-                {/* LA RAZÓN POR LA QUE AL USAR EL E DENTRO DE LOS SET NO DA ERROR, ES PORQUE EN EL ONSUBMIT YA LO HEMOS TIPADO */}
-                <form
-                  onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                    e.preventDefault();
-                    handleAddProduct();
-                  }}
-                >
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="nombre" className="text-right">
-                        Producto
-                      </Label>
-                      <div className="col-span-3 relative">
-                        <Box className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
-                        <Input
-                          onChange={(e) =>
-                            setProductCreate({
-                              ...productCreate,
-                              nombre: e.target.value,
-                            })
-                          }
-                          value={productCreate.nombre}
-                          id="nombre"
-                          name="nombre"
-                          placeholder="Nombre del producto"
-                          className="pl-10 shadow-sm rounded-md"
-                        />
-                      </div>
-                    </div>
 
-                    {/* Dropdown de categorías con selección múltiple */}
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="categorias" className="text-right">
-                        Categoría
-                      </Label>
-                      <div className="col-span-3">
-                        <SelectM
-                          placeholder="Seleccionar categoría..."
-                          isMulti
-                          name="categorias"
-                          options={categorias.map((categoria) => ({
-                            value: categoria.id,
-                            label: categoria.nombre,
-                          }))}
-                          className="basic-multi-select text-black"
-                          classNamePrefix="select"
-                          onChange={(
-                            selectedOptions: MultiValue<{
-                              value: number;
-                              label: string;
-                            }>
-                          ) => {
-                            const selectedIds = selectedOptions.map(
-                              (option) => option.value
-                            );
-                            setProductCreate({
-                              ...productCreate,
-                              categorias: selectedIds,
-                            });
-                          }}
-                          value={categorias
-                            .filter((categoria) =>
-                              productCreate.categorias.includes(categoria.id)
-                            )
-                            .map((categoria) => ({
-                              value: categoria.id,
-                              label: categoria.nombre,
-                            }))}
-                        />
-                      </div>
-                    </div>
+                <Tabs defaultValue="account" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="account">Producto</TabsTrigger>
+                    <TabsTrigger value="password">Imagenes</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="account" className="mt-4">
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleAddProduct();
+                      }}
+                      className="overflow-hidden"
+                    >
+                      <ScrollArea className="h-[calc(95vh-220px)]">
+                        <div className="space-y-4 p-1">
+                          {/* Todo el contenido del formulario permanece igual */}
+                          {/* Fila 1: Nombre y Categoría */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="nombre" className="text-sm">
+                                Producto
+                              </Label>
+                              <div className="relative">
+                                <Box className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                <Input
+                                  onChange={(e) =>
+                                    setProductCreate({
+                                      ...productCreate,
+                                      nombre: e.target.value,
+                                    })
+                                  }
+                                  value={productCreate.nombre}
+                                  id="nombre"
+                                  name="nombre"
+                                  placeholder="Nombre del producto"
+                                  className="pl-9 h-9 shadow-sm rounded-md"
+                                />
+                              </div>
+                            </div>
 
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="code" className="text-right">
-                        Código Producto
-                      </Label>
-                      <div className="col-span-3 relative">
-                        <Barcode className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
-                        <Input
-                          value={productCreate.codigoProducto}
-                          onChange={(e) =>
-                            setProductCreate({
-                              ...productCreate,
-                              codigoProducto: e.target.value,
-                            })
-                          }
-                          id="code"
-                          name="code"
-                          placeholder="Código único producto"
-                          className="pl-10 shadow-sm rounded-md"
-                        />
-                      </div>
-                    </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="categorias" className="text-sm">
+                                Categoría
+                              </Label>
+                              <SelectM
+                                placeholder="Seleccionar categoría..."
+                                isMulti
+                                name="categorias"
+                                options={categorias.map((categoria) => ({
+                                  value: categoria.id,
+                                  label: categoria.nombre,
+                                }))}
+                                className="basic-multi-select text-black"
+                                classNamePrefix="select"
+                                onChange={(selectedOptions) => {
+                                  const selectedIds = selectedOptions.map(
+                                    (option) => option.value
+                                  );
+                                  setProductCreate({
+                                    ...productCreate,
+                                    categorias: selectedIds,
+                                  });
+                                }}
+                                value={categorias
+                                  .filter((categoria) =>
+                                    productCreate.categorias.includes(
+                                      categoria.id
+                                    )
+                                  )
+                                  .map((categoria) => ({
+                                    value: categoria.id,
+                                    label: categoria.nombre,
+                                  }))}
+                              />
+                            </div>
+                          </div>
 
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="desc" className="text-right">
-                        Descripción
-                      </Label>
-                      <div className="col-span-3 relative">
-                        <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
-                        <Textarea
-                          value={productCreate.descripcion}
-                          onChange={(e) =>
-                            setProductCreate({
-                              ...productCreate,
-                              descripcion: e.target.value,
-                            })
-                          }
-                          placeholder="Breve descripción..."
-                          id="desc"
-                          name="desc"
-                          className="pl-10 shadow-sm rounded-md"
-                        />
-                      </div>
-                    </div>
+                          {/* Fila 2: Códigos */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label
+                                htmlFor="codigoProducto"
+                                className="text-sm"
+                              >
+                                Código Producto
+                              </Label>
+                              <div className="relative">
+                                <Barcode className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                <Input
+                                  value={productCreate.codigoProducto}
+                                  onChange={(e) =>
+                                    setProductCreate({
+                                      ...productCreate,
+                                      codigoProducto: e.target.value,
+                                    })
+                                  }
+                                  id="codigoProducto"
+                                  name="codigoProducto"
+                                  placeholder="Código único producto"
+                                  className="pl-9 h-9 shadow-sm rounded-md"
+                                />
+                              </div>
+                            </div>
 
-                    {/* NUEVO CAMPO PARA PRECIO COSTO */}
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="price1" className="text-right">
-                        Precio Costo
-                      </Label>
-                      <div className="col-span-3 relative">
-                        {/* Icono de dólar */}
-                        <Coins className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
-                        <Input
-                          value={productCreate.precioCostoActual ?? ""} // Si es null, asigna una cadena vacía
-                          onChange={(e) =>
-                            setProductCreate({
-                              ...productCreate,
-                              precioCostoActual: e.target.value
-                                ? Number(e.target.value)
-                                : null,
-                            })
-                          }
-                          id="price1"
-                          name="price1"
-                          type="number"
-                          step="1"
-                          placeholder="Precio costo del producto"
-                          className="pl-10 shadow-sm rounded-md border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
+                            <div className="space-y-2">
+                              <Label
+                                htmlFor="codigoProveedor"
+                                className="text-sm"
+                              >
+                                Código Proveedor
+                              </Label>
+                              <div className="relative">
+                                <Barcode className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                <Input
+                                  value={productCreate.codigoProveedor}
+                                  onChange={(e) =>
+                                    setProductCreate({
+                                      ...productCreate,
+                                      codigoProveedor: e.target.value,
+                                    })
+                                  }
+                                  id="codigoProveedor"
+                                  name="codigoProveedor"
+                                  placeholder="Código Proveedor"
+                                  className="pl-9 h-9 shadow-sm rounded-md"
+                                />
+                              </div>
+                            </div>
+                          </div>
 
-                    {/* Input for Price 1 */}
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="price1" className="text-right">
-                        Precio Venta 1
-                      </Label>
-                      <div className="col-span-3 relative">
-                        <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
-                        <Input
-                          value={productCreate.precioVenta[0] || ""} // If no value exists, show empty string
-                          onChange={(e) => handlePriceChange(0, e.target.value)} // Update the first price
-                          id="price1"
-                          name="price1"
-                          type="number"
-                          step="1"
-                          placeholder="0.00"
-                          className="pl-10 shadow-sm rounded-md"
-                        />
-                      </div>
-                    </div>
+                          {/* STOCK MINIMO */}
+                          <div className="space-y-2">
+                            <Label htmlFor="stockBajo" className="text-sm">
+                              Stock Minimo
+                            </Label>
+                            <div className="relative">
+                              <Coins className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                              <Input
+                                value={productCreate.stockMinimo ?? ""}
+                                onChange={(e) =>
+                                  setProductCreate({
+                                    ...productCreate,
+                                    stockMinimo: e.target.value
+                                      ? Number(e.target.value)
+                                      : null,
+                                  })
+                                }
+                                id="stockBajo"
+                                name="stockBajo"
+                                type="number"
+                                step="1"
+                                placeholder="Stock minimo (opcional)"
+                                className="pl-9 h-9 shadow-sm rounded-md"
+                              />
+                            </div>
+                          </div>
 
-                    {/* Input for Price 2 */}
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="price2" className="text-right">
-                        Precio Venta 2
-                      </Label>
-                      <div className="col-span-3 relative">
-                        <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
-                        <Input
-                          value={productCreate.precioVenta[1] || ""} // If no value exists, show empty string
-                          onChange={(e) => handlePriceChange(1, e.target.value)} // Update the second price
-                          id="price2"
-                          name="price2"
-                          type="number"
-                          step="1"
-                          placeholder="0.00"
-                          className="pl-10 shadow-sm rounded-md"
-                        />
-                      </div>
-                    </div>
+                          {/* Fila 3: Descripción */}
+                          <div className="space-y-2">
+                            <Label htmlFor="desc" className="text-sm">
+                              Descripción
+                            </Label>
+                            <div className="relative">
+                              <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                              <Textarea
+                                value={productCreate.descripcion}
+                                onChange={(e) =>
+                                  setProductCreate({
+                                    ...productCreate,
+                                    descripcion: e.target.value,
+                                  })
+                                }
+                                placeholder="Breve descripción..."
+                                id="desc"
+                                name="desc"
+                                className="pl-9 shadow-sm rounded-md min-h-[60px] resize-none"
+                              />
+                            </div>
+                          </div>
 
-                    {/* Input for Price 3 */}
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="price3" className="text-right">
-                        Precio Venta 3
-                      </Label>
-                      <div className="col-span-3 relative">
-                        <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
-                        <Input
-                          value={productCreate.precioVenta[2] || ""} // If no value exists, show empty string
-                          onChange={(e) => handlePriceChange(2, e.target.value)} // Update the third price
-                          id="price3"
-                          name="price3"
-                          type="number"
-                          step="1"
-                          placeholder="0.00"
-                          className="pl-10 shadow-sm rounded-md"
+                          {/* Fila 4: Precios */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="precioCosto" className="text-sm">
+                                Precio Costo
+                              </Label>
+                              <div className="relative">
+                                <Coins className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                <Input
+                                  value={productCreate.precioCostoActual ?? ""}
+                                  onChange={(e) =>
+                                    setProductCreate({
+                                      ...productCreate,
+                                      precioCostoActual: e.target.value
+                                        ? Number(e.target.value)
+                                        : null,
+                                    })
+                                  }
+                                  id="precioCosto"
+                                  name="precioCosto"
+                                  type="number"
+                                  step="1"
+                                  placeholder="Precio costo del producto"
+                                  className="pl-9 h-9 shadow-sm rounded-md"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="price1" className="text-sm">
+                                Precio Venta 1
+                              </Label>
+                              <div className="relative">
+                                <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                <Input
+                                  value={productCreate.precioVenta[0] || ""}
+                                  onChange={(e) =>
+                                    handlePriceChange(0, e.target.value)
+                                  }
+                                  id="price1"
+                                  name="price1"
+                                  type="number"
+                                  step="1"
+                                  placeholder="0.00"
+                                  className="pl-9 h-9 shadow-sm rounded-md"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Fila 5: Precios adicionales */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="price2" className="text-sm">
+                                Precio Venta 2
+                              </Label>
+                              <div className="relative">
+                                <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                <Input
+                                  value={productCreate.precioVenta[1] || ""}
+                                  onChange={(e) =>
+                                    handlePriceChange(1, e.target.value)
+                                  }
+                                  id="price2"
+                                  name="price2"
+                                  type="number"
+                                  step="1"
+                                  placeholder="0.00"
+                                  className="pl-9 h-9 shadow-sm rounded-md"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="price3" className="text-sm">
+                                Precio Venta 3
+                              </Label>
+                              <div className="relative">
+                                <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                <Input
+                                  value={productCreate.precioVenta[2] || ""}
+                                  onChange={(e) =>
+                                    handlePriceChange(2, e.target.value)
+                                  }
+                                  id="price3"
+                                  name="price3"
+                                  type="number"
+                                  step="1"
+                                  placeholder="0.00"
+                                  className="pl-9 h-9 shadow-sm rounded-md"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </ScrollArea>
+
+                      <DialogFooter className="mt-4 pt-4 border-t">
+                        <Button type="submit" className="w-full sm:w-auto">
+                          Añadir Producto
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </TabsContent>
+                  <TabsContent value="password" className="mt-4">
+                    <div className="max-w-5xl max-h-[95vh] overflow-hidden">
+                      <div className="overflow-y-auto max-h-[calc(90vh-120px)] pr-2">
+                        <ImageCropperUploader
+                          croppedImages={croppedImages}
+                          setCroppedImages={setCroppedImages}
                         />
                       </div>
                     </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit">Añadir Producto</Button>
-                  </DialogFooter>
-                </form>
+                  </TabsContent>
+                </Tabs>
               </DialogContent>
             </Dialog>
           </div>
         </div>
-        <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-4">
+        <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-4">
           {/* Input de búsqueda */}
-          <div className="flex items-center w-full md:w-1/3 space-x-2">
+          <div className="relative w-full md:w-1/3">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-white" />
             <Input
               type="text"
               placeholder="Buscar producto por nombre, código"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
+              className="pl-9 w-full transition-all border-border/50 focus:border-primary"
+              aria-label="Buscar productos"
             />
-            <Barcode className="h-6 w-6 text-gray-500" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2"
+                >
+                  <Barcode className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Buscar por código de barras</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           {/* Filtro de categoría */}
           <div className="w-full md:w-1/3">
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Categoría" />
+              <SelectTrigger className="w-full border-border/50 focus:border-primary">
+                <div className="flex items-center">
+                  <TagIcon className="mr-2 h-4 w-4 text-muted-foreground dark:text-white" />
+                  <SelectValue placeholder="Categoría" />
+                </div>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
@@ -601,8 +784,11 @@ export default function Inventario() {
           {/* Filtro de proveedores */}
           <div className="w-full md:w-1/3">
             <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Proveedores" />
+              <SelectTrigger className="w-full border-border/50 focus:border-primary">
+                <div className="flex items-center">
+                  <Store className="mr-2 h-4 w-4 text-muted-foreground dark:text-white" />
+                  <SelectValue placeholder="Proveedores" />
+                </div>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
@@ -618,93 +804,144 @@ export default function Inventario() {
         </div>
       </div>
       {/* MAPEO DE PRODUCTOS EN LA TABLA */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg border border-border/40 shadow-sm">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead>Producto</TableHead>
-              <TableHead>Categoria</TableHead>
+              <TableHead className="font-semibold">Producto</TableHead>
+              <TableHead className="font-semibold">Categoria</TableHead>
               <TableHead
-                className="cursor-pointer"
+                className="cursor-pointer font-semibold group"
                 onClick={() => handleSort("quantity")}
               >
-                Cantidad en Stock
-                {sortBy === "quantity" && (
-                  <ArrowDownUp className="inline ml-1" size={16} />
-                )}
+                <div className="flex items-center">
+                  Cantidad en Stock
+                  {sortBy === "quantity" ? (
+                    <ArrowDownUp className="ml-1 h-4 w-4 text-primary transition-transform" />
+                  ) : (
+                    <ArrowDownUp className="ml-1 h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity" />
+                  )}
+                </div>
               </TableHead>
+              <TableHead className="font-semibold">Stock minimo</TableHead>
               <TableHead
-                className="cursor-pointer"
+                className="cursor-pointer font-semibold group"
                 onClick={() => handleSort("price")}
               >
-                Precio por unidad
-                {sortBy === "price" && (
-                  <ArrowDownUp className="inline ml-1" size={16} />
-                )}
+                <div className="flex items-center">
+                  Precio por unidad
+                  {sortBy === "price" ? (
+                    <ArrowDownUp className="ml-1 h-4 w-4 text-primary transition-transform" />
+                  ) : (
+                    <ArrowDownUp className="ml-1 h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity" />
+                  )}
+                </div>
               </TableHead>
-              <TableHead>Día de entrada</TableHead>
+              <TableHead className="font-semibold">Día de entrada</TableHead>
               <TableHead
-                className="cursor-pointer"
+                className="cursor-pointer font-semibold group"
                 onClick={() => handleSort("expiration")}
               >
-                Fecha de expiración
-                {sortBy === "expiration" && (
-                  <ArrowDownUp className="inline ml-1" size={16} />
-                )}
+                <div className="flex items-center">
+                  Fecha de expiración
+                  {sortBy === "expiration" ? (
+                    <ArrowDownUp className="ml-1 h-4 w-4 text-primary transition-transform" />
+                  ) : (
+                    <ArrowDownUp className="ml-1 h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity" />
+                  )}
+                </div>
               </TableHead>
-              <TableHead>Distribución de Stock por Sucursal</TableHead>
-
-              <TableHead>Acciones</TableHead>
+              <TableHead className="font-semibold">
+                Distribución de Stock por Sucursal
+              </TableHead>
+              <TableHead className="font-semibold">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentItems.map((product) => (
-              <TableRow key={product.id}>
-                <TableCell>{product.nombre}</TableCell>
+              <TableRow
+                key={product.id}
+                className="hover:bg-muted/30 transition-colors"
+              >
+                <TableCell className="font-medium">{product.nombre}</TableCell>
                 <TableCell>
-                  <p className="text-xs ">
-                    {product.categorias.map((cat) => cat.nombre).join(", ")}
-                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {product.categorias.map((cat) => (
+                      <Badge
+                        key={cat.nombre}
+                        variant="outline"
+                        className="text-xs px-2 py-0.5"
+                      >
+                        {cat.nombre}
+                      </Badge>
+                    ))}
+                  </div>
                 </TableCell>
 
                 <TableCell>
-                  {product.stock.length === 0 ? (
-                    <p className="text-gray-500 font-bold">No disponible</p>
+                  {product.stock.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {product.stock.map(({ id, cantidad, sucursal }) => (
+                        <div
+                          key={id}
+                          className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-zinc-900"
+                        >
+                          {/* Abreviatura o iniciales de la sucursal */}
+                          <span className="text-xs font-semibold">
+                            {sucursal.nombre.slice(0, 3).toUpperCase()}
+                          </span>
+                          {/* Cantidad */}
+                          <span className="text-sm font-bold">{cantidad}</span>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
-                    product.stock.map((stock) => (
-                      <span className="ml-2 font-extrabold" key={stock.id}>
-                        {stock.cantidad}
-                      </span> // Muestra la cantidad
-                    ))
+                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                      <Ban className="h-3 w-3 mr-1" />
+                      N/A
+                    </div>
                   )}
                 </TableCell>
+                <TableCell>
+                  <span>{product.stockThreshold?.stockMinimo ?? "N/A"}</span>
+                </TableCell>
 
                 <TableCell>
-                  {product.precios
-                    .map((precio) =>
-                      new Intl.NumberFormat("es-GT", {
-                        style: "currency",
-                        currency: "GTQ",
-                      }).format(Number(precio.precio))
-                    )
-                    .join(", ")}
+                  <div className="space-y-1">
+                    {product.precios.map((precio, idx) => (
+                      <div key={idx} className="font-medium">
+                        {new Intl.NumberFormat("es-GT", {
+                          style: "currency",
+                          currency: "GTQ",
+                        }).format(Number(precio.precio))}
+                      </div>
+                    ))}
+                  </div>
                 </TableCell>
 
                 <TableCell>
                   {product.stock.length === 0 ? (
-                    <p className="text-orange-500 font-bold">
+                    <div className="text-xs items-center flex">
+                      <AlertCircle className="h-5 w-5 mr-1" />
                       Sin stock asignado
-                    </p>
+                    </div>
                   ) : (
                     product.stock.map((stock) => (
-                      <Link key={stock.id} to={`/stock-edicion/${stock.id}`}>
-                        <p>{formatearFecha(stock.fechaIngreso)}</p>
-                      </Link>
+                      <div className="text-xs items-center flex">
+                        <Link
+                          key={stock.id}
+                          to={`/stock-edicion/${stock.id}`}
+                          className=" transition-colors "
+                        >
+                          <CalendarDays className="h-3 w-3 inline mr-1" />
+                          {formatearFecha(stock.fechaIngreso)}
+                        </Link>
+                      </div>
                     ))
                   )}
                 </TableCell>
 
-                <TableCell className="">
+                <TableCell>
                   {product.stock.length > 0 ? (
                     product.stock.map((stock, index) => {
                       const fechaVencimiento = new Date(stock.fechaVencimiento);
@@ -714,35 +951,73 @@ export default function Inventario() {
                         fechaVencimiento.setHours(23, 59, 59, 999) <=
                           hoy.getTime();
 
+                      // Calcular días restantes para vencimiento
+                      const diasRestantes = stock.fechaVencimiento
+                        ? Math.ceil(
+                            (fechaVencimiento.getTime() - hoy.getTime()) /
+                              (1000 * 60 * 60 * 24)
+                          )
+                        : null;
+
                       return (
-                        <div
-                          key={index}
-                          className="flex justify-center items-center "
-                        >
+                        <div key={index} className="flex items-center">
                           {/* Si hay fecha de vencimiento */}
                           {stock.fechaVencimiento ? (
                             estaVencido ? (
-                              <p className="text-rose-500 font-bold">
-                                Expirado-
-                                {formatearFecha(stock.fechaVencimiento)}
-                              </p>
+                              <Badge
+                                variant="destructive"
+                                className="flex items-center mb-1"
+                              >
+                                <Clock className="h-3 w-3 mr-1" />
+                                <span>
+                                  Expirado-
+                                  {formatearFecha(stock.fechaVencimiento)}
+                                </span>
+                              </Badge>
                             ) : (
-                              <p className="font-semibold">
-                                {formatearFecha(stock.fechaVencimiento)}
-                              </p>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge
+                                    variant={
+                                      diasRestantes && diasRestantes < 30
+                                        ? "outline"
+                                        : "secondary"
+                                    }
+                                    className={`flex items-center ${
+                                      diasRestantes && diasRestantes < 30
+                                        ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 mb-1"
+                                        : ""
+                                    }`}
+                                  >
+                                    <Calendar className="h-3 w-3 mr-1" />
+                                    <span>
+                                      {formatearFecha(stock.fechaVencimiento)}
+                                    </span>
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {diasRestantes
+                                    ? `${diasRestantes} días para vencer`
+                                    : "Fecha de vencimiento"}
+                                </TooltipContent>
+                              </Tooltip>
                             )
                           ) : (
-                            /* Si no hay fecha de vencimiento */
-                            <p className="text-purple-500 font-bold">N/A</p>
+                            <Badge
+                              variant="outline"
+                              className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                            >
+                              <InfinityIcon className="h-3 w-3 mr-1" />
+                              <span>N/A</span>
+                            </Badge>
                           )}
                         </div>
                       );
                     })
                   ) : (
-                    <div className="flex justify-center items-center mt-2 mb-2">
-                      <p className="text-gray-500 font-bold">
-                        Sin stock asignado
-                      </p>
+                    <div className="flex justify-center items-center text-xs">
+                      <AlertCircle className="h-3 w-3 mr-1" />
+                      Sin stock asignado
                     </div>
                   )}
                 </TableCell>
@@ -750,122 +1025,122 @@ export default function Inventario() {
                 <TableCell>
                   {product && product.stock && product.stock.length > 0 ? (
                     <Popover>
-                      <PopoverTrigger>
-                        <Button variant="link">Ver</Button>{" "}
-                        {/* Botón que activa el popover */}
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center"
+                        >
+                          <MapPin className="h-3 w-3 mr-1" />
+                          <span>Ver</span>
+                        </Button>
                       </PopoverTrigger>
-                      <PopoverContent>
-                        <div className="p-4 space-y-2">
-                          {product.stock
-                            .reduce(
-                              (
-                                acc: {
-                                  sucursal: { nombre: string };
-                                  cantidad: number;
-                                }[],
-                                stock: {
-                                  sucursal: { nombre: string };
-                                  cantidad: number;
-                                }
-                              ) => {
-                                const existingStock = acc.find(
-                                  (s) =>
-                                    s.sucursal.nombre === stock.sucursal.nombre
-                                );
-                                if (existingStock) {
-                                  existingStock.cantidad += stock.cantidad;
-                                } else {
-                                  acc.push({ ...stock });
-                                }
-                                return acc;
-                              },
-                              []
-                            )
-                            .map((stock) => (
-                              <div
-                                key={stock.sucursal.nombre} // Usar nombre como key temporal si no tienes un id
-                                className="flex items-center gap-2 bg-gray-100 p-2 rounded-lg shadow-sm"
-                              >
-                                <p className="font-semibold text-gray-700">
-                                  {stock.sucursal.nombre}:
-                                </p>
-                                <p className="text-gray-600">
-                                  {stock.cantidad} Uds
-                                </p>
-                              </div>
-                            ))}
+                      <PopoverContent className="w-72">
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-sm flex items-center">
+                            <Building2 className="h-4 w-4 mr-1 text-primary" />
+                            Distribución por Sucursal
+                          </h4>
+                          <Separator />
+                          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                            {product.stock
+                              .reduce(
+                                (
+                                  acc: {
+                                    sucursal: { nombre: string };
+                                    cantidad: number;
+                                  }[],
+                                  stock: {
+                                    sucursal: { nombre: string };
+                                    cantidad: number;
+                                  }
+                                ) => {
+                                  const existingStock = acc.find(
+                                    (s) =>
+                                      s.sucursal.nombre ===
+                                      stock.sucursal.nombre
+                                  );
+                                  if (existingStock) {
+                                    existingStock.cantidad += stock.cantidad;
+                                  } else {
+                                    acc.push({ ...stock });
+                                  }
+                                  return acc;
+                                },
+                                []
+                              )
+                              .map((stock) => (
+                                <div
+                                  key={stock.sucursal.nombre}
+                                  className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border border-border/40"
+                                >
+                                  <div className="flex items-center">
+                                    <Store className="h-4 w-4 mr-2 text-primary" />
+                                    <span className="font-medium">
+                                      {stock.sucursal.nombre}
+                                    </span>
+                                  </div>
+                                  <Badge variant="secondary">
+                                    {stock.cantidad} Uds
+                                  </Badge>
+                                </div>
+                              ))}
+                          </div>
                         </div>
                       </PopoverContent>
                     </Popover>
                   ) : (
-                    "No asignado"
+                    <Badge
+                      variant="outline"
+                      className="bg-muted text-muted-foreground"
+                    >
+                      No asignado
+                    </Badge>
                   )}
                 </TableCell>
 
                 <TableCell>
-                  <div className="flex space-x-2">
-                    {/* Enlace para editar el producto */}
-
+                  <div className="flex items-center space-x-2">
                     {/* Botón de HoverCard para mostrar la descripción */}
                     <HoverCard>
                       <HoverCardTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Eye size={16} />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full"
+                          aria-label="Ver detalles"
+                        >
+                          <Eye className="h-4 w-4 text-muted-foreground" />
                         </Button>
                       </HoverCardTrigger>
-                      <HoverCardContent className="w-80 p-4">
-                        <h4 className="text-sm font-semibold">
-                          Descripción del producto
-                        </h4>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          {product.descripcion
-                            ? product.descripcion
-                            : "No hay descripción disponible"}
-                        </p>
+                      <HoverCardContent className="w-80">
+                        <div className="flex justify-between">
+                          <h4 className="font-semibold">
+                            Detalles del producto
+                          </h4>
+                          <Badge variant="outline">
+                            {product.codigoProducto || "Sin código"}
+                          </Badge>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">
+                            {product.descripcion
+                              ? product.descripcion
+                              : "No hay descripción disponible"}
+                          </p>
+                        </div>
                       </HoverCardContent>
                     </HoverCard>
 
                     <Link
-                      to={`/editar-producto/${product.id}`} // Cambia a la ruta correcta que maneje la edición del producto
-                      className="flex items-center text-blue-500 hover:underline"
+                      to={`/editar-producto/${product.id}`}
+                      className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0"
+                      aria-label="Editar producto"
                     >
-                      <Edit className="h-4 w-4" />
-                      <span className="ml-1">Editar</span>
+                      <Edit className="h-4 w-4 text-blue-500" />
+                      <span className="sr-only">Editar</span>
                     </Link>
-
-                    {/* Botón para eliminar el producto */}
-                    {/* <Dialog>
-                      <DialogTrigger>
-                        <Button variant="destructive" size="sm">
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle className="text-center">
-                            Eliminación de Producto
-                          </DialogTitle>
-                          <DialogDescription>
-                            Al eliminar el producto, se eliminarán sus
-                            referencias tanto a stocks como a registros de
-                            ventas en todas las sucursales donde haya sido
-                            referenciado. Esto podría causar huecos de
-                            información. ¿Continuar?
-                          </DialogDescription>
-                          <DialogDescription className="text-center">
-                            ¿Continuar?
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="flex gap-2 mt-4 justify-center items-center">
-                          <Button
-                            variant="destructive"
-                            onClick={() => handleDeleteProduct(product.id)}
-                          >
-                            Confirmar Eliminación
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog> */}
                   </div>
                 </TableCell>
               </TableRow>

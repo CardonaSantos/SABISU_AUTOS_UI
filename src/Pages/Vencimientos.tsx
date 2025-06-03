@@ -158,7 +158,7 @@ function Vencimientos() {
                         <TableCell>#{vencimiento.id}</TableCell>
 
                         <TableCell className="font-medium">
-                          {vencimiento.stock.producto.nombre}
+                          {vencimiento?.stock?.producto?.nombre}
                         </TableCell>
                         <TableCell>
                           {formatearFecha(vencimiento.fechaVencimiento)}

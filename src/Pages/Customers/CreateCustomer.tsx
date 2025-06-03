@@ -47,6 +47,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -56,7 +57,7 @@ interface ClienteResponse {
   telefono: string;
   dpi: string;
   direccion: string;
-  iPInternet: string;
+  observaciones?: string;
   actualizadoEn: string;
   _count: {
     compras: number;
@@ -69,7 +70,7 @@ interface FormData {
   telefono?: string;
   direccion?: string;
   dpi?: string;
-  iPInternet?: string;
+  observaciones?: string;
 }
 
 interface FormDataEdit {
@@ -78,7 +79,7 @@ interface FormDataEdit {
   telefono?: string;
   direccion?: string;
   dpi?: string;
-  iPInternet?: string;
+  observaciones?: string;
 }
 
 // Define form errors structure
@@ -94,7 +95,7 @@ export default function CreateCustomer() {
     telefono: "",
     direccion: "",
     dpi: "",
-    iPInternet: "",
+    observaciones: "",
   });
 
   const [formDataEdit, setFormDataEdit] = useState<FormDataEdit>({
@@ -103,14 +104,15 @@ export default function CreateCustomer() {
     direccion: "",
     dpi: "",
     id: 0,
-    iPInternet: "",
+    observaciones: "",
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [clientes, setClientes] = useState<ClienteResponse[]>([]);
 
-  // HANDLE PARA EL CHANGE
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
@@ -118,7 +120,6 @@ export default function CreateCustomer() {
     }));
   };
 
-  // VALIDAR FORM
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
     if (!formData.nombre.trim()) newErrors.nombre = "El nombre es requerido";
@@ -130,23 +131,23 @@ export default function CreateCustomer() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // CREAR CLIENTE
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
       try {
         const response = await axios.post(`${API_URL}/client`, formData);
         if (response.status === 201) {
+          getCustomers();
           toast.success("Cliente creado");
           setFormData({
             nombre: "",
             telefono: "",
             direccion: "",
             dpi: "",
-            iPInternet: "",
+            observaciones: "",
           });
         } else {
-          throw new Error("Failed to create client");
+          throw new Error("Fallo al crear cliente");
         }
       } catch (error) {
         toast.error("Error al crear el cliente");
@@ -154,7 +155,6 @@ export default function CreateCustomer() {
     }
   };
 
-  // Fetch clientes data from API
   const getCustomers = async () => {
     try {
       const response = await axios.get(`${API_URL}/client/get-all-customers`);
@@ -167,12 +167,9 @@ export default function CreateCustomer() {
     }
   };
 
-  //CONSEGUIR CLIENTES DEL SERVER
   useEffect(() => {
     getCustomers();
   }, []);
-
-  console.log("LOS CLIENTES SON: ", clientes);
 
   const [searchTermn, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"more" | "less">("more");
@@ -201,25 +198,18 @@ export default function CreateCustomer() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
   const totalPages = Math.ceil(filteredClientes.length / itemsPerPage);
-  // Calcular el índice del último elemento de la página actual
   const indexOfLastItem = currentPage * itemsPerPage;
-  // Calcular el índice del primer elemento de la página actual
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  // Obtener los elementos de la página actual
   const currentItems = filteredClientes.slice(
     indexOfFirstItem,
     indexOfLastItem
   );
-  // Cambiar de página
   const onPageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  //DIALOG
   const [openSection, setOpenSection] = useState(false);
   const [openConfirmDelete, setOpenConfirmDelete] = useState(false);
-
-  // Función para manejar la apertura del diálogo y cargar datos del cliente
   const handleEditClick = (client: FormDataEdit) => {
     setFormDataEdit({
       nombre: client.nombre || "",
@@ -227,12 +217,11 @@ export default function CreateCustomer() {
       direccion: client.direccion || "",
       dpi: client.dpi || "",
       id: client.id,
-      iPInternet: client.iPInternet || "",
+      observaciones: client.observaciones || "",
     });
     setOpenSection(true);
   };
 
-  // Función para cerrar el diálogo
   const handleClose = () => {
     setOpenSection(false);
   };
@@ -280,14 +269,13 @@ export default function CreateCustomer() {
       </TabsList>
       {/* Formulario para crear cliente */}
       <TabsContent value="crear-cliente">
-        <Card className="shadow-xl">
-          <CardHeader></CardHeader>
+        <Card className="shadow-md pt-5">
           <CardContent className="space-y-2">
             <form
               onSubmit={handleSubmit}
-              className="space-y-6 max-w-2xl mx-auto p-6 bg-card rounded-lg shadow-md"
+              className="space-y-6 max-w-2xl mx-auto p-6 bg-card rounded-lg"
             >
-              <h2 className="text-2xl font-bold text-center mb-6">
+              <h2 className="text-lg font-bold text-center mb-6">
                 Crear Nuevo Cliente
               </h2>
 
@@ -348,13 +336,14 @@ export default function CreateCustomer() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="direccion">IP (opcional)</Label>
-                  <Input
-                    id="iPInternet"
-                    name="iPInternet"
-                    value={formData.iPInternet}
+                <div className="block sm:col-span-2">
+                  <Label htmlFor="observaciones">Observaciones</Label>
+                  <Textarea
+                    id="observaciones"
+                    name="observaciones"
+                    value={formData.observaciones}
                     onChange={handleChange}
+                    className="w-full"
                   />
                 </div>
               </div>
@@ -364,7 +353,6 @@ export default function CreateCustomer() {
               </Button>
             </form>
           </CardContent>
-          <CardFooter></CardFooter>
         </Card>
       </TabsContent>
 
@@ -401,11 +389,10 @@ export default function CreateCustomer() {
               <TableCaption>Clientes disponibles</TableCaption>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px]">Cliente No.</TableHead>
+                  <TableHead className="w-[100px]">No. Cliente</TableHead>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Telefono</TableHead>
                   <TableHead className="text-right">DPI</TableHead>
-                  <TableHead className="text-right">IP</TableHead>
                   <TableHead className="text-right">Dirección</TableHead>
                   <TableHead className="text-right">Compras hechas</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -416,7 +403,7 @@ export default function CreateCustomer() {
                   currentItems.map((client) => (
                     <TableRow key={client.id}>
                       <TableCell className="font-medium">
-                        #{client.id ?? "ID no disponible"}
+                        {client.id ?? "ID no disponible"}
                       </TableCell>
                       <TableCell>
                         {client.nombre || "Nombre no disponible"}
@@ -426,10 +413,6 @@ export default function CreateCustomer() {
                       </TableCell>
                       <TableCell className="text-right">
                         {client.dpi || "DPI no disponible"}
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                        {client.iPInternet || "N/A"}
                       </TableCell>
 
                       <TableCell className="text-right">
@@ -447,7 +430,7 @@ export default function CreateCustomer() {
                           onClick={() => handleEditClick(client)}
                           variant={"outline"}
                         >
-                          <Edit />
+                          <Edit className="w-4 h-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -505,14 +488,13 @@ export default function CreateCustomer() {
                     </label>
 
                     <label>
-                      IP Internet:
-                      <input
-                        type="text"
-                        value={formDataEdit.iPInternet}
+                      Observaciones:
+                      <Textarea
+                        value={formDataEdit.observaciones}
                         onChange={(e) =>
                           setFormDataEdit({
                             ...formDataEdit,
-                            iPInternet: e.target.value,
+                            observaciones: e.target.value,
                           })
                         }
                         className="border p-2 rounded w-full bg-transparent"

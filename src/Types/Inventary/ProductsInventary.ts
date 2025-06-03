@@ -30,6 +30,11 @@ type Precios = {
   precio: number;
 };
 
+type stockThresholds = {
+  id: number;
+  stockMinimo: number;
+};
+
 type Producto = {
   id: number;
   nombre: string;
@@ -42,6 +47,7 @@ type Producto = {
   stock: Stock[];
   precios: Precios[];
   precioCostoActual: number;
+  stockThreshold: stockThresholds;
 };
 
 export type ProductsInventary = Producto;

@@ -5,7 +5,6 @@ import {
   Eye,
   FileSpreadsheet,
   FileText,
-  Ticket,
   Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -62,6 +61,17 @@ import DatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useStore } from "@/components/Context/ContextSucursal";
 import { Textarea } from "@/components/ui/textarea";
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
+dayjs.locale("es");
 registerLocale("es", es);
 
 interface Producto {
@@ -93,6 +103,7 @@ export default function HistorialVentas() {
   });
 
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
   const [filtroVenta, setFiltroVenta] = useState("");
   const [ventas, setVentas] = useState<VentasHistorial>([]);
@@ -119,8 +130,6 @@ export default function HistorialVentas() {
       getVentas();
     }
   }, [sucursalId]);
-
-  console.log("Las ventas en el historial ventas son: ", ventas);
 
   const DetallesVenta = ({ venta }: { venta: Venta }) => (
     <Card className="w-full shadow-xl">
@@ -240,62 +249,41 @@ export default function HistorialVentas() {
       </CardContent>
     </Card>
   );
-
-  console.log(
-    "Las fechas de las ventas son: ",
-    ventas.map((venta) => venta.fechaVenta)
-  );
-
+  const filtroNormalizado = filtroVenta.trim().toLowerCase();
   const filter = ventas
     .filter((venta) => {
-      // Convertir la fecha de la venta a formato sin hora
-      const ventaFecha = new Date(venta.fechaVenta);
-      // Eliminar la hora de la fecha seleccionada
-      const fechaSeleccionada =
-        startDate && new Date(startDate).setHours(0, 0, 0, 0); // Solo la fecha sin la hora
-      const ventaFechaSinHora = ventaFecha.setHours(0, 0, 0, 0); // Solo la fecha sin la hora
+      // 1 — Fecha de la venta normalizada (00:00 GT)
+      const fechaVenta = dayjs(venta.fechaVenta)
+        .tz("America/Guatemala")
+        .startOf("day");
 
-      // Compara solo las fechas sin tener en cuenta la hora
-      const fechaCoincide = fechaSeleccionada
-        ? fechaSeleccionada === ventaFechaSinHora
-        : true; // Si no hay fecha seleccionada, no se aplica filtro
+      // 2 — Rango seleccionado
+      const inicio = startDate
+        ? dayjs(startDate).tz("America/Guatemala").startOf("day")
+        : null;
 
-      // Filtra por nombre, teléfono, dpi, dirección o id, y también por fecha si se selecciona
-      return (
-        (venta.cliente?.nombre
-          .trim()
-          .toLowerCase()
-          .includes(filtroVenta.trim().toLowerCase()) ||
-          venta.cliente?.telefono
-            .trim()
-            .toLowerCase()
-            .includes(filtroVenta.trim().toLowerCase()) ||
-          venta.cliente?.dpi
-            .trim()
-            .toLowerCase()
-            .includes(filtroVenta.trim().toLowerCase()) ||
-          venta.cliente?.direccion
-            .trim()
-            .toLowerCase()
-            .includes(filtroVenta.trim().toLowerCase()) ||
-          venta.cliente?.id
-            .toString()
-            .trim()
-            .toLowerCase()
-            .includes(filtroVenta.trim().toLowerCase()) ||
-          venta.id
-            .toString()
-            .trim()
-            .toLowerCase()
-            .includes(filtroVenta.trim().toLowerCase())) &&
-        fechaCoincide
-      );
+      const fin = endDate
+        ? dayjs(endDate).tz("America/Guatemala").endOf("day") // 23:59:59 GT
+        : null;
+
+      const coincideRango =
+        (!inicio || fechaVenta.isSameOrAfter(inicio, "day")) &&
+        (!fin || fechaVenta.isSameOrBefore(fin, "day"));
+
+      // 3 — Filtro de texto (nombre, teléfono, etc.)
+      const coincideTexto =
+        venta.cliente?.nombre?.toLowerCase().includes(filtroNormalizado) ||
+        venta.cliente?.telefono?.toLowerCase().includes(filtroNormalizado) ||
+        venta.cliente?.dpi?.toLowerCase().includes(filtroNormalizado) ||
+        venta.cliente?.direccion?.toLowerCase().includes(filtroNormalizado) ||
+        venta.cliente?.id?.toString().includes(filtroNormalizado) ||
+        venta.id.toString().includes(filtroNormalizado);
+
+      return coincideTexto && coincideRango;
     })
-    .sort((a, b) => {
-      const fechaA = new Date(a.fechaVenta).getTime();
-      const fechaB = new Date(b.fechaVenta).getTime();
-      return fechaB - fechaA;
-    });
+    .sort(
+      (a, b) => dayjs(b.fechaVenta).valueOf() - dayjs(a.fechaVenta).valueOf()
+    );
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
@@ -394,7 +382,7 @@ export default function HistorialVentas() {
           value={filtroVenta}
           onChange={(e) => setFiltroVenta(e.target.value)}
         />
-        <div className="w-full md:w-1/2">
+        <div className="w-full flex gap-2 md:w-1/2">
           <DatePicker
             locale="es"
             selected={startDate}
@@ -403,7 +391,18 @@ export default function HistorialVentas() {
             }}
             className="w-full px-4 py-2 border rounded-md bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder-gray-500"
             isClearable
-            placeholderText="Seleccionar una fecha"
+            placeholderText="Inicio"
+          />
+
+          <DatePicker
+            locale="es"
+            selected={endDate}
+            onChange={(date) => {
+              setEndDate(date || undefined);
+            }}
+            className="w-full px-4 py-2 border rounded-md bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder-gray-500"
+            isClearable
+            placeholderText="Fin"
           />
         </div>
       </div>
@@ -419,7 +418,6 @@ export default function HistorialVentas() {
                   <TableHead>Total</TableHead>
                   <TableHead>Acciones</TableHead>
                   <TableHead>Impresiones</TableHead>
-                  <TableHead>Ticket</TableHead>
 
                   <TableHead>Eliminar</TableHead>
                 </TableRow>
@@ -510,29 +508,6 @@ export default function HistorialVentas() {
                         {/* GENERAR EL TICKET */}
                       </div>
                     </TableCell>
-
-                    <TableCell className="flex justify-center items-center">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Link to={`/ticket/generar-ticket/${venta.id}`}>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                aria-label="Imprimir Garantía"
-                              >
-                                <Ticket className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Generar Ticket</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-
-                    {/* GENERAR EL TICKER */}
 
                     {/* Eliminar registro */}
                     <TableCell>

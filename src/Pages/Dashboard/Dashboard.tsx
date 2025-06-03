@@ -87,6 +87,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import currency from "currency.js";
 import DesvanecerHaciaArriba from "@/Crm/Motion/DashboardAnimations";
 import SkeletonCard from "./Skeleton/SkeletonCardCredit";
+import TableAlertStocks from "./TableAlertStocks";
+
+dayjs.extend(localizedFormat);
+dayjs.extend(customParseFormat);
+dayjs.locale("es");
 
 const formatearMoneda = (monto: number) => {
   return currency(monto, {
@@ -170,6 +175,32 @@ export interface SolicitudTransferencia {
   fechaAprobacion: string | null;
   administradorId: number | null;
 }
+interface VentasSemanalChart {
+  dia: string;
+  totalVenta: number;
+  ventas: number;
+  fecha: string;
+}
+
+interface MasVendidos {
+  id: number;
+  nombre: string;
+  totalVentas: number;
+}
+
+interface VentaReciente {
+  id: number;
+  fechaVenta: string;
+  totalVenta: number;
+  sucursal: {
+    id: number;
+    nombre: string;
+  };
+}
+
+interface dailyMoney {
+  totalDeHoy: number;
+}
 
 enum EstadoPrecio {
   APROBADO = "APROBADO",
@@ -178,9 +209,6 @@ enum EstadoPrecio {
 }
 
 export default function Dashboard() {
-  dayjs.extend(localizedFormat);
-  dayjs.extend(customParseFormat);
-  dayjs.locale("es");
   const formatearFecha = (fecha: string) => {
     let nueva_fecha = dayjs(fecha).format("DD MMMM YYYY, hh:mm A");
     return nueva_fecha;
@@ -193,33 +221,6 @@ export default function Dashboard() {
 
   const sucursalId = useStore((state) => state.sucursalId);
   const userID = useStore((state) => state.userId);
-
-  interface VentasSemanalChart {
-    dia: string;
-    totalVenta: number;
-    ventas: number;
-    fecha: string;
-  }
-
-  interface MasVendidos {
-    id: number;
-    nombre: string;
-    totalVentas: number;
-  }
-
-  interface VentaReciente {
-    id: number;
-    fechaVenta: string;
-    totalVenta: number;
-    sucursal: {
-      id: number;
-      nombre: string;
-    };
-  }
-
-  interface dailyMoney {
-    totalDeHoy: number;
-  }
 
   const [ventasMes, setVentasMes] = useState(0);
   const [ventasSemana, setVentasSemana] = useState(0);
@@ -234,6 +235,14 @@ export default function Dashboard() {
   const [transaccionesRecientes, setTransaccionesRecientes] = useState<
     VentaReciente[]
   >([]);
+  const [openAcept, setOpenAcept] = useState(false);
+  const [openReject, setOpenReject] = useState(false);
+  const [openAceptarTransferencia, setOpenAceptarTransferencia] =
+    useState(false);
+  const [openRechazarTransferencia, setOpenRechazarTransferencia] =
+    useState(false);
+  const socket = useSocket();
+  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
 
   const getInfo = async () => {
     try {
@@ -249,13 +258,9 @@ export default function Dashboard() {
         axios.get(`${API_URL}/analytics/get-ventas/mes/${sucursalId}`),
         axios.get(`${API_URL}/analytics/get-ventas/semana/${sucursalId}`),
         axios.get(`${API_URL}/analytics/venta-dia/${sucursalId}`),
-
-        // {API_URL}/analytics/venta-dia/${suc.id}
-
         axios.get(
           `${API_URL}/analytics/get-ventas/semanal-chart/${sucursalId}`
         ),
-
         axios.get(`${API_URL}/analytics/get-productos-mas-vendidos/`),
         axios.get(`${API_URL}/analytics/get-ventas-recientes/`),
       ]);
@@ -281,8 +286,6 @@ export default function Dashboard() {
     }
   }, [sucursalId]);
 
-  //==============================================>
-  // SOLICITUDES DE PRECIO
   const getSolicitudes = async () => {
     try {
       const response = await axios.get(`${API_URL}/price-request`);
@@ -294,8 +297,6 @@ export default function Dashboard() {
       toast.error("Error al conseguir solicitudes");
     }
   };
-  //=======================================================>
-  // SOLICITUDES DE TRANSFERENCIA PRODUCTO
   const getSolicitudesTransferencia = async () => {
     try {
       const response = await axios.get(
@@ -317,9 +318,6 @@ export default function Dashboard() {
   useEffect(() => {
     getSolicitudesTransferencia();
   }, []);
-
-  const [openAcept, setOpenAcept] = useState(false);
-  const [openReject, setOpenReject] = useState(false);
 
   const handleAceptRequest = async (idSolicitud: number) => {
     try {
@@ -353,9 +351,6 @@ export default function Dashboard() {
       toast.error("Error");
     }
   };
-
-  const socket = useSocket();
-  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
 
   useEffect(() => {
     if (socket) {
@@ -398,11 +393,6 @@ export default function Dashboard() {
       };
     }
   }, [socket]);
-
-  const [openAceptarTransferencia, setOpenAceptarTransferencia] =
-    useState(false);
-  const [openRechazarTransferencia, setOpenRechazarTransferencia] =
-    useState(false);
 
   // Funciones para manejar aceptar y rechazar en el card de transferencia
   const handleAceptarTransferencia = async (
@@ -1518,7 +1508,7 @@ export default function Dashboard() {
 
       {/* Resumen de ventas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="shadow-xl">
+        <Card className="shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Ventas del mes{" "}
@@ -1531,7 +1521,7 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="shadow-xl">
+        <Card className="shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Ingresos de la semana
@@ -1544,7 +1534,7 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="shadow-xl">
+        <Card className="shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Ingresos del dia{" "}
@@ -1562,6 +1552,8 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <TableAlertStocks />
 
       {/* MOSTRAR LOS CRÉDITOS ACTIVOS */}
       <div
@@ -1790,7 +1782,7 @@ export default function Dashboard() {
       </div>
 
       {/* MOSTRAR LAS SOLICITUDES DE PRECIO */}
-      <Card className="shadow-xl">
+      <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="text-xl">
             Solicitud de Precio Especial
@@ -1913,7 +1905,7 @@ export default function Dashboard() {
       </Card>
 
       {/* MOSTRAS LAS SOLICITUDES DE TRANSFERENCIA */}
-      <Card className="shadow-xl">
+      <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="text-xl">
             Solicitudes de Transferencia de Producto
@@ -2161,7 +2153,7 @@ export default function Dashboard() {
       </Dialog>
 
       {/* Gráfico de ventas */}
-      <Card className="shadow-xl">
+      <Card className="shadow-md">
         <CardHeader>
           <CardTitle>Ventas de la Semana</CardTitle>
         </CardHeader>
@@ -2198,7 +2190,7 @@ export default function Dashboard() {
 
       {/* Productos e inventario */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="shadow-xl">
+        <Card className="shadow-md">
           <CardHeader>
             <CardTitle>Productos Más Vendidos</CardTitle>
           </CardHeader>
@@ -2222,7 +2214,7 @@ export default function Dashboard() {
             </Table>
           </CardContent>
         </Card>
-        <Card className="shadow-xl">
+        <Card className="shadow-md">
           <CardHeader>
             <CardTitle>Transacciones Recientes</CardTitle>
           </CardHeader>
@@ -2261,8 +2253,6 @@ export default function Dashboard() {
 
       {/* Actividades recientes y Calendario */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-
-      {/* Notificaciones y alertas */}
     </motion.div>
   );
 }

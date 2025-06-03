@@ -10,6 +10,11 @@ export type Precios = {
   precio: number;
 };
 
+export type imagenesProducto = {
+  id: number;
+  url: string;
+};
+
 type Producto = {
   id: number;
   nombre: string;
@@ -20,6 +25,7 @@ type Producto = {
   actualizadoEn: string; // En formato ISO
   stock: Stock[];
   precios: Precios[];
+  imagenesProducto: imagenesProducto[];
 };
 
 export type ProductosResponse = Producto;
