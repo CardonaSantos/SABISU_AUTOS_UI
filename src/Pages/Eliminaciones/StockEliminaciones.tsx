@@ -1,5 +1,7 @@
 "use client";
 
+import type React from "react";
+
 import { useEffect, useState } from "react";
 import {
   Table,
@@ -17,23 +19,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
 import {
   Calendar,
   User,
   Package,
-  Trash2,
   AlertCircle,
   Tag,
   FileText,
   Building,
-  ChevronLeft,
-  ChevronRight,
+  Hash,
+  Boxes,
+  Trash2,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import localizedFormat from "dayjs/plugin/localizedFormat";
@@ -57,44 +57,47 @@ dayjs.extend(localizedFormat);
 dayjs.locale("es");
 
 function formatearFechaUTC(fecha: string) {
-  // return dayjs.utc(fecha).format("DD/MM/YYYY HH:mm:ss");
   return dayjs(fecha).format("DD/MM/YYYY hh:mm A");
 }
 
-// Definición de tipos
-type Producto = {
+// Definición de tipos (ya proporcionados por el usuario)
+export interface ProductoResumen {
   id: number;
   nombre: string;
-  descripcion: string;
+  descripcion?: string;
   codigoProducto: string;
-};
-
-type Usuario = {
+}
+export interface UsuarioResumen {
   id: number;
   nombre: string;
   rol: string;
-};
-
-type Sucursal = {
+}
+export interface SucursalResumen {
   id: number;
   nombre: string;
-};
-
-type EliminacionStock = {
+}
+export interface EliminacionStockRegistro {
   id: number;
   productoId: number;
-  fechaHora: string;
+  fechaHora: string; // ISO
   usuarioId: number;
   sucursalId: number;
   motivo: string;
-  producto: Producto;
-  usuario: Usuario;
-  sucursal: Sucursal;
-};
+  cantidadAnterior: number;
+  cantidadStockEliminada: number;
+  stockRestante: number;
+  referenciaTipo?: string;
+  referenciaId?: number;
+  createdAt: string; // ISO
+  updatedAt: string; // ISO
+  producto: ProductoResumen;
+  usuario: UsuarioResumen;
+  sucursal: SucursalResumen;
+}
 
 const API_URL = import.meta.env.VITE_API_URL;
-// Componente para mostrar un campo de información
-// Componente para mostrar un campo de información
+
+// Componente para mostrar un campo de información mejorado
 const InfoField = ({
   icon,
   label,
@@ -102,187 +105,261 @@ const InfoField = ({
 }: {
   icon: React.ReactNode;
   label: string;
-  value: string;
+  value: string | number | undefined;
 }) => (
-  <div className="flex items-start space-x-2 p-2  rounded-md">
-    <div className="w-5 h-5 flex-shrink-0">{icon}</div>
+  <div className="flex items-start space-x-2 py-2">
+    {" "}
+    {/* Reduced padding, removed bg/border/rounded */}
+    <div className="w-4 h-4 flex-shrink-0 ">{icon}</div>{" "}
+    {/* Smaller icon, lighter color */}
     <div className="flex flex-col">
-      <p className="text-sm font-medium ">{label}</p>
-      <p className="text-sm ">{value}</p>
+      <p className="text-xs 0">{label}</p> {/* Smaller label text */}
+      <p className="text-sm  break-words">{value || "N/A"}</p>{" "}
+      {/* Normal value text */}
     </div>
   </div>
 );
 
 // Componente principal
 export default function StockEliminaciones() {
-  const [selectedItem, setSelectedItem] = useState<EliminacionStock | null>(
-    null
-  );
-
+  const [selectedItem, setSelectedItem] =
+    useState<EliminacionStockRegistro | null>(null);
   const [stockEliminaciones, setStockEliminaciones] = useState<
-    EliminacionStock[]
+    EliminacionStockRegistro[]
   >([]);
+
   useEffect(() => {
     const getRegists = async () => {
       try {
         const response = await axios.get(
           `${API_URL}/stock-remove/get-stock-remove-regists`
         );
-
         if (response.status === 200) {
           setStockEliminaciones(response.data);
         }
       } catch (error) {
-        console.log(error);
+        console.error("Error al conseguir los registros:", error);
         toast.error("Error al conseguir los registros");
       }
     };
     getRegists();
   }, []);
 
-  console.log("Las eliminaciones de stock son: ", stockEliminaciones);
-
-  //PAGINACIÓN:
+  // PAGINACIÓN:
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
   const totalPages = Math.ceil(stockEliminaciones.length / itemsPerPage);
 
-  // Calcular el índice del último elemento de la página actual
   const indexOfLastItem = currentPage * itemsPerPage;
-  // Calcular el índice del primer elemento de la página actual
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  // Obtener los elementos de la página actual
   const currentItems = stockEliminaciones.slice(
     indexOfFirstItem,
     indexOfLastItem
   );
 
-  // Cambiar de página
   const onPageChange = (page: number) => {
     setCurrentPage(page);
   };
 
   return (
-    <div className="container mx-auto py-10">
-      <Card className="shadow-xl">
-        <CardHeader>
-          <CardTitle>Registros de eliminaciones de Stock</CardTitle>
-          <CardDescription>Todas las acciones quedan guardadas</CardDescription>
+    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <Card className="shadow-lg ">
+        <CardHeader className="pb-3">
+          {" "}
+          {/* Slightly less padding */}
+          <CardTitle className="text-xl font-semibold ">
+            Registros de Eliminaciones de Stock
+          </CardTitle>{" "}
+          {/* Smaller title */}
+          <CardDescription className="text-sm text-gray-600">
+            {" "}
+            {/* Smaller description */}
+            Todas las acciones de eliminación de stock quedan guardadas.
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Eliminación</TableHead>
-                <TableHead>Producto</TableHead>
-                <TableHead>Fecha y Hora</TableHead>
-                <TableHead>Usuario</TableHead>
-                <TableHead>Sucursal</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentItems &&
-                currentItems.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">#{item.id}</TableCell>
-                    <TableCell>{item.producto.nombre}</TableCell>
-                    <TableCell>{formatearFechaUTC(item.fechaHora)}</TableCell>
-                    <TableCell>{item.usuario.nombre}</TableCell>
-                    <TableCell>{item.sucursal.nombre}</TableCell>
-                    <TableCell className="text-right">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedItem(item)}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Detalles
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[550px]">
-                          <DialogHeader className="text-center">
-                            <DialogTitle className="text-2xl font-bold">
-                              Detalles de Eliminación de Stock
-                            </DialogTitle>
-                          </DialogHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table className="min-w-full  ">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">
+                    Eliminación
+                  </TableHead>
+                  <TableHead className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">
+                    Producto
+                  </TableHead>
+                  <TableHead className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">
+                    Fecha y Hora
+                  </TableHead>
+                  <TableHead className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">
+                    Usuario
+                  </TableHead>
+                  <TableHead className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">
+                    Sucursal
+                  </TableHead>
+                  <TableHead className="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider">
+                    Acciones
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
 
-                          {selectedItem && (
-                            <ScrollArea className="max-h-[27rem]">
-                              <div className="grid gap-4 py-4">
-                                <div className="grid grid-cols-2 gap-4">
+              <TableBody className="">
+                {currentItems && currentItems.length > 0 ? (
+                  currentItems.map((item) => (
+                    <TableRow key={item.id} className="">
+                      <TableCell className="px-4 py-2 whitespace-nowrap text-sm font-medium ">
+                        {" "}
+                        {/* Smaller padding, text-sm, darker text */}#{item.id}
+                      </TableCell>
+                      <TableCell className="px-4 py-2 whitespace-nowrap text-sm ">
+                        {" "}
+                        {/* Smaller padding, text-sm */}
+                        {item.producto.nombre}
+                      </TableCell>
+                      <TableCell className="px-4 py-2 whitespace-nowrap text-sm ">
+                        {" "}
+                        {/* Smaller padding, text-sm */}
+                        {formatearFechaUTC(item.fechaHora)}
+                      </TableCell>
+                      <TableCell className="px-4 py-2 whitespace-nowrap text-sm">
+                        {" "}
+                        {/* Smaller padding, text-sm */}
+                        {item.usuario.nombre}
+                      </TableCell>
+                      <TableCell className="px-4 py-2 whitespace-nowrap text-sm ">
+                        {" "}
+                        {/* Smaller padding, text-sm */}
+                        {item.sucursal.nombre}
+                      </TableCell>
+                      <TableCell className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
+                        {" "}
+                        {/* Smaller padding, text-sm */}
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedItem(item)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Detalles
+                            </Button>
+                          </DialogTrigger>
+
+                          <DialogContent className="sm:max-w-lg p-4">
+                            <DialogHeader className="mb-3">
+                              <DialogTitle className="text-base font-bold">
+                                Detalles de Eliminación de Stock
+                              </DialogTitle>
+                            </DialogHeader>
+
+                            {selectedItem && (
+                              <ScrollArea className="max-h-[70vh]">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   <InfoField
-                                    icon={<Package className="w-5 h-5 " />}
+                                    icon={<Hash />}
+                                    label="ID Eliminación"
+                                    value={selectedItem.id}
+                                  />
+                                  <InfoField
+                                    icon={<Package />}
                                     label="Producto"
                                     value={selectedItem.producto.nombre}
                                   />
                                   <InfoField
-                                    icon={<Tag className="w-5 h-5 " />}
+                                    icon={<Tag />}
                                     label="Código producto"
                                     value={selectedItem.producto.codigoProducto}
                                   />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
                                   <InfoField
-                                    icon={<FileText className="w-5 h-5 " />}
+                                    icon={<FileText />}
                                     label="Descripción"
-                                    value={selectedItem.producto.descripcion}
+                                    value={
+                                      selectedItem.producto.descripcion || "N/A"
+                                    }
                                   />
                                   <InfoField
-                                    icon={<Calendar className="w-5 h-5 " />}
+                                    icon={<Calendar />}
                                     label="Fecha de eliminación"
                                     value={formatearFechaUTC(
                                       selectedItem.fechaHora
                                     )}
                                   />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
                                   <InfoField
-                                    icon={<User className="w-5 h-5 " />}
+                                    icon={<User />}
                                     label="Usuario"
                                     value={`${selectedItem.usuario.nombre} (${selectedItem.usuario.rol})`}
                                   />
                                   <InfoField
-                                    icon={<Building className="w-5 h-5 " />}
+                                    icon={<Building />}
                                     label="Sucursal"
                                     value={selectedItem.sucursal.nombre}
                                   />
+                                  <InfoField
+                                    icon={<Boxes />}
+                                    label="Cant. Eliminada"
+                                    value={selectedItem.cantidadStockEliminada}
+                                  />
+                                  <InfoField
+                                    icon={<Boxes />}
+                                    label="Stock Anterior"
+                                    value={selectedItem.cantidadAnterior}
+                                  />
+                                  <InfoField
+                                    icon={<Boxes />}
+                                    label="Stock Restante"
+                                    value={selectedItem.stockRestante}
+                                  />
+                                  <div className="sm:col-span-2">
+                                    <InfoField
+                                      icon={<AlertCircle />}
+                                      label="Motivo"
+                                      value={
+                                        selectedItem.motivo || "No especificado"
+                                      }
+                                    />
+                                  </div>
                                 </div>
-
-                                <InfoField
-                                  icon={<AlertCircle className="w-5 h-5 " />}
-                                  label="Motivo"
-                                  value={
-                                    selectedItem.motivo || "No especificado"
-                                  }
-                                />
-                              </div>
-                            </ScrollArea>
-                          )}
-                        </DialogContent>
-                      </Dialog>
+                              </ScrollArea>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-8 text-gray-500"
+                    >
+                      No hay registros de eliminaciones de stock.
                     </TableCell>
                   </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-          <div className="flex items-center justify-center py-4">
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex items-center justify-center py-6">
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
-                  <Button onClick={() => onPageChange(1)}>Primero</Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(1)}
+                    disabled={currentPage === 1}
+                    className="text-gray-700 hover:bg-gray-100"
+                  >
+                    Primero
+                  </Button>
                 </PaginationItem>
                 <PaginationItem>
                   <PaginationPrevious
                     onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </PaginationPrevious>
+                    className="text-gray-700 hover:bg-gray-100"
+                  />
                 </PaginationItem>
-
                 {/* Sistema de truncado */}
                 {currentPage > 3 && (
                   <>
@@ -296,7 +373,6 @@ export default function StockEliminaciones() {
                     </PaginationItem>
                   </>
                 )}
-
                 {Array.from({ length: totalPages }, (_, index) => {
                   const page = index + 1;
                   if (
@@ -316,7 +392,6 @@ export default function StockEliminaciones() {
                   }
                   return null;
                 })}
-
                 {currentPage < totalPages - 2 && (
                   <>
                     <PaginationItem>
@@ -329,20 +404,21 @@ export default function StockEliminaciones() {
                     </PaginationItem>
                   </>
                 )}
-
                 <PaginationItem>
                   <PaginationNext
                     onClick={() =>
                       onPageChange(Math.min(totalPages, currentPage + 1))
                     }
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </PaginationNext>
+                    className="text-gray-700 hover:bg-gray-100"
+                  />
                 </PaginationItem>
                 <PaginationItem>
                   <Button
-                    variant={"destructive"}
+                    variant="outline"
+                    size="sm"
                     onClick={() => onPageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="text-gray-700 hover:bg-gray-100"
                   >
                     Último
                   </Button>

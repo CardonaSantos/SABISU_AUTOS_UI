@@ -1,3 +1,12 @@
+enum RolPrecio {
+  PUBLICO = "PUBLICO",
+  MAYORISTA = "MAYORISTA",
+  ESPECIAL = "ESPECIAL",
+  DISTRIBUIDOR = "DISTRIBUIDOR",
+  PROMOCION = "PROMOCION",
+  CLIENTE_ESPECIAL = "CLIENTE_ESPECIAL",
+}
+
 type Stock = {
   id: number;
   cantidad: number;
@@ -8,6 +17,7 @@ type Stock = {
 export type Precios = {
   id: number;
   precio: number;
+  rol: RolPrecio;
 };
 
 export type imagenesProducto = {
@@ -19,7 +29,7 @@ type Producto = {
   id: number;
   nombre: string;
   descripcion: string;
-  precioVenta: number;
+  precioVenta: number; //NO SE USA XD
   codigoProducto: string;
   creadoEn: string; // En formato ISO
   actualizadoEn: string; // En formato ISO

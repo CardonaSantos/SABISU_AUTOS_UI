@@ -1,21 +1,20 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 import {
   AlertCircle,
   Ban,
+  Building,
   Building2,
   Calendar,
   CalendarDays,
+  CircleUserRound,
   Clock,
   InfinityIcon,
   MapPin,
   PlusCircle,
   Search,
-  Store,
   TagIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +49,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
 import {
   ArrowDownUp,
   Barcode,
@@ -61,7 +59,6 @@ import {
   Edit,
   Eye,
   FileText,
-  Tag,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import axios from "axios";
@@ -98,13 +95,15 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { ImageCropperUploader } from "./Cropper";
+import { PrecioProducto } from "./Inventario/preciosInterfaces.interface";
+import AddPrices from "./Inventario/AddPrices";
+import { formattMonedaGT } from "@/utils/formattMoneda";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
 dayjs.locale("es");
 
 const formatearFecha = (fecha: string) => {
-  // Formateo en UTC sin conversión a local
   return dayjs.utc(fecha).format("DD/MM/YYYY");
 };
 
@@ -135,6 +134,7 @@ type CroppedImage = {
 };
 
 export default function Inventario() {
+  const [preciosProducto, setPreciosProducto] = useState<PrecioProducto[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [supplierFilter, setSupplierFilter] = useState<string>("all");
@@ -172,8 +172,8 @@ export default function Inventario() {
       !productCreate.nombre ||
       productCreate.categorias.length <= 0 ||
       !productCreate.codigoProducto ||
-      !productCreate.precioVenta ||
-      productCreate.precioVenta.length <= 0 ||
+      // !productCreate.precioVenta ||
+      // productCreate.precioVenta.length <= 0 ||
       !productCreate.precioCostoActual ||
       productCreate.precioCostoActual <= 0
     ) {
@@ -200,13 +200,16 @@ export default function Inventario() {
     );
 
     formData.append("categorias", JSON.stringify(productCreate.categorias));
-    formData.append("precioVenta", JSON.stringify(productCreate.precioVenta));
+    formData.append("precioVenta", JSON.stringify(preciosProducto));
 
     // 3) Añadimos las imágenes
     croppedImages.forEach((img) => {
       const file = new File([img.blob], img.fileName, { type: img.blob.type });
       formData.append("images", file);
     });
+
+    console.log("El formData a enviar es: ", formData);
+
     try {
       const response = await axios.post(`${API_URL}/products`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -228,6 +231,7 @@ export default function Inventario() {
         });
         setCroppedImages([]);
         getProductosInventario();
+        setPreciosProducto([]);
       }
     } catch (error) {
       console.log(error);
@@ -393,16 +397,6 @@ export default function Inventario() {
     return sum + stockQuantity;
   }, 0);
 
-  // Function to handle changes in each input dynamically
-  const handlePriceChange = (index: number, value: string) => {
-    const updatedPrecios = [...productCreate.precioVenta]; // Create a copy of the existing array
-    updatedPrecios[index] = Number(value); // Update the price at the specific index
-    setProductCreate({
-      ...productCreate,
-      precioVenta: updatedPrecios, // Update the state with the modified array
-    });
-  };
-
   return (
     <div className="container mx-auto p-4 shadow-xl">
       <h1 className="text-2xl font-bold mb-4">Administrador de inventario</h1>
@@ -449,7 +443,6 @@ export default function Inventario() {
                       <ScrollArea className="h-[calc(95vh-220px)]">
                         <div className="space-y-4 p-1">
                           {/* Todo el contenido del formulario permanece igual */}
-                          {/* Fila 1: Nombre y Categoría */}
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label htmlFor="nombre" className="text-sm">
@@ -613,8 +606,7 @@ export default function Inventario() {
                             </div>
                           </div>
 
-                          {/* Fila 4: Precios */}
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="">
                             <div className="space-y-2">
                               <Label htmlFor="precioCosto" className="text-sm">
                                 Precio Costo
@@ -640,72 +632,12 @@ export default function Inventario() {
                                 />
                               </div>
                             </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="price1" className="text-sm">
-                                Precio Venta 1
-                              </Label>
-                              <div className="relative">
-                                <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                                <Input
-                                  value={productCreate.precioVenta[0] || ""}
-                                  onChange={(e) =>
-                                    handlePriceChange(0, e.target.value)
-                                  }
-                                  id="price1"
-                                  name="price1"
-                                  type="number"
-                                  step="1"
-                                  placeholder="0.00"
-                                  className="pl-9 h-9 shadow-sm rounded-md"
-                                />
-                              </div>
-                            </div>
                           </div>
-
-                          {/* Fila 5: Precios adicionales */}
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="price2" className="text-sm">
-                                Precio Venta 2
-                              </Label>
-                              <div className="relative">
-                                <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                                <Input
-                                  value={productCreate.precioVenta[1] || ""}
-                                  onChange={(e) =>
-                                    handlePriceChange(1, e.target.value)
-                                  }
-                                  id="price2"
-                                  name="price2"
-                                  type="number"
-                                  step="1"
-                                  placeholder="0.00"
-                                  className="pl-9 h-9 shadow-sm rounded-md"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="price3" className="text-sm">
-                                Precio Venta 3
-                              </Label>
-                              <div className="relative">
-                                <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                                <Input
-                                  value={productCreate.precioVenta[2] || ""}
-                                  onChange={(e) =>
-                                    handlePriceChange(2, e.target.value)
-                                  }
-                                  id="price3"
-                                  name="price3"
-                                  type="number"
-                                  step="1"
-                                  placeholder="0.00"
-                                  className="pl-9 h-9 shadow-sm rounded-md"
-                                />
-                              </div>
-                            </div>
+                          <div className="">
+                            <AddPrices
+                              precios={preciosProducto}
+                              setPrecios={setPreciosProducto}
+                            />
                           </div>
                         </div>
                       </ScrollArea>
@@ -786,7 +718,7 @@ export default function Inventario() {
             <Select value={supplierFilter} onValueChange={setSupplierFilter}>
               <SelectTrigger className="w-full border-border/50 focus:border-primary">
                 <div className="flex items-center">
-                  <Store className="mr-2 h-4 w-4 text-muted-foreground dark:text-white" />
+                  <CircleUserRound className="mr-2 h-4 w-4 text-muted-foreground dark:text-white" />
                   <SelectValue placeholder="Proveedores" />
                 </div>
               </SelectTrigger>
@@ -909,12 +841,29 @@ export default function Inventario() {
                 <TableCell>
                   <div className="space-y-1">
                     {product.precios.map((precio, idx) => (
-                      <div key={idx} className="font-medium">
-                        {new Intl.NumberFormat("es-GT", {
-                          style: "currency",
-                          currency: "GTQ",
-                        }).format(Number(precio.precio))}
-                      </div>
+                      <Tooltip key={idx}>
+                        <TooltipTrigger asChild>
+                          <span className="font-medium cursor-pointer block">
+                            {formattMonedaGT(precio.precio)}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="text-xs space-y-1">
+                            <p>
+                              <b>No. Orden:</b> {precio.orden}
+                            </p>
+                            <p>
+                              <b>Precio:</b> {formattMonedaGT(precio.precio)}
+                            </p>
+                            <p>
+                              <b>Rol Precio:</b> {precio.rol}
+                            </p>
+                            <p>
+                              <b>Tipo:</b> {precio.tipo}
+                            </p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
                     ))}
                   </div>
                 </TableCell>
@@ -1038,7 +987,7 @@ export default function Inventario() {
                       <PopoverContent className="w-72">
                         <div className="space-y-2">
                           <h4 className="font-medium text-sm flex items-center">
-                            <Building2 className="h-4 w-4 mr-1 text-primary" />
+                            <Building2 className="h-4 w-4 mr-1" />
                             Distribución por Sucursal
                           </h4>
                           <Separator />
@@ -1075,7 +1024,7 @@ export default function Inventario() {
                                   className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border border-border/40"
                                 >
                                   <div className="flex items-center">
-                                    <Store className="h-4 w-4 mr-2 text-primary" />
+                                    <Building className="h-4 w-4 mr-2" />
                                     <span className="font-medium">
                                       {stock.sucursal.nombre}
                                     </span>

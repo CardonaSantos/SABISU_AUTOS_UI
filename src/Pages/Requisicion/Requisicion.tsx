@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fetchStockAlerts,
   createRequisition,
@@ -19,7 +19,6 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RequisicionesMap from "./RequisicionesMap";
 import { RequisitionResponse } from "./requisicion.interfaces";
-
 import {
   Table,
   TableBody,
@@ -30,7 +29,6 @@ import {
 } from "@/components/ui/table";
 import axios from "axios";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Pagination,
@@ -44,35 +42,79 @@ import {
 import {
   AlertTriangle,
   LoaderCircle,
+  MessageCircleWarning,
   Package,
+  Search,
   ShoppingCart,
 } from "lucide-react";
 import { formattMoneda } from "../Utils/Utils";
+import { AdvancedDialog } from "@/utils/components/AdvancedDialog";
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
+dayjs.locale("es");
+
+type SelectedLine = {
+  cantidad: number;
+  fechaExpiracion: Date | null;
+};
 
 const RequisitionBuilder = () => {
   const sucursalId = useStore((state) => state.sucursalId) ?? 0;
   const usuarioId = useStore((state) => state.userId) ?? 0;
-
+  const [openGenerateReq, setOpenGenerateReq] = useState<boolean>(false);
   const [alerts, setAlerts] = useState<StockAlertItem[]>([]);
-  const [selected, setSelected] = useState<Record<number, number>>({});
-  // const [observaciones, setObservaciones] = useState("");
+  const [selected, setSelected] = useState<Record<number, SelectedLine>>({});
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [requisiciones, setRequisiciones] = useState<RequisitionResponse[]>([]);
   const [isLoadingRequisiciones, setIsLoadingRequisiciones] =
     useState<boolean>(false);
+  const [inputFilter, setInputFilter] = useState<string>("");
+  //FILTRADO
+  const filtrados = useMemo(() => {
+    const q = inputFilter.toLowerCase().trim();
+    if (!q) return alerts;
+
+    return alerts.filter((a) => {
+      const codigo = String(a.codigoProducto).toLowerCase();
+      const nombre = a.nombre.toLowerCase();
+
+      const matchesCodeOrName = codigo.includes(q) || nombre.includes(q);
+
+      return matchesCodeOrName;
+    });
+  }, [inputFilter, alerts]);
+
   //PAGINACION
   // Calcular paginación
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(alerts.length / itemsPerPage);
+  const totalPages = Math.ceil(filtrados.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentAlerts = alerts.slice(startIndex, endIndex);
+  const currentAlerts = filtrados.slice(startIndex, endIndex);
   // Calcular estadísticas
   const selectedCount = Object.keys(selected).length;
   const totalSelectedQty = Object.values(selected).reduce(
-    (acc, qty) => acc + qty,
+    (acc, qty) => acc + qty.cantidad,
     0
   );
   // Función para obtener el nivel de alerta
@@ -83,28 +125,36 @@ const RequisitionBuilder = () => {
     if (percentage <= 75) return { level: "medium", color: "secondary" };
     return { level: "low", color: "outline" };
   };
+  // Dentro de tu componente:
 
-  const getRequisiciones = () => {
+  const getRequisiciones = async () => {
     setIsLoadingRequisiciones(true);
-    getRequisicionesRegist()
-      .then((data) => setRequisiciones(data))
-      .catch((error) => {
-        console.log("El error es: ", error);
-        toast.info("No se encontraron requisiciones");
-        if (axios.isAxiosError(error) && error.response) {
-          const { status, data } = error.response;
+    try {
+      const data = await getRequisicionesRegist();
+      setRequisiciones([...data]); //
+    } catch (error: unknown) {
+      console.error("Error al cargar requisiciones:", error);
 
-          if (status === 422 && data.code === "NO_REQUISICIONES") {
-            toast.info("No se encontraron requisiciones");
-          }
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const code = (error.response?.data as any)?.code;
+
+        if (status === 422 && code === "NO_REQUISICIONES") {
+          toast.info("No hay requisiciones registradas");
+        } else {
+          toast.error("Error al obtener requisiciones");
         }
-      })
-      .finally(() => setIsLoadingRequisiciones(false));
+      } else {
+        toast.error("Error desconocido al obtener requisiciones");
+      }
+    } finally {
+      setIsLoadingRequisiciones(false);
+    }
   };
 
   useEffect(() => {
     getRequisiciones();
-  }, []);
+  }, []); // al no depender de nada más, cadena vacía
 
   /* ---------- Paso A: obtener alertas ---------- */
   const fetchAlerts = async () => {
@@ -114,7 +164,6 @@ const RequisitionBuilder = () => {
     setLoading(true);
 
     try {
-      // espera **a la vez** la API y el retardo
       const [data] = await Promise.all([
         fetchStockAlerts(sucursalId),
         new Promise((r) => setTimeout(r, MIN_DELAY)),
@@ -124,7 +173,12 @@ const RequisitionBuilder = () => {
 
       setAlerts(data);
       setSelected(
-        Object.fromEntries(data.map((a) => [a.productoId, a.cantidadSugerida]))
+        Object.fromEntries(
+          data.map((a) => [
+            a.productoId,
+            { cantidad: a.cantidadSugerida, fechaExpiracion: null },
+          ])
+        )
       );
     } catch {
       toast.error("No se pudo obtener alertas de stock");
@@ -136,21 +190,32 @@ const RequisitionBuilder = () => {
   const toggle = (prodId: number) =>
     setSelected((prev) =>
       prodId in prev
-        ? /* des-seleccionar */
-          (() => {
-            const { [prodId]: _omit, ...rest } = prev;
+        ? (() => {
+            const { [prodId]: _, ...rest } = prev;
             return rest;
           })()
-        : /* volver a seleccionar con la sugerida de la alerta */
-          {
+        : {
             ...prev,
-            [prodId]: alerts.find((a) => a.productoId === prodId)!
-              .cantidadSugerida,
+            [prodId]: {
+              cantidad: alerts.find((a) => a.productoId === prodId)!
+                .cantidadSugerida,
+              fechaExpiracion: null, // o new Date()
+            },
           }
     );
 
   const updateQty = (prodId: number, qty: number) =>
-    setSelected((prev) => ({ ...prev, [prodId]: qty }));
+    setSelected((prev) => ({
+      ...prev,
+      [prodId]: { ...prev[prodId], cantidad: qty },
+    }));
+
+  const updateDate = (prodId: number, date: Date | null) => {
+    setSelected((prev) => ({
+      ...prev,
+      [prodId]: { ...prev[prodId], fechaExpiracion: date },
+    }));
+  };
 
   const handleCreate = useCallback(async () => {
     if (submitting || Object.keys(selected).length === 0) return;
@@ -158,10 +223,10 @@ const RequisitionBuilder = () => {
     const dto: CreateRequisitionDto = {
       sucursalId,
       usuarioId,
-      // observaciones,
       lineas: Object.entries(selected).map(([id, qty]) => ({
         productoId: Number(id),
-        cantidadSugerida: qty,
+        cantidadSugerida: qty.cantidad,
+        fechaExpiracion: qty.fechaExpiracion,
       })),
     };
 
@@ -171,16 +236,16 @@ const RequisitionBuilder = () => {
 
     try {
       await createRequisition(dto);
-
-      // garantiza al menos MIN_DELAY ms de spinner
       const elapsed = Date.now() - start;
       if (elapsed < MIN_DELAY) {
         await new Promise((r) => setTimeout(r, MIN_DELAY - elapsed));
       }
-
       toast.success("Requisición creada");
-      setSelected({}); // limpia selección
-      await fetchAlerts(); // refresca las alertas si lo necesitas
+      setSelected({});
+      await fetchAlerts();
+      setOpenGenerateReq(false);
+      handleCheckAll();
+      // setAlerts([]);
     } catch (err) {
       console.error(err);
       toast.error("Error al crear la requisición");
@@ -190,11 +255,37 @@ const RequisitionBuilder = () => {
   }, [sucursalId, usuarioId, selected, submitting]);
 
   const totalSelectedCost = alerts.reduce((acc, item) => {
-    const qty = selected[item.productoId] ?? 0;
-    return acc + (item.precioCosto ?? 0) * qty;
+    const cantidad = selected[item.productoId]?.cantidad ?? 0;
+    return acc + (item.precioCosto ?? 0) * cantidad;
   }, 0);
 
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputFilter(e.target.value);
+  };
+
   console.log("Las requisiciones son: ", alerts);
+  console.log("Los seleccionados son: ", selected);
+  // Fuera del return:
+  const handleCheckAll = () => {
+    // Suponiendo que quieres seleccionar todos los alertas visibles:
+    const lista = alerts; // o filtrados, o currentAlerts, según contexto
+    const allSelected = Object.keys(selected).length === lista.length;
+
+    if (allSelected) {
+      // Deseleccionar todo
+      setSelected({});
+    } else {
+      // Seleccionar todos: construimos un nuevo Record
+      const nuevo: Record<number, SelectedLine> = {};
+      lista.forEach((a) => {
+        nuevo[a.productoId] = {
+          cantidad: a.cantidadSugerida,
+          fechaExpiracion: null,
+        };
+      });
+      setSelected(nuevo);
+    }
+  };
 
   return (
     <Tabs defaultValue="requisiciones" className="w-full">
@@ -208,12 +299,13 @@ const RequisitionBuilder = () => {
           isLoadingRequisiciones={isLoadingRequisiciones}
           setIsLoadingRequisiciones={setIsLoadingRequisiciones}
           requisiciones={requisiciones}
+          fetchAlerts={fetchAlerts}
         />
       </TabsContent>
       <TabsContent value="gRequisicion">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+            <CardTitle className="flex items-center space-x-2 text-lg">
               <AlertTriangle className="h-5 w-5 text-orange-500" />
               <span>Productos con alerta de stock</span>
             </CardTitle>
@@ -239,8 +331,9 @@ const RequisitionBuilder = () => {
               </Button>
 
               <Button
+                type="button"
                 disabled={submitting || Object.keys(selected).length === 0}
-                onClick={handleCreate}
+                onClick={() => setOpenGenerateReq(true)}
                 aria-busy={submitting}
               >
                 {submitting ? (
@@ -269,13 +362,20 @@ const RequisitionBuilder = () => {
             ) : (
               <>
                 {/* Estadísticas */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
                   <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center space-x-2">
-                        <AlertTriangle className="h-4 w-4 text-orange-500" />
+                    <CardContent className="p-3">
+                      {" "}
+                      {/* antes pt-6 ahora p-3 */}
+                      <div className="flex items-center space-x-1">
+                        {" "}
+                        {/* gap más pequeño */}
+                        <AlertTriangle className="h-3 w-3 text-orange-500" />{" "}
+                        {/* icono más pequeño */}
                         <div>
-                          <p className="text-2xl font-bold">{alerts.length}</p>
+                          <p className="text-base font-semibold">
+                            {alerts.length}
+                          </p>
                           <p className="text-xs text-muted-foreground">
                             Productos en alerta
                           </p>
@@ -283,12 +383,15 @@ const RequisitionBuilder = () => {
                       </div>
                     </CardContent>
                   </Card>
+
                   <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center space-x-2">
-                        <ShoppingCart className="h-4 w-4 text-blue-500" />
+                    <CardContent className="p-3">
+                      <div className="flex items-center space-x-1">
+                        <ShoppingCart className="h-3 w-3 text-blue-500" />
                         <div>
-                          <p className="text-2xl font-bold">{selectedCount}</p>
+                          <p className="text-base font-semibold">
+                            {selectedCount}
+                          </p>
                           <p className="text-xs text-muted-foreground">
                             Productos seleccionados
                           </p>
@@ -296,12 +399,13 @@ const RequisitionBuilder = () => {
                       </div>
                     </CardContent>
                   </Card>
+
                   <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center space-x-2">
-                        <Package className="h-4 w-4 text-green-500" />
+                    <CardContent className="p-3">
+                      <div className="flex items-center space-x-1">
+                        <Package className="h-3 w-3 text-green-500" />
                         <div>
-                          <p className="text-2xl font-bold">
+                          <p className="text-base font-semibold">
                             {totalSelectedQty}
                           </p>
                           <p className="text-xs text-muted-foreground">
@@ -313,15 +417,15 @@ const RequisitionBuilder = () => {
                   </Card>
 
                   <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center space-x-2">
-                        <Package className="h-4 w-4 text-green-500" />
+                    <CardContent className="p-3">
+                      <div className="flex items-center space-x-1">
+                        <Package className="h-3 w-3 text-green-500" />
                         <div>
-                          <p className="text-2xl font-bold">
+                          <p className="text-base font-semibold">
                             {formattMoneda(totalSelectedCost)}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            Costo total a solicitar
+                            Costo total
                           </p>
                         </div>
                       </div>
@@ -329,13 +433,40 @@ const RequisitionBuilder = () => {
                   </Card>
                 </div>
 
-                {/* Tabla con scroll horizontal */}
-                <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-                  <Table>
+                <div className="pb-6">
+                  <div className="relative w-full max-w-sm">
+                    <Search
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                      size={16}
+                    />
+                    <Input
+                      onChange={handleFilterChange}
+                      placeholder="Buscar..."
+                      className="pl-10 pr-3"
+                    />
+                  </div>
+                </div>
+
+                <div className="w-full min-h-[240px] max-h-[600px] overflow-y-auto">
+                  <Table className="table-fixed">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[50px]">
-                          <span className="sr-only">Seleccionar</span>
+                        <TableHead className="w-[50px] text-center">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Checkbox
+                                checked={
+                                  Object.keys(selected).length ===
+                                  currentAlerts.length
+                                }
+                                onCheckedChange={handleCheckAll}
+                                aria-label="Seleccionar todos"
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Seleccionar todos</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </TableHead>
                         <TableHead className="min-w-[200px]">
                           Producto
@@ -356,6 +487,10 @@ const RequisitionBuilder = () => {
 
                         <TableHead className="text-center min-w-[120px]">
                           Total por pedir
+                        </TableHead>
+
+                        <TableHead className="text-center min-w-[100px] text-sm">
+                          F. exp.
                         </TableHead>
 
                         <TableHead className="text-center min-w-[100px]">
@@ -387,6 +522,36 @@ const RequisitionBuilder = () => {
                               <div className="flex items-center space-x-2">
                                 <Package className="h-4 w-4 text-muted-foreground" />
                                 <span>{a.nombre}</span>
+                                {a.tieneSolicitudPendiente ? (
+                                  <>
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <MessageCircleWarning className="text-red-500 hover:cursor-pointer" />
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-80">
+                                        <div className="grid gap-4">
+                                          <div className="space-y-2">
+                                            <h4 className="text-sm">
+                                              Este producto tiene las siguientes
+                                              requisiciones pendientes
+                                            </h4>
+                                            {
+                                              <ul className="text-xs">
+                                                {a.foliosPendientes.map(
+                                                  (item, index) => (
+                                                    <li key={index}>
+                                                      • {item}
+                                                    </li>
+                                                  )
+                                                )}
+                                              </ul>
+                                            }
+                                          </div>
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+                                  </>
+                                ) : null}
                               </div>
                             </TableCell>
                             <TableCell className="text-center">
@@ -404,7 +569,7 @@ const RequisitionBuilder = () => {
                                 <Input
                                   type="number"
                                   min={1}
-                                  value={selected[a.productoId]}
+                                  value={selected[a.productoId]?.cantidad ?? ""}
                                   onChange={(e) =>
                                     updateQty(
                                       a.productoId,
@@ -431,9 +596,47 @@ const RequisitionBuilder = () => {
                               {a.precioCosto
                                 ? formattMoneda(
                                     a.precioCosto *
-                                      (selected[a.productoId] ?? 0)
+                                      (selected[a?.productoId]?.cantidad ?? 0)
                                   )
                                 : "N/A"}
+                            </TableCell>
+                            <TableCell className="text-center py-1 px-2">
+                              {checked ? (
+                                <Input
+                                  type="date"
+                                  className="w-32 text-black dark:text-white text-center text-sm p-1 border rounded"
+                                  value={
+                                    selected[a.productoId]?.fechaExpiracion
+                                      ? dayjs(
+                                          selected[a.productoId].fechaExpiracion
+                                        )
+                                          .tz("America/Guatemala")
+                                          .format("YYYY-MM-DD")
+                                      : ""
+                                  }
+                                  onChange={(e) => {
+                                    const val = e.target.value; // "2025-07-16" o ""
+                                    if (!val) {
+                                      updateDate(a.productoId, null);
+                                    } else {
+                                      const [year, month, day] = val
+                                        .split("-")
+                                        .map((n) => parseInt(n, 10));
+                                      const date = dayjs
+                                        .tz(
+                                          `${year}-${month}-${day}`,
+                                          "YYYY-M-D",
+                                          "America/Guatemala"
+                                        )
+                                        .startOf("day")
+                                        .toDate();
+                                      updateDate(a.productoId, date);
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span>-</span>
+                              )}
                             </TableCell>
 
                             <TableCell className="text-center">
@@ -449,8 +652,7 @@ const RequisitionBuilder = () => {
                       })}
                     </TableBody>
                   </Table>
-                  <ScrollBar orientation="horizontal" />
-                </ScrollArea>
+                </div>
 
                 {/* Paginación */}
                 {totalPages > 1 && (
@@ -546,6 +748,27 @@ const RequisitionBuilder = () => {
           </CardContent>
         </Card>
       </TabsContent>
+      <AdvancedDialog
+        title="¿Generar requisición de productos?"
+        description="Se creará una solicitud de requisición para los productos seleccionados."
+        onOpenChange={setOpenGenerateReq}
+        open={openGenerateReq}
+        icon="alert"
+        type="info"
+        confirmButton={{
+          label: "Sí, generar requisición",
+          disabled: submitting,
+          loading: submitting,
+          loadingText: "Generando requisición...",
+          onClick: () => handleCreate(),
+        }}
+        cancelButton={{
+          label: "Cancelar",
+          onClick: () => setOpenGenerateReq(false),
+          disabled: submitting,
+          loadingText: "Cancelando...",
+        }}
+      />
     </Tabs>
   );
 };

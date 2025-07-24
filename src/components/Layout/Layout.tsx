@@ -107,9 +107,6 @@ export default function Layout2({ children }: LayoutProps) {
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [usuario, setUsuario] = useState<Usuario | null>(null);
 
-  // Clases de logo
-  const logoClasses = "h-20 w-20 md:h-24 md:w-24";
-
   // Decodificar y setear datos del POS al iniciar
   useEffect(() => {
     const token = localStorage.getItem("authTokenPos");
@@ -221,7 +218,11 @@ export default function Layout2({ children }: LayoutProps) {
           <header className="sticky top-0 z-10 h-16 w-full bg-background border-b shadow-sm flex items-center justify-between px-4">
             <div className="flex items-center space-x-2">
               <Link to="/">
-                <img src={nv2} alt="Logo" className={logoClasses} />
+                <img
+                  src={nv2}
+                  alt="Logo"
+                  className="h-10 w-10 md:h-14 md:w-14"
+                />
               </Link>
               <p className="text-xs font-semibold text-foreground sm:text-sm md:text-base">
                 {sucursalInfo?.nombre || ""}

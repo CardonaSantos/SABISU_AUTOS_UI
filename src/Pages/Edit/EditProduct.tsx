@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "../Utils/ConfirmDialog";
 import { ImageCropperUploader } from "../Cropper";
+import { PrecioProducto, PricesEditor } from "./PricesEditor";
+import { AdvancedDialog } from "@/utils/components/AdvancedDialog";
+import { useStore } from "@/components/Context/ContextSucursal";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -38,8 +41,12 @@ type Category = {
 };
 
 type Precios = {
-  id: number;
+  id?: number;
   precio: number;
+  orden: number;
+  rol: string;
+  tipo?: string;
+  usado?: boolean;
 };
 type stockThreshold = {
   id: number;
@@ -78,8 +85,11 @@ type CroppedImage = {
 
 export default function ProductEditForm() {
   const { id } = useParams();
+  const sucursalId = useStore((state) => state.sucursalId) ?? 0;
+  const modificadoPorId = useStore((state) => state.userId) ?? 0;
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState<Product | null>(null);
-  // const usuarioId = useStore((state) => state.userId);
+  const [openUpdate, setOpenUpdate] = useState<boolean>(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const [publicId, setPublicId] = useState<string | null>(null);
@@ -87,33 +97,36 @@ export default function ProductEditForm() {
   const [openConfirmDelete, setOpenConfirmDelete] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [croppedImages, setCroppedImages] = useState<CroppedImage[]>([]);
-  // Actualizar los campos del formulario
+  const [motivoCambio, setMotivoCambio] = useState<string>("");
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => (prev ? { ...prev, [name]: value } : prev));
+    setFormData((prev) => {
+      if (!prev) return prev;
+      let v: string | number = value;
+      if (name === "precioCostoActual") {
+        v = Number(value);
+      }
+      return { ...prev, [name]: v };
+    });
   };
 
-  const handlePriceChange =
-    (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseFloat(e.target.value);
-      setFormData((prev) => {
-        if (!prev) return prev;
-        const updatedPrices = [...prev.precios];
-        if (updatedPrices[index]) {
-          updatedPrices[index].precio = isNaN(value) ? 0 : value;
-        } else {
-          updatedPrices[index] = { id: 0, precio: isNaN(value) ? 0 : value };
-        }
-        return { ...prev, precios: updatedPrices };
-      });
-    };
+  console.log("El producto a editar es: ", formData);
+  const handleSubmit = async (
+    e?: React.FormEvent<HTMLButtonElement> | React.MouseEvent<HTMLButtonElement>
+  ): Promise<void> => {
+    if (e) {
+      e.preventDefault();
+    }
+    setIsLoading(true);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (isLoading) return;
+
     if (!formData || !formData.nombre.trim()) {
-      return toast.info("Nombre y al menos una categoría son obligatorios");
+      toast.info("Nombre y al menos una categoría son obligatorios");
+      return;
     }
 
     const fd = new FormData();
@@ -123,7 +136,10 @@ export default function ProductEditForm() {
     fd.append("codigoProveedor", formData.codigoProveedor || "");
     fd.append("stockMinimo", formData.stockThreshold.stockMinimo.toString());
     fd.append("precioCostoActual", formData.precioCostoActual.toString());
-
+    fd.append("motivoCambio", motivoCambio);
+    fd.append("sucursalId", sucursalId.toString()); // sucursalId
+    fd.append("modificadoPorId", modificadoPorId.toString());
+    // motivoCambio
     // 1) Categorías como JSON
     const catIds = formData.categorias.map((c) => c.id);
     fd.append("categorias", JSON.stringify(catIds));
@@ -145,11 +161,16 @@ export default function ProductEditForm() {
       );
       if (res.status === 200) {
         toast.success("Producto actualizado exitosamente");
+        setIsLoading(false);
         getProducto();
+        setCroppedImages([]);
       }
     } catch (err) {
       console.error(err);
       toast.error("Error al actualizar el producto.");
+    } finally {
+      setIsLoading(false);
+      setOpenUpdate(false);
     }
   };
 
@@ -160,7 +181,6 @@ export default function ProductEditForm() {
       );
       if (response.status === 200) {
         console.log("data: ", response.data);
-
         setFormData(response.data);
       }
     } catch (error) {
@@ -188,12 +208,12 @@ export default function ProductEditForm() {
   const handleStockMinimoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const nuevoValor = parseInt(e.target.value, 10) || 0;
     setFormData((prev) => {
-      if (!prev) return prev; // si aún no hay datos, no hagas nada
+      if (!prev) return prev;
       return {
         ...prev,
         stockThreshold: {
           ...prev.stockThreshold,
-          stockMinimo: nuevoValor, // aquí ya es number
+          stockMinimo: nuevoValor,
         },
       };
     });
@@ -222,6 +242,23 @@ export default function ProductEditForm() {
     }
   };
 
+  const initialPrice = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (formData && initialPrice.current === null) {
+      initialPrice.current = formData.precioCostoActual;
+    }
+  }, [formData]);
+
+  // luego, en tu render/comparación:
+  const isPriceModified =
+    formData !== null &&
+    initialPrice.current !== null &&
+    formData.precioCostoActual !== initialPrice.current;
+
+  console.log("Precio inicial", initialPrice.current);
+  console.log("Precio modificado?", isPriceModified);
+
   return formData ? (
     <div className="max-w-4xl mx-auto p-6">
       <Tabs defaultValue="account" className="w-full">
@@ -242,7 +279,7 @@ export default function ProductEditForm() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form className="space-y-6">
                 <div>
                   <Label htmlFor="nombre">Nombre del Producto</Label>
                   <Input
@@ -280,30 +317,15 @@ export default function ProductEditForm() {
                   <Label className="block text-center mb-4 text-lg font-semibold">
                     Precios
                   </Label>
-                  <div className="space-y-3">
-                    {[0, 1, 2].map((index) => {
-                      const precio = formData.precios[index] || { precio: "" };
-                      return (
-                        <div
-                          key={index}
-                          className="flex items-center space-x-4"
-                        >
-                          <Label className="w-1/4 text-right font-semibold">
-                            Precio #{index + 1}:
-                          </Label>
-                          <Input
-                            type="number"
-                            value={precio.precio || ""}
-                            onChange={handlePriceChange(index)}
-                            step="0.01"
-                            min="0"
-                            className="w-3/4"
-                            placeholder="0.00"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <PricesEditor
+                    getProducto={getProducto}
+                    precios={formData.precios}
+                    setPrecios={(nuevosPrecios: PrecioProducto[]) =>
+                      setFormData((prev) =>
+                        prev ? { ...prev, precios: nuevosPrecios } : prev
+                      )
+                    }
+                  />
                 </div>
 
                 <div>
@@ -373,7 +395,12 @@ export default function ProductEditForm() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full h-12 text-lg">
+                <Button
+                  onClick={() => setOpenUpdate(true)}
+                  variant={"outline"}
+                  type="button"
+                  className="w-full hover:cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800"
+                >
                   Actualizar Producto
                 </Button>
               </form>
@@ -470,6 +497,44 @@ export default function ProductEditForm() {
         confirmLabel="Eliminar imagen"
         cancelLabel="Cancelar"
         icon={<AlertCircle className="h-8 w-8 text-amber-600" />}
+      />
+
+      <AdvancedDialog
+        onOpenChange={setOpenUpdate}
+        open={openUpdate}
+        title="¿Actualizar producto?"
+        description="El producto se actualizará con los cambios que has realizado."
+        subtitle="Este cambio aplicará en todas las sucursales."
+        icon="info"
+        confirmButton={{
+          label: "Si, continuar y actualizar",
+          disabled: isLoading,
+          loading: isLoading,
+          onClick: handleSubmit,
+          loadingText: "Actualizando...",
+        }}
+        cancelButton={{
+          label: "Cancelar",
+          onClick: () => setOpenUpdate(false),
+          variant: "outline",
+        }}
+        children={
+          <div>
+            {isPriceModified ? (
+              <div>
+                <p className="text-xs font-semibold">
+                  Justifique el cambio de precio
+                </p>
+                <Textarea
+                  className="mt-2"
+                  placeholder="Motivo del cambio de precio"
+                  value={motivoCambio}
+                  onChange={(e) => setMotivoCambio(e.target.value)}
+                />
+              </div>
+            ) : null}
+          </div>
+        }
       />
     </div>
   ) : (

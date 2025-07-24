@@ -6,7 +6,6 @@ import {
 } from "react-router-dom";
 import { Toaster } from "sonner";
 import Dashboard from "./Pages/Dashboard/Dashboard";
-import PuntoVenta from "./Pages/PuntoVenta";
 import Inventario from "./Pages/Inventario";
 // import Reportes from "./Pages/Reports/Reportes";
 import EntregasStock from "./Pages/EntregasStock";
@@ -69,6 +68,9 @@ import CrmLogin from "./Crm/CrmAuth/CrmLogin";
 import { SummarySales } from "./Pages/SummarySales/SummarySales";
 import RequisitionBuilder from "./Pages/Requisicion/Requisicion";
 import RequisicionPDF from "./Pages/Requisicion/PDF/Pdf";
+import { RequisitionEditor } from "./Pages/Requisicion/RequisitionEditor";
+import PuntoVenta from "./Pages/POS/PuntoVenta";
+import MovimientosStock from "./Pages/HistorialCambiosStock/HistorialCambiosStock";
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -537,10 +539,28 @@ function App() {
             />
 
             <Route
+              path="/requisicion-edit/:requisicionID"
+              element={
+                <ProtectRouteAdmin>
+                  <RequisitionEditor />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
               path="/pdf-requisicion/:id"
               element={
                 <ProtectRouteAdmin>
                   <RequisicionPDF />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/movimientos-stock"
+              element={
+                <ProtectRouteAdmin>
+                  <MovimientosStock />
                 </ProtectRouteAdmin>
               }
             />

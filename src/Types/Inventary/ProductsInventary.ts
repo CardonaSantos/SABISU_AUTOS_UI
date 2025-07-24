@@ -1,3 +1,8 @@
+import {
+  RolPrecio,
+  TipoPrecio,
+} from "@/Pages/Inventario/preciosInterfaces.interface";
+
 type Proveedor = {
   nombre: string;
 };
@@ -28,6 +33,10 @@ type Categoria = {
 type Precios = {
   id: number;
   precio: number;
+  orden: number;
+  rol: RolPrecio;
+  tipo: TipoPrecio;
+  usado: boolean;
 };
 
 type stockThresholds = {

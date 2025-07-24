@@ -52,6 +52,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formateDateWithMinutes } from "@/Crm/Utils/FormateDate";
 
 // Tipos
 type Producto = {
@@ -262,7 +263,7 @@ export default function EntregasStock() {
                     </p>
                     <p className="col-span-2">
                       <span className="font-medium">Fecha de Ingreso:</span>{" "}
-                      {formatDate(stock.fechaIngreso)}
+                      {formateDateWithMinutes(stock.fechaIngreso)}
                     </p>
                     <p className="col-span-2">
                       <span className="font-medium">Fecha de Vencimiento:</span>{" "}

@@ -47,6 +47,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { formattMonedaGT } from "@/utils/formattMoneda";
 
 // Tipos
 type Sucursal = {
@@ -196,24 +197,24 @@ export default function HistorialCambiosPrecio() {
             <div className="grid gap-2">
               <p className="flex items-center">
                 <span className="font-medium">Nombre:</span>
-                <span className="ml-2">{cambio.modificadoPor.nombre}</span>
+                <span className="ml-2">{cambio?.modificadoPor?.nombre}</span>
               </p>
               <p className="flex items-center">
                 <span className="font-medium">Rol:</span>
-                <span className="ml-2">{cambio.modificadoPor.rol}</span>
+                <span className="ml-2">{cambio?.modificadoPor?.rol}</span>
               </p>
               <p className="flex items-center">
                 <Building className="mr-1" size={16} />
                 <span className="font-medium">Sucursal:</span>
                 <span className="ml-2">
-                  {cambio.modificadoPor.sucursal.nombre}
+                  {cambio.modificadoPor?.sucursal?.nombre}
                 </span>
               </p>
               <p className="flex items-center">
                 <MapPin className="mr-1" size={16} />
                 <span className="font-medium">Dirección de Sucursal:</span>
                 <span className="ml-2">
-                  {cambio.modificadoPor.sucursal.direccion}
+                  {cambio?.modificadoPor?.sucursal?.direccion}
                 </span>
               </p>
             </div>
@@ -263,73 +264,61 @@ export default function HistorialCambiosPrecio() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentItems.map((cambio) => (
-                <TableRow key={cambio.id}>
-                  <TableCell>
-                    <div className="flex items-center">
-                      <Tag className="mr-2" size={16} />
-                      {cambio.producto.nombre}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center">
-                      <Calendar className="mr-2" size={16} />
-                      {formatDate(cambio.fechaCambio)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    Q{cambio.precioCostoAnterior.toFixed(2)}
-                  </TableCell>
-                  <TableCell>Q{cambio.precioCostoNuevo.toFixed(2)}</TableCell>
-                  {/* <TableCell>
-              
-                <Badge
-                  className={`flex items-center px-2 py-1 rounded-full text-sm font-medium ${
-                    cambio.precioCostoNuevo > cambio.precioCostoAnterior
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  <ArrowUpDown className="mr-1" size={14} />
-                  {calcularPorcentajeCambio(
-                    cambio.precioCostoAnterior,
-                    cambio.precioCostoNuevo
-                  )}
-                  %
-                </Badge>
-              </TableCell> */}
-                  <TableCell>
-                    <div className="flex items-center">
-                      <User className="mr-2" size={16} />
-                      {cambio.modificadoPor.nombre} ({cambio.modificadoPor.rol})
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedCambio(cambio)}
-                        >
-                          <Eye className="mr-2" size={16} />
-                          Ver Detalles
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-3xl">
-                        <DialogHeader>
-                          <DialogTitle>
-                            Detalles del Cambio de Precio
-                          </DialogTitle>
-                        </DialogHeader>
-                        {selectedCambio && (
-                          <CambioDetails cambio={selectedCambio} />
-                        )}
-                      </DialogContent>
-                    </Dialog>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {currentItems &&
+                currentItems.map((cambio) => (
+                  <TableRow key={cambio.id}>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Tag className="mr-2" size={16} />
+                        {cambio?.producto?.nombre}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Calendar className="mr-2" size={16} />
+                        {formatDate(cambio?.fechaCambio)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {formattMonedaGT(cambio?.precioCostoAnterior)}
+                    </TableCell>
+                    <TableCell>
+                      {formattMonedaGT(cambio.precioCostoNuevo)}
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex items-center">
+                        <User className="mr-2" size={16} />
+                        {cambio?.modificadoPor?.nombre} (
+                        {cambio?.modificadoPor?.rol})
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedCambio(cambio)}
+                          >
+                            <Eye className="mr-2" size={16} />
+                            Ver Detalles
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-3xl">
+                          <DialogHeader>
+                            <DialogTitle>
+                              Detalles del Cambio de Precio
+                            </DialogTitle>
+                          </DialogHeader>
+                          {selectedCambio && (
+                            <CambioDetails cambio={selectedCambio} />
+                          )}
+                        </DialogContent>
+                      </Dialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
           <CardFooter className="flex justify-center items-center">

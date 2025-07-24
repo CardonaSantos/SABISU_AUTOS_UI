@@ -20,6 +20,7 @@ import {
   Goal,
   ChartPie,
   Repeat1,
+  PackageSearch,
 } from "lucide-react";
 
 import {
@@ -109,7 +110,6 @@ const menuItemsAdmin = [
   { icon: Home, label: "Home", href: "/" },
   { icon: ShoppingCart, label: "Punto de Venta", href: "/punto-venta" },
   { icon: Clock, label: "Historial de Ventas", href: "/historial/ventas" },
-
   // Sección de Inventario y Stock con submenú
   {
     icon: Package,
@@ -129,6 +129,12 @@ const menuItemsAdmin = [
         href: "/stock-eliminaciones",
       },
       { icon: NotebookIcon, label: "Entregas Stock", href: "/entregas-stock" },
+
+      {
+        icon: PackageSearch,
+        label: "Movimientos de Stock",
+        href: "/movimientos-stock",
+      },
     ],
   },
 
