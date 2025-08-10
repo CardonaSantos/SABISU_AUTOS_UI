@@ -7,7 +7,7 @@ const zona = "America/Guatemala";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-export const formattFecha = (value: string | Date) => {
+export const formattFecha = (value: string | Date | null) => {
   return dayjs(value).tz(zona).format("DD/MM/YYYY");
 };
 

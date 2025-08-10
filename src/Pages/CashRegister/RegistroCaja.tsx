@@ -42,7 +42,6 @@ dayjs.extend(localizedFormat);
 dayjs.locale("es");
 
 const formatearFecha = (fecha: string) => {
-  // Formateo en UTC sin conversión a local
   return dayjs(fecha).format("DD/MM/YYYY hh:mm A");
 };
 
@@ -323,6 +322,7 @@ export default function RegistroCaja() {
       sucursalId,
       usuarioId,
     };
+    console.log("La data para crear la caja es: ", dataToSend);
 
     try {
       const response = await axios.post(

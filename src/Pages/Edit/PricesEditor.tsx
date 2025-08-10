@@ -21,7 +21,7 @@ const ROLES_PRECIO = [
   { value: "DISTRIBUIDOR", label: "Distribuidor" },
 ];
 
-export type PrecioProducto = {
+export type PrecioProductoInventario = {
   id?: number;
   precio: number;
   orden: number;
@@ -31,8 +31,8 @@ export type PrecioProducto = {
 };
 
 interface PricesEditorProps {
-  precios: PrecioProducto[];
-  setPrecios: (precios: PrecioProducto[]) => void;
+  precios: PrecioProductoInventario[];
+  setPrecios: (precios: PrecioProductoInventario[]) => void;
   getProducto: () => void;
 }
 

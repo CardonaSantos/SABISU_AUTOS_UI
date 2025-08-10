@@ -83,6 +83,7 @@ type StockEntregado = {
   id: number;
   productoId: number;
   cantidad: number;
+  cantidadInicial: number;
   costoTotal: number;
   creadoEn: string;
   fechaIngreso: string;
@@ -249,6 +250,12 @@ export default function EntregasStock() {
                       <span className="font-medium">Código:</span>{" "}
                       {stock.producto.codigoProducto}
                     </p>
+
+                    <p>
+                      <span className="font-medium">Cantidad Inicial:</span>{" "}
+                      {stock.cantidadInicial}
+                    </p>
+
                     <p>
                       <span className="font-medium">Cantidad:</span>{" "}
                       {stock.cantidad}

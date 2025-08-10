@@ -4,6 +4,7 @@ import {
   HistorialEliminacionStock,
   HistorialEliminacionVenta,
   HistorialEntregaStock,
+  HistorialGarantiaStock,
   HistorialIngresoRequisicion,
   HistorialSalidaVenta,
   HistorialTransferenciaProducto,
@@ -37,6 +38,8 @@ export interface HistorialStockDTO {
   eliminacionVenta?: HistorialEliminacionVenta["eliminacionVenta"];
   transferenciaProducto?: HistorialTransferenciaProducto["transferenciaProducto"];
   entregaStock?: HistorialEntregaStock["entregaStock"];
+  //NUEVO EL HISTORIALGARANTIASTOCK PROVIENE DE INTERFACESDATA
+  garantia?: HistorialGarantiaStock["garantia"];
 }
 
 // 2) Wrapper genérico de paginación

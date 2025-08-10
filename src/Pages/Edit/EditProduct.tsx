@@ -29,7 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "../Utils/ConfirmDialog";
 import { ImageCropperUploader } from "../Cropper";
-import { PrecioProducto, PricesEditor } from "./PricesEditor";
+import { PrecioProductoInventario, PricesEditor } from "./PricesEditor";
 import { AdvancedDialog } from "@/utils/components/AdvancedDialog";
 import { useStore } from "@/components/Context/ContextSucursal";
 
@@ -82,7 +82,14 @@ type CroppedImage = {
   url: string;
   originalIndex: number;
 };
+export enum RolPrecio {
+  PUBLICO = "PUBLICO",
+  MAYORISTA = "MAYORISTA",
+  ESPECIAL = "ESPECIAL",
+  DISTRIBUIDOR = "DISTRIBUIDOR",
+}
 
+// PrecioProductoInventario
 export default function ProductEditForm() {
   const { id } = useParams();
   const sucursalId = useStore((state) => state.sucursalId) ?? 0;
@@ -320,7 +327,7 @@ export default function ProductEditForm() {
                   <PricesEditor
                     getProducto={getProducto}
                     precios={formData.precios}
-                    setPrecios={(nuevosPrecios: PrecioProducto[]) =>
+                    setPrecios={(nuevosPrecios: PrecioProductoInventario[]) =>
                       setFormData((prev) =>
                         prev ? { ...prev, precios: nuevosPrecios } : prev
                       )

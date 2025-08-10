@@ -1,4 +1,4 @@
-import { PrecioProducto, RolPrecio } from "./preciosInterfaces.interface";
+import { RolPrecio } from "./preciosInterfaces.interface";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -16,6 +16,13 @@ interface PropsComponent {
   precios: PrecioProducto[];
   setPrecios: (value: PrecioProducto[]) => void;
 }
+
+interface PrecioProducto {
+  orden: number;
+  rol: RolPrecio;
+  precio: string;
+}
+
 const ROLES = [
   { label: "Público", value: "PUBLICO" },
   { label: "Mayorista", value: "MAYORISTA" },

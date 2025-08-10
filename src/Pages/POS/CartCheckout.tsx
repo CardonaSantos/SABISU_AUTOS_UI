@@ -26,6 +26,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import SelectM from "react-select";
+import { TipoComprobante } from "./interfaces";
 
 enum RolPrecio {
   PUBLICO = "PUBLICO",
@@ -95,6 +96,14 @@ interface CartCheckoutProps {
   onRemoveFromCart: (productId: number) => void;
   onCompleteSale: () => void;
   formatCurrency: (amount: number) => string;
+  //PARA METODO DE PAGO Y OTROS
+  tipoComprobante: TipoComprobante | null;
+  setTipoComprobante: React.Dispatch<
+    React.SetStateAction<TipoComprobante | null>
+  >;
+
+  setReferenciaPago: React.Dispatch<React.SetStateAction<string>>;
+  referenciaPago: string;
 }
 
 export default function CartCheckout({
@@ -123,6 +132,8 @@ export default function CartCheckout({
   onRemoveFromCart,
   onCompleteSale,
   formatCurrency,
+  referenciaPago,
+  setReferenciaPago,
 }: CartCheckoutProps) {
   const calculateTotal = (): number => {
     return cart.reduce(
@@ -367,25 +378,31 @@ export default function CartCheckout({
           <div className="flex flex-row gap-4">
             {/* Columna izquierda: Método de Pago */}
             <div className="flex-1">
-              <Label className="text-sm font-medium block mb-1.5">
+              <Label className="text-xs font-medium block mb-1.5">
                 Método de Pago
               </Label>
               <Select
+                disabled={!!referenciaPago}
                 value={paymentMethod}
-                onValueChange={(value) => setPaymentMethod(value)}
+                onValueChange={setPaymentMethod}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full h-8 min-h-0 py-1 px-2 text-xs">
                   <SelectValue placeholder="Método de Pago" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CONTADO">Contado</SelectItem>
-                  <SelectItem value="TARJETA">Tarjeta</SelectItem>
-                  <SelectItem value="TRANSFERENCIA">
+                <SelectContent className="text-xs">
+                  <SelectItem className="text-xs" value="CONTADO">
+                    Contado
+                  </SelectItem>
+                  <SelectItem className="text-xs" value="TARJETA">
+                    Tarjeta
+                  </SelectItem>
+                  <SelectItem className="text-xs" value="TRANSFERENCIA">
                     Transferencia Bancaria
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
             {/* Columna derecha: Selección de Cliente */}
             <div className="flex-1">
               <Tabs
@@ -514,6 +531,21 @@ export default function CartCheckout({
               </Tabs>
             </div>
           </div>
+
+          {paymentMethod === "TRANSFERENCIA" && (
+            <div>
+              <Label className="text-xs" htmlFor="referenciaPago">
+                Núm. boleta / transferencia único
+              </Label>
+              <Input
+                className="h-6 my-1"
+                id="referenciaPago"
+                value={referenciaPago}
+                onChange={(e) => setReferenciaPago(e.target.value)}
+                placeholder="457278567843"
+              />
+            </div>
+          )}
         </div>
       </Card>
     </div>

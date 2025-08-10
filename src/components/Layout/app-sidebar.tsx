@@ -12,8 +12,6 @@ import {
   CreditCard,
   WrenchIcon,
   ChevronDown,
-  PackageOpen,
-  Tag,
   Building2,
   FileSpreadsheet,
   Target,
@@ -21,6 +19,7 @@ import {
   ChartPie,
   Repeat1,
   PackageSearch,
+  Blocks,
 } from "lucide-react";
 
 import {
@@ -40,7 +39,6 @@ import {
   ShoppingCart,
   Package,
   Users,
-  Box,
   AlertCircle,
   Clock,
   Building,
@@ -115,9 +113,12 @@ const menuItemsAdmin = [
     icon: Package,
     label: "Inventario y Stock",
     submenu: [
-      { icon: PackageOpen, label: "Inventario", href: "/inventario" },
+      {
+        icon: Blocks,
+        label: "Inventario y Stock",
+        href: "/inventario-stock",
+      },
 
-      { icon: Box, label: "Añadir Stock", href: "/adicion-stock" },
       {
         icon: NotepadText,
         label: "Historial Cambios Precio",
@@ -137,8 +138,6 @@ const menuItemsAdmin = [
       },
     ],
   },
-
-  { icon: Tag, label: "Categorías", href: "/categorias" },
 
   // Vencimientos
   { icon: AlertCircle, label: "Vencimientos", href: "/vencimientos" },

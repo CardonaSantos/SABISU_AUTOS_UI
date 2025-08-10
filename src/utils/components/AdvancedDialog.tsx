@@ -424,11 +424,24 @@ export function AdvancedDialog({
                   variant="outline"
                   onClick={finalCancelButton.onClick}
                   disabled={finalCancelButton.disabled}
-                  className="border border-gray-200 dark:border-gray-700 w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600 rounded-lg py-2.5 transition-all duration-200"
+                  className="
+          border border-gray-300 dark:border-zinc-600 
+          w-full 
+          bg-white dark:bg-zinc-900 
+          text-gray-700 dark:text-zinc-300 
+          hover:bg-gray-100 hover:text-gray-800 dark:hover:bg-zinc-800 dark:hover:text-white
+          focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-zinc-500
+          disabled:opacity-50 disabled:cursor-not-allowed
+          rounded-lg py-2.5 
+          transition-all duration-200
+          font-medium
+        "
                 >
                   {finalCancelButton.icon}
                   {finalCancelButton.label}
                 </Button>
+
+                {/* Confirm Button */}
                 <Button
                   type="button"
                   variant={finalConfirmButton.variant}
@@ -437,10 +450,24 @@ export function AdvancedDialog({
                     finalConfirmButton.disabled || finalConfirmButton.loading
                   }
                   className={cn(
-                    "w-full transition-all duration-200 rounded-lg py-2.5 shadow-sm",
+                    "w-full transition-all duration-200 rounded-lg py-2.5 shadow-sm font-medium",
                     finalConfirmButton.variant === "destructive"
-                      ? "bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                      : "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-gray-800 dark:focus:ring-gray-300"
+                      ? `
+              bg-red-600 dark:bg-red-700 
+              text-white dark:text-white 
+              border border-red-600 dark:border-red-600
+              hover:bg-red-700 hover:text-white dark:hover:bg-red-600 dark:hover:text-white
+              focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400
+              disabled:opacity-50 disabled:cursor-not-allowed
+            `
+                      : `
+              bg-zinc-900 dark:bg-zinc-100 
+              text-white dark:text-zinc-900 
+              border border-zinc-900 dark:border-zinc-100
+              hover:bg-zinc-800 hover:text-white dark:hover:bg-zinc-200 dark:hover:text-zinc-900
+              focus:outline-none focus:ring-2 focus:ring-zinc-700 dark:focus:ring-zinc-300
+              disabled:opacity-50 disabled:cursor-not-allowed
+            `
                   )}
                 >
                   {finalConfirmButton.loading ? (

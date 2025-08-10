@@ -1,4 +1,4 @@
-export interface PrecioProducto {
+export interface PrecioProductoInventario {
   precio: string;
   orden: number;
   rol: RolPrecio;

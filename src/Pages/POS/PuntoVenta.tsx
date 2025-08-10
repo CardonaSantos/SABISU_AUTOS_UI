@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CheckCircle, Coins, Package } from "lucide-react";
+import { CheckCircle, Coins, Package, Receipt } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,11 +30,13 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { formatearMoneda } from "@/Crm/CrmServices/crm-service.types";
-
 // Importar los nuevos componentes
 import ProductList from "./ProductList";
 import CartCheckout from "./CartCheckout";
 import DialogImages from "../DialogImages";
+import { TipoComprobante } from "./interfaces";
+import { formattMonedaGT } from "@/utils/formattMoneda";
+import { ComprobanteSelector } from "./Components/ComprobanteSelector";
 
 dayjs.extend(localizedFormat);
 dayjs.locale("es");
@@ -140,6 +141,12 @@ export default function PuntoVenta() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [productos, setProductos] = useState<ProductosResponse[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<string>("CONTADO");
+
+  const [tipoComprobante, setTipoComprobante] =
+    useState<TipoComprobante | null>(TipoComprobante.RECIBO);
+
+  const [referenciaPago, setReferenciaPago] = useState<string>("");
+
   const [openSection, setOpenSection] = useState(false);
   const [ventaResponse, setventaResponse] = useState<Venta | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
@@ -240,6 +247,8 @@ export default function PuntoVenta() {
         selectedPriceId: prod.selectedPriceId,
       })),
       metodoPago: paymentMethod || "CONTADO",
+      tipoComprobante: tipoComprobante,
+      referenciaPago: referenciaPago,
       monto: cart.reduce(
         (acc, prod) => acc + prod.selectedPrice * prod.quantity,
         0
@@ -267,10 +276,18 @@ export default function PuntoVenta() {
       return;
     }
 
+    if (!tipoComprobante) {
+      toast.info("Seleccione Recibo o Factura");
+      return;
+    }
+
     try {
       const response = await axios.post(`${API_URL}/venta`, saleData);
-      if (response.status === 201 || response.status === 200) {
+      if (response.status === 201) {
         toast.success("Venta completada con éxito");
+        setReferenciaPago("");
+        setPaymentMethod("CONTADO");
+        setTipoComprobante(TipoComprobante.RECIBO);
         setIsDialogOpen(false);
         setCart([]);
         getProducts();
@@ -378,8 +395,15 @@ export default function PuntoVenta() {
     setImagesProduct(images);
   };
 
+  // 1) Mejora el nombre para que refleje “referencia inválida”
+  const isReferenceInvalid =
+    paymentMethod === "TRANSFERENCIA" && !referenciaPago;
+
+  // 2) Combina con OR
+  const isButtonDisabled = isDisableButton || isReferenceInvalid;
+
   return (
-    <div className="container  ">
+    <div className="container">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {/* Componente de Lista de Productos */}
         <ProductList
@@ -391,6 +415,10 @@ export default function PuntoVenta() {
         {/* Componente de Carrito y Checkout */}
         <CartCheckout
           cart={cart}
+          setReferenciaPago={setReferenciaPago}
+          referenciaPago={referenciaPago}
+          tipoComprobante={tipoComprobante}
+          setTipoComprobante={setTipoComprobante}
           paymentMethod={paymentMethod}
           setPaymentMethod={setPaymentMethod}
           imei={imei}
@@ -419,45 +447,43 @@ export default function PuntoVenta() {
       </div>
 
       {/* PETICION DE PRECIO ESPECIAL */}
-      <div className="mt-20">
-        <Card className="shadow-xl">
-          <CardHeader>
-            <CardTitle>Petición de precio especial</CardTitle>
-            <CardDescription>
-              Al solicitar un precio especial, esa instancia solo se podrá usar
-              en una venta
+      <div className="mt-10">
+        <Card className="shadow-md rounded-lg border overflow-hidden">
+          <CardHeader className=" p-6">
+            <CardTitle className="text-xl font-semibold">
+              Petición de precio especial
+            </CardTitle>
+            <CardDescription className="text-sm text-gray-600  dark:text-white">
+              Al solicitar un precio especial, esa instancia sólo se podrá usar
+              en una venta.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <div className="space-y-2">
-                <Label>Producto</Label>
+
+          <CardContent className="p-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Producto */}
+              <div className="flex flex-col">
+                <Label className="text-sm font-medium mb-1">Producto</Label>
                 <SelectM
                   placeholder="Seleccionar producto"
-                  options={productos.map((product) => ({
-                    value: product.id.toString(),
-                    label: `${product.nombre} (${product.codigoProducto})`,
+                  options={productos.map((p) => ({
+                    value: p.id.toString(),
+                    label: `${p.nombre} (${p.codigoProducto})`,
                   }))}
-                  className="basic-select text-black"
+                  className="basic-select text-sm h-10 text-black"
                   classNamePrefix="select"
-                  onChange={(selectedOption) => {
-                    if (selectedOption) {
-                      setSelectedProductId(selectedOption.value);
-                    }
-                  }}
+                  onChange={(opt) => setSelectedProductId(opt?.value ?? "")}
                   value={
                     selectedProductId
                       ? {
                           value: selectedProductId,
                           label: `${
                             productos.find(
-                              (product) =>
-                                product.id.toString() === selectedProductId
+                              (p) => p.id.toString() === selectedProductId
                             )?.nombre
                           } (${
                             productos.find(
-                              (product) =>
-                                product.id.toString() === selectedProductId
+                              (p) => p.id.toString() === selectedProductId
                             )?.codigoProducto
                           })`,
                         }
@@ -465,48 +491,54 @@ export default function PuntoVenta() {
                   }
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Precio Requerido</Label>
+
+              {/* Precio Requerido */}
+              <div className="flex flex-col">
+                <Label className="text-sm font-medium mb-1">
+                  Precio Requerido
+                </Label>
                 <Input
+                  type="number"
+                  className="h-10 text-sm"
+                  placeholder="100.00"
                   value={precioReques ?? ""}
                   onChange={(e) =>
                     setPrecioRequest(
                       e.target.value ? Number(e.target.value) : null
                     )
                   }
-                  placeholder="100"
-                  type="number"
                 />
               </div>
             </div>
+
+            {/* Botón */}
             <Button
               onClick={() => setOpenRequest(true)}
-              className="my-10 w-full"
-              variant={"default"}
+              variant="default"
+              className="w-full py-2 text-sm"
             >
               Solicitar precio especial
             </Button>
+
+            {/* Modal de confirmación */}
             <Dialog open={openReques} onOpenChange={setOpenRequest}>
-              <DialogContent>
+              <DialogContent className="w-full max-w-md">
                 <DialogHeader>
-                  <DialogTitle className="text-center">
+                  <DialogTitle className="text-lg font-semibold text-center">
                     Solicitar precio especial
                   </DialogTitle>
-                  <DialogDescription className="text-center">
-                    Esta instancia solo se podrá aplicar a una venta
-                  </DialogDescription>
-                  <DialogDescription className="text-center">
+                  <DialogDescription className="text-sm text-center text-gray-600">
+                    Esta instancia sólo se podrá aplicar a una venta.
                     ¿Continuar?
                   </DialogDescription>
                 </DialogHeader>
-                <div className="flex justify-end gap-2">
+                <div className="mt-4 flex justify-end">
                   <Button
-                    disabled={!precioReques && !selectedProductId}
-                    variant={"default"}
-                    className="w-full"
-                    onClick={() => handleMakeRequest()}
+                    onClick={handleMakeRequest}
+                    disabled={!precioReques || !selectedProductId}
+                    className="px-4 py-2 text-sm"
                   >
-                    Solicitar
+                    Confirmar
                   </Button>
                 </div>
               </DialogContent>
@@ -524,105 +556,140 @@ export default function PuntoVenta() {
 
       {/* DIALOG DE VENTA EXITOSA */}
       <Dialog open={openSection} onOpenChange={setOpenSection}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-center">
-              Venta registrada exitosamente
-            </DialogTitle>
-            <DialogDescription className="text-center mt-2">
-              Ahora puedes generar el comprobante de venta para el cliente.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-md mx-auto p-0 overflow-hidden">
+          {/* Header with close button */}
+          <div className="relative p-6 pb-4">
+            {/* Success Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+            </div>
+
+            {/* Title */}
+            <h2 className="text-xl font-semibold text-center text-gray-900 mb-2 dark:text-white">
+              Venta Registrada
+            </h2>
+            <p className="dark:text-white text-center text-gray-600 text-sm">
+              La venta se ha procesado exitosamente
+            </p>
+          </div>
+
+          {/* Sale Details */}
           {ventaResponse && (
-            <div className="mt-4 text-center items-center justify-center">
-              <p className="text-sm mb-4">
-                Número de Venta: <strong>#{ventaResponse?.id}</strong>
-              </p>
-              <p className=" text-sm mb-4">
-                Fecha y Hora de Venta:{" "}
-                <strong>{formatearFechaUTC(ventaResponse.fechaVenta)}</strong>
-              </p>
-              <p className=" text-sm mb-4">
-                Monto Total:{" "}
-                <strong>
-                  {new Intl.NumberFormat("es-GT", {
-                    style: "currency",
-                    currency: "GTQ",
-                  }).format(ventaResponse?.totalVenta)}
-                </strong>
-              </p>
+            <div className="dark:bg-zinc-950 px-6 py-4 dark:bg-g bg-gray-50 border-y">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600  dark:text-white ">
+                    Número de Venta:
+                  </span>
+                  <span className="font-semibold text-gray-900  dark:text-white ">
+                    #{ventaResponse.id}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center ">
+                  <span className="text-sm text-gray-600  dark:text-white ">
+                    Fecha y Hora:
+                  </span>
+                  <span className="font-semibold text-gray-900 text-sm  dark:text-white ">
+                    {formatearFechaUTC(ventaResponse.fechaVenta)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                  <span className="text-base font-medium text-gray-900 dark:text-white ">
+                    Total:
+                  </span>
+                  <span className="text-lg font-bold text-green-600">
+                    {formattMonedaGT(ventaResponse.totalVenta)}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
-          <div className="flex justify-center items-center gap-2 mt-4">
-            <Button
-              variant={"destructive"}
-              className="px-4 py-2  rounded hover:bg-secondary-hover focus:outline-none"
-              onClick={handleClose}
-            >
-              Mantenerse
-            </Button>
-            <Link to={`/venta/generar-factura/${ventaResponse?.id}`}>
+
+          {/* Action Buttons */}
+          <div className="p-6 pt-4">
+            <div className="flex gap-3">
               <Button
-                className="px-4 py-2  rounded hover:bg-primary-hover focus:outline-none"
+                variant="outline"
+                className="flex-1 h-11 border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent dark:text-white dark:hover:bg-transparent "
                 onClick={handleClose}
               >
-                Imprimir Comprobante
+                Mantenerse
               </Button>
-            </Link>
+
+              <Link
+                to={`/venta/generar-factura/${ventaResponse?.id}`}
+                className="flex-1"
+              >
+                <Button
+                  className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-medium"
+                  onClick={handleClose}
+                >
+                  <Receipt className="w-4 h-4 mr-2" />
+                  Imprimir Comprobante
+                </Button>
+              </Link>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* DIALOG DE CONFIRMACION VENTA */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <div className="bg-purple-50  dark:bg-zinc-900 p-6">
-            <DialogHeader className="text-center space-y-1">
+        <DialogContent className="sm:max-w-md">
+          {/* Header compacto */}
+          <div className="bg-purple-50 dark:bg-zinc-900 p-4">
+            <DialogHeader className="text-center space-y-2">
               <div className="flex justify-center">
-                <div className="rounded-full p-3 shadow-sm border-4 border-white dark:border-zinc-900">
-                  <div className="bg-gradient-to-br from-purple-500 to-blue-500 p-3 rounded-full animate-pulse">
-                    <CheckCircle className="h-8 w-8 text-white" />
-                  </div>
+                <div className="bg-gradient-to-br from-purple-500 to-blue-500 p-2 rounded-full animate-pulse">
+                  <CheckCircle className="h-6 w-6 text-white" />
                 </div>
               </div>
-              <DialogTitle className="text-lg font-bold text-gray-800 dark:text-gray-100 text-center">
+              <DialogTitle className="text-base font-bold text-gray-800 dark:text-gray-100 text-center">
                 Confirmar Venta
               </DialogTitle>
             </DialogHeader>
           </div>
-          <div className="p-6 space-y-6 bg-purple-50  dark:bg-zinc-900">
-            {/* Resumen de la venta */}
-            <div className="              bg-purple-50  dark:bg-zinc-950 rounded-lg p-4 space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                <Package className="h-4 w-4" />
+
+          <div className="p-4 space-y-4 bg-purple-50 dark:bg-zinc-900">
+            {/* Resumen compacto */}
+            <div className="bg-purple-50 dark:bg-zinc-950 rounded-lg p-3 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300">
+                <Package className="h-3 w-3" />
                 Resumen de productos
               </div>
-              <div className="space-y-2 overflow-y-auto max-h-28 px-4">
+
+              <div className="space-y-1 max-h-20 overflow-y-auto">
                 {cart.map((item) => (
                   <div
                     key={item.id}
-                    className="flex justify-between items-center text-sm"
+                    className="flex justify-between items-center text-xs"
                   >
                     <span className="text-gray-600 dark:text-gray-400 truncate">
                       {productos.find((prod) => prod.id === item.id)?.nombre} ×{" "}
                       {item.quantity}
                     </span>
-                    <span className="font-medium text-gray-600  dark:text-gray-400">
+                    <span className="font-medium text-gray-600 dark:text-gray-400">
                       {formatearMoneda(item.selectedPrice * item.quantity)}
                     </span>
                   </div>
                 ))}
               </div>
+
               <Separator className="dark:bg-gray-700" />
+
               <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <Coins className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  <span className="font-semibold text-gray-700 dark:text-gray-300">
+                <div className="flex items-center gap-1">
+                  <Coins className="h-3 w-3 text-green-600 dark:text-green-400" />
+                  <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">
                     Total
                   </span>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  <div className="text-lg font-bold text-green-600 dark:text-green-400">
                     {formatearMoneda(
                       cart.reduce(
                         (acc, item: CartItem) =>
@@ -633,39 +700,67 @@ export default function PuntoVenta() {
                   </div>
                   <Badge
                     variant="secondary"
-                    className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    className="text-xs bg-gray-200 dark:bg-gray-700"
                   >
                     {cart.length} {cart.length === 1 ? "artículo" : "artículos"}
                   </Badge>
                 </div>
               </div>
             </div>
-            {/* Botones de acción */}
-            <div className="flex gap-3 pt-2">
+
+            <div className=" justify-center items-center flex">
+              <ComprobanteSelector
+                tipo={tipoComprobante}
+                setTipo={setTipoComprobante}
+              />
+            </div>
+
+            {/* Referencia de pago si existe */}
+            {referenciaPago && (
+              <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2 border border-blue-200 dark:border-blue-800">
+                <div className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                  Referencia de Pago
+                </div>
+                <div className="text-sm font-mono text-blue-800 dark:text-blue-200">
+                  {referenciaPago}
+                </div>
+              </div>
+            )}
+
+            {isReferenceInvalid && (
+              <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2 border border-blue-200 dark:border-blue-800">
+                <div className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                  El número de boleta no puede estar vacío
+                </div>
+              </div>
+            )}
+
+            {/* Botones compactos */}
+            <div className="flex gap-2 pt-1">
               <Button
                 onClick={() => setIsDialogOpen(false)}
                 variant="destructive"
-                size="lg"
-                className="flex-1 "
+                size="sm"
+                className="flex-1 h-8 text-sm"
                 disabled={isDisableButton}
               >
                 Cancelar
               </Button>
               <Button
-                disabled={isDisableButton}
-                size="lg"
+                disabled={isButtonDisabled}
+                size="sm"
                 onClick={handleCompleteSale}
-                className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                className="flex-1 h-8 text-sm bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
               >
                 {isDisableButton ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Procesando...
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs">Procesando...</span>
                   </div>
                 ) : (
                   <>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Confirmar Venta
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Confirmar
                   </>
                 )}
               </Button>

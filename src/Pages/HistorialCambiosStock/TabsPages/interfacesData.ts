@@ -16,6 +16,7 @@ export enum TipoMovimientoStock {
   ELIMINACION = "ELIMINACION",
   ELIMINACION_STOCK = "ELIMINACION_STOCK",
   INVENTARIO_INICIAL = "INVENTARIO_INICIAL",
+  GARANTIA = "GARANTIA",
   OTRO = "OTRO",
 }
 
@@ -47,6 +48,8 @@ export type PaginatedTransferenciasProducto =
   PaginatedResponse<HistorialTransferenciaProducto>;
 
 export type PaginatedEntregasStock = PaginatedResponse<HistorialEntregaStock>;
+
+export type PaginatedGarantiaStock = PaginatedResponse<HistorialGarantiaStock>;
 
 //TYPES A USAR
 
@@ -258,6 +261,38 @@ export interface HistorialEntregaStock extends HistorialStockBase {
   };
 }
 
+//GARANTIA STOCK
+export interface HistorialGarantiaStock extends HistorialStockBase {
+  tipo: TipoMovimientoStock.GARANTIA;
+  // Aquí coincide con la clave que devuelve el servidor:
+  garantia: {
+    id: number;
+    creadoEn: string; // o Date si parseas
+    cliente: {
+      id: number;
+      nombre: string;
+      direccion: string;
+      telefono: string;
+    };
+    cantidadDevuelta: number;
+    comentario: string;
+    descripcionProblema: string;
+    estado: string; // o tu enum EstadoGarantia
+    fechaRecepcion: string; // o Date
+    usuarioRecibe: {
+      id: number;
+      nombre: string;
+      correo: string;
+      rol: string;
+    };
+    producto: {
+      id: number;
+      nombre: string;
+      codigoProducto: string;
+      descripcion: string | null;
+    };
+  };
+}
 export type HistorialStockItem =
   | HistorialIngresoRequisicion
   | HistorialSalidaVenta
@@ -265,4 +300,5 @@ export type HistorialStockItem =
   | HistorialEliminacionStock
   | HistorialEliminacionVenta
   | HistorialTransferenciaProducto
-  | HistorialEntregaStock;
+  | HistorialEntregaStock
+  | HistorialGarantiaStock;

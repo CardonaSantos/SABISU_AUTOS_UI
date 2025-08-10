@@ -116,7 +116,7 @@ export default function StockEdicion() {
 
       if (response.status === 200) {
         toast.success("Stock actualizado correctamente");
-        navigate("/inventario");
+        navigate("/inventario-stock");
       }
     } catch (error) {
       console.error(error);
@@ -190,7 +190,7 @@ export default function StockEdicion() {
       if (response.status === 201) {
         toast.success("Eliminacion completada");
         setTimeout(() => {
-          navigate("/inventario");
+          navigate("/inventario-stock");
         }, 1000);
       }
     } catch (error) {

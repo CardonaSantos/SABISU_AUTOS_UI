@@ -5,20 +5,16 @@ import {
   Routes,
 } from "react-router-dom";
 import { Toaster } from "sonner";
-import Dashboard from "./Pages/Dashboard/Dashboard";
-import Inventario from "./Pages/Inventario";
 // import Reportes from "./Pages/Reports/Reportes";
 import EntregasStock from "./Pages/EntregasStock";
 import Vencimientos from "./Pages/Vencimientos";
-import HistorialVentas from "./Pages/HistorialVentas";
-import Stock from "./Pages/Stock";
+import HistorialVentas from "./Pages/HistorialVentas/HistorialVentas";
 import Invoice from "./components/PDF/Invoice";
 import Login from "./Pages/Auth/Login";
 import RegisterView from "./Pages/Auth/Register";
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
 import NotFoundPage from "./Pages/NotFount/NotFoundPage";
 import AgregarProveedor from "./Pages/Provider/AgregarProveedor";
-import CreateCategory from "./Pages/Category/CreateCategory";
 import CreateSucursal from "./Pages/Sucursal/CreateSucursal";
 import ProductEditForm from "./Pages/Edit/EditProduct";
 import Sucursales from "./Pages/Sucursal/Sucursales";
@@ -36,7 +32,6 @@ import ReceiveWarrantyPage from "./Pages/Warranty/ReceiveWarrantyPage";
 import WarrantyPage from "./components/PDF/PDF-Warranty/WarrantyPage";
 import WarrantyFinalPage from "./components/PDF/WarrantyFinal/WarrantyFinalPDFPage";
 import RegistroDeposito from "./Pages/CashRegister/RegistroDeposito";
-import RegistroCaja from "./Pages/CashRegister/RegistroCaja";
 import CashRegisters from "./Pages/CashRegister/CashRegisters";
 import BalanceSucursal from "./Pages/CashRegister/BalanceSucursal";
 import UserConfig from "./Pages/Config/UserConfig";
@@ -71,6 +66,9 @@ import RequisicionPDF from "./Pages/Requisicion/PDF/Pdf";
 import { RequisitionEditor } from "./Pages/Requisicion/RequisitionEditor";
 import PuntoVenta from "./Pages/POS/PuntoVenta";
 import MovimientosStock from "./Pages/HistorialCambiosStock/HistorialCambiosStock";
+import InventarioStockPage from "./Pages/InventarioYStock/InventarioStockPage";
+import DashboardPageMain from "./Pages/NewDashboard/dashboard/page";
+import Caja from "./Pages/Caja/Caja";
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -119,7 +117,7 @@ function App() {
               path="/dashboard"
               element={
                 <ProtectRouteAdmin>
-                  <Dashboard />
+                  <DashboardPageMain />
                 </ProtectRouteAdmin>
               }
             />
@@ -161,15 +159,6 @@ function App() {
             />
 
             <Route
-              path="/inventario"
-              element={
-                <ProtectedRoute>
-                  <Inventario />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
               path="/agregar-proveedor"
               element={
                 <ProtectRouteAdmin>
@@ -179,19 +168,10 @@ function App() {
             />
 
             <Route
-              path="/categorias"
-              element={
-                <ProtectRouteAdmin>
-                  <CreateCategory />
-                </ProtectRouteAdmin>
-              }
-            />
-
-            <Route
-              path="/adicion-stock"
+              path="/inventario-stock"
               element={
                 <ProtectedRoute>
-                  <Stock />
+                  <InventarioStockPage />
                 </ProtectedRoute>
               }
             />
@@ -371,7 +351,7 @@ function App() {
               path="/registro-caja"
               element={
                 <ProtectedRoute>
-                  <RegistroCaja />
+                  <Caja />
                 </ProtectedRoute>
               }
             />

@@ -23,6 +23,7 @@ export interface ProductoVenta {
   creadoEn: string; // Formato ISO string
   producto: ProductoInfo;
   precioVenta: number;
+  estado: EstadoDetalleVenta;
 }
 
 export interface Cliente {
@@ -48,6 +49,16 @@ export interface Municipio {
   id: number;
   nombre: string;
 }
+export enum TipoComprobante {
+  FACTURA = "FACTURA",
+  RECIBO = "RECIBO",
+}
+
+export enum EstadoDetalleVenta {
+  VENDIDO = "VENDIDO",
+  PARCIAL_GARANTIA = "PARCIAL_GARANTIA",
+  ANULADO = "ANULADO",
+}
 
 export interface Venta {
   id: number;
@@ -58,10 +69,13 @@ export interface Venta {
   productos: ProductoVenta[];
   totalVenta: number; //TOTAL
   metodoPago: MetodoPago;
+  estado: EstadoDetalleVenta;
   //OTROS CAMPOS
   nombreClienteFinal: string;
   telefonoClienteFinal: string;
   direccionClienteFinal: string;
+  referenciaPago: string;
+  tipoComprobante: TipoComprobante;
 }
 
 export type VentasHistorial = Venta[];
