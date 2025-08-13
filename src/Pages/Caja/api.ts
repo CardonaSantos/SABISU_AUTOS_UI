@@ -1,6 +1,8 @@
 import axios from "axios";
 import { CajaAbierta, CerrarCaja, IniciarCaja } from "./interfaces";
 import { MovimientoCajaItem } from "./MovimientosCajaInterface";
+import { VentaLigadaACaja } from "./VentasCaja/interface";
+import { getApiErrorMessageAxios } from "../Utils/UtilsErrorApi";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -45,10 +47,28 @@ export const getCajasRegistros = async () => {
 };
 
 //MOVIMIENTOS
-
 export const getMovimientosCajaById = async (cajaID: number) => {
   const response = await axios.get<MovimientoCajaItem[]>(
     `${API_URL}/movimiento-caja/movimientos-caja/${cajaID}`
+  );
+  return response.data;
+};
+
+export const deleteMovimiento = async (movimientoID: number) => {
+  try {
+    const response = await axios.delete(
+      `${API_URL}/movimiento-caja/delete-movimiento/${movimientoID}`
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessageAxios(error));
+  }
+};
+
+// VENTAS EN CAJA
+export const getVentasCajaById = async (cajaID: number) => {
+  const response = await axios.get<VentaLigadaACaja[]>(
+    `${API_URL}/caja/get-cajas-registros-ventas/${cajaID}`
   );
   return response.data;
 };

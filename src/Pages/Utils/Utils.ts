@@ -11,6 +11,10 @@ export const formattFecha = (value: string | Date | null) => {
   return dayjs(value).tz(zona).format("DD/MM/YYYY");
 };
 
+export const formattFechaWithMinutes = (value: string | Date | null) => {
+  return dayjs(value).tz(zona).format("DD/MM/YYYY hh:mm a");
+};
+
 export const formattMoneda = (
   value: string | number,
   decimales = 2
@@ -23,3 +27,5 @@ export const formattMoneda = (
     pattern: "!#", // símbolo antes del número ("Q 1,234.50")
   }).format(); // ← ahora devuelve string
 };
+
+export const TZGT = "America/Guatemala";

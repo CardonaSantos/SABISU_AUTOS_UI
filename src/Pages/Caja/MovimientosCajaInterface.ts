@@ -10,7 +10,6 @@ export type TipoMovimiento =
   | "AJUSTE"
   | "DEVOLUCION"
   | "OTRO";
-
 export type CategoriaMovimiento =
   | "COSTO_VENTA"
   | "DEPOSITO_CIERRE"

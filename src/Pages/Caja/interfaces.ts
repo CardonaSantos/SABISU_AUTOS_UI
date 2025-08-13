@@ -7,12 +7,7 @@ export interface IniciarCaja {
 
 //MODIFICAR DESPUES PARA ACEPTAR DATA DE EGRESOS Y DEMÁS, CALCULAR EN EL FRONT Y ENVIAR
 export interface CerrarCaja {
-  sucursalId: number;
-  usuarioInicioId: number;
-  saldoInicial: number;
-  comentario?: string;
   comentarioFinal?: string;
-  saldoFinal?: number;
   cajaID: number;
   usuarioCierra: number;
 }

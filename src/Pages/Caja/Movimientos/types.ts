@@ -3,15 +3,14 @@
 export enum TipoMovimientoCaja {
   INGRESO = "INGRESO",
   EGRESO = "EGRESO",
-  VENTA = "VENTA",
-  ABONO = "ABONO",
-  RETIRO = "RETIRO",
   DEPOSITO_BANCO = "DEPOSITO_BANCO",
-  CHEQUE = "CHEQUE",
-  TRANSFERENCIA = "TRANSFERENCIA",
-  AJUSTE = "AJUSTE",
-  DEVOLUCION = "DEVOLUCION",
-  OTRO = "OTRO",
+  // ABONO = "ABONO",
+  // RETIRO = "RETIRO",
+  // CHEQUE = "CHEQUE",
+  // TRANSFERENCIA = "TRANSFERENCIA",
+  // AJUSTE = "AJUSTE",
+  // DEVOLUCION = "DEVOLUCION",
+  // OTRO = "OTRO",
 }
 
 export enum CategoriaMovimiento {
@@ -22,18 +21,18 @@ export enum CategoriaMovimiento {
 }
 
 export interface CreateMovimientoCajaDto {
-  registroCajaId?: number;
-  fecha?: string; // ISO 8601 string
   tipo: TipoMovimientoCaja;
-  categoria: CategoriaMovimiento;
+  categoria: CategoriaMovimiento | undefined;
   monto: number;
+  usuarioId: number;
   descripcion?: string;
   referencia?: string;
   banco?: string;
   numeroBoleta?: string;
   usadoParaCierre?: boolean;
   proveedorId?: number;
-  usuarioId: number;
+  sucursalId: number;
+  fecha?: string; // ISO 8601 string
 }
 
 export interface Proveedor {

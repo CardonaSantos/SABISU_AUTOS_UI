@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useState } from "react";
 
 import { CajaAbierta, CerrarCaja, IniciarCaja } from "./interfaces";
 import { motion } from "framer-motion";
@@ -12,11 +12,13 @@ import {
   getMovimientosCajaById,
   getUltimaCajaAbierta,
   getUltimoSaldoSucursal,
+  getVentasCajaById,
   iniciarCaja,
 } from "./api";
 import { useStore } from "@/components/Context/ContextSucursal";
 import { MovimientoCajaItem } from "./MovimientosCajaInterface";
 import MovimientoCajaPage from "./Movimientos/movimiento-caja-page";
+import { VentaLigadaACaja } from "./VentasCaja/interface";
 function Caja() {
   const sucursalID: number = useStore((state) => state.sucursalId) ?? 0;
   const userID: number = useStore((state) => state.userId) ?? 0;
@@ -24,6 +26,8 @@ function Caja() {
   const [isSubmiting, setIsSubmiting] = useState<boolean>(false);
 
   const [movimientos, setMovimientos] = useState<MovimientoCajaItem[]>([]);
+
+  const [ventas, setVentas] = useState<VentaLigadaACaja[]>([]);
 
   const [cajaMontoAnterior, setCajaMontoAnterior] = useState<number>(1);
   const [nuevaCaja, setNuevaCaja] = useState<IniciarCaja | null>({
@@ -33,12 +37,9 @@ function Caja() {
     comentario: "",
   });
   const [cerrarCajaDto, setCerrarCajaDto] = useState<CerrarCaja | null>({
-    saldoInicial: cajaAbierta?.saldoInicial ?? 0,
-    sucursalId: sucursalID,
-    usuarioInicioId: userID,
-    comentarioFinal: "",
     cajaID: cajaAbierta?.id ?? 0,
-    usuarioCierra: cajaAbierta?.usuarioInicioId ?? 0,
+    usuarioCierra: userID,
+    comentarioFinal: "",
   });
 
   //STATES PARA ABRIR O CERRAR DIALOGS
@@ -52,11 +53,10 @@ function Caja() {
     if (hasOpen) {
       setNuevaCaja(null);
       setCerrarCajaDto((prev) => ({
-        // ajusta los campos según tu DTO
         ...(prev ?? ({} as CerrarCaja)),
-        cajaID: cajaAbierta!.id,
-        saldoFinal: 0, // default editable por el usuario
-        // comentario: cajaAbierta?.comentario,
+        cajaID: cajaAbierta?.id ?? 0,
+        usuarioCierra: userID,
+        comentarioFinal: "",
       }));
     } else {
       // Modo ABRIR: limpiamos cerrarCajaDto y preparamos nuevaCaja
@@ -68,7 +68,6 @@ function Caja() {
         comentario: "",
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasOpen, cajaMontoAnterior, sucursalID, userID]);
 
   useEffect(() => {
@@ -100,53 +99,50 @@ function Caja() {
   };
 
   const handleSubmitIniciarCaja = async () => {
+    if (!nuevaCaja || isSubmiting) return;
+    setIsSubmiting(true);
     try {
-      if (!nuevaCaja || isSubmiting) return;
-      setIsSubmiting(true);
       await toast.promise(iniciarCaja(nuevaCaja), {
         loading: "Iniciando turno en caja...",
         success: "Turno registrado",
         error: "Error al registrar turno en caja",
       });
-      await getCajaAbierta(); // refresca modo
-      await getMontoAnterior();
-    } catch (error) {
-      console.log("El error es:", error);
+      await reloadContext();
     } finally {
       setIsSubmiting(false);
       setOpenConfirDialog(false);
+      await reloadContext();
     }
   };
 
   const handleCerrarCaja = async () => {
+    if (!cerrarCajaDto || isSubmiting) return;
+    setIsSubmiting(true);
     try {
-      if (!cerrarCajaDto || isSubmiting) return;
-      setIsSubmiting(true);
       await toast.promise(cerrarCaja(cerrarCajaDto), {
         loading: "Cerrando turno en caja...",
         success: "Caja cerrada correctamente",
         error: "Error al cerrar turno en caja",
       });
-      await getCajaAbierta(); // al cerrar debería pasar a null
-      await getMontoAnterior();
-    } catch (error) {
-      console.log("El error es: ", error);
-      toast.error("Error al cerrar turno en caja");
+      await reloadContext(); // <- esto decide si limpia o trae todo
     } finally {
       setIsSubmiting(false);
       setOpenCloseCaja(false);
+      await reloadContext();
     }
   };
 
-  // 4) Fetchers (tal cual ya tenías)
   const getCajaAbierta = async () => {
     try {
       const data = await getUltimaCajaAbierta(sucursalID, userID);
       setCajaAbierta(data);
+      return data;
     } catch {
       toast.error("Error al conseguir último registro de caja");
+      return null;
     }
   };
+
   const getMontoAnterior = async () => {
     try {
       const data = await getUltimoSaldoSucursal(sucursalID);
@@ -156,29 +152,65 @@ function Caja() {
     }
   };
 
-  const getMovimientosCaja = async () => {
+  const getMovimientosCaja = async (cajaId: number) => {
     try {
-      if (!cajaAbierta) return;
-      const data = await getMovimientosCajaById(cajaAbierta?.id);
+      const data = await getMovimientosCajaById(cajaId);
       setMovimientos(data);
-    } catch (error) {
-      console.log("El error es: ", error);
+    } catch {
       toast.error("Error al conseguir registros de movimientos de esta caja");
+    }
+  };
+  const getVentasCaja = async (cajaId: number) => {
+    try {
+      const data = await getVentasCajaById(cajaId);
+      setVentas(data);
+    } catch {
+      toast.error("Error al conseguir registros de ventas de esta caja");
     }
   };
 
   useEffect(() => {
-    if (!cajaAbierta?.id) return;
-    getMovimientosCaja();
+    if (!cajaAbierta?.id) {
+      setMovimientos([]);
+      setVentas([]);
+      return;
+    }
+    getMovimientosCaja(cajaAbierta.id);
+    getVentasCaja(cajaAbierta.id);
   }, [cajaAbierta?.id]);
 
-  console.log("La caja a cerrar es: ", cerrarCajaDto);
-  // const handleSuccess = () => {
-  //   // Redirigir a la lista de movimientos o mostrar mensaje de
+  const refreshMovimientos = useCallback(async () => {
+    if (cajaAbierta?.id) {
+      await getMovimientosCaja(cajaAbierta.id);
+    } else {
+      setMovimientos([]);
+    }
+  }, [cajaAbierta?.id]);
 
-  //   alert("Registrado");
-  //   console.log("Registrado");
-  // };
+  const reloadContext = useCallback(async () => {
+    const caja = await getUltimaCajaAbierta(sucursalID, userID);
+    setCajaAbierta(caja);
+
+    if (caja?.id) {
+      const [movs, vtas] = await Promise.all([
+        getMovimientosCajaById(caja.id),
+        getVentasCajaById(caja.id),
+      ]);
+      setMovimientos(movs);
+      setVentas(vtas);
+    } else {
+      setMovimientos([]);
+      setVentas([]);
+    }
+
+    const saldo = await getUltimoSaldoSucursal(sucursalID);
+    setCajaMontoAnterior(saldo);
+  }, [sucursalID, userID]);
+
+  useEffect(() => {
+    reloadContext();
+  }, [reloadContext]);
+
   return (
     <div className="container mx-auto">
       <motion.div {...DesvanecerHaciaArriba} className="w-full">
@@ -198,37 +230,43 @@ function Caja() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="registrarcaja" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="">
-                <CajaForm
-                  // modo
-                  hasOpen={hasOpen}
-                  // abrir
-                  nuevaCaja={nuevaCaja}
-                  handleChangeGeneric={handleChangeGeneric}
-                  handleSubmitIniciarCaja={handleSubmitIniciarCaja}
-                  // cerrar
-                  cerrarCajaDto={cerrarCajaDto}
-                  handleChangeCerrar={handleChangeCerrar}
-                  handleCerrarCaja={handleCerrarCaja}
-                  // ui
-                  isSubmiting={isSubmiting}
-                  cajaMontoAnterior={cajaMontoAnterior}
-                  openCloseCaja={openCloseCaja}
-                  openConfirmDialog={openConfirmDialog}
-                  setOpenCloseCaja={setOpenCloseCaja}
-                  setOpenConfirDialog={setOpenConfirDialog}
-                  cajaAbierta={cajaAbierta}
-                />
+            <motion.div {...DesvanecerHaciaArriba}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="">
+                  <CajaForm
+                    // modo
+                    hasOpen={hasOpen}
+                    // abrir
+                    nuevaCaja={nuevaCaja}
+                    handleChangeGeneric={handleChangeGeneric}
+                    handleSubmitIniciarCaja={handleSubmitIniciarCaja}
+                    // cerrar
+                    cerrarCajaDto={cerrarCajaDto}
+                    handleChangeCerrar={handleChangeCerrar}
+                    handleCerrarCaja={handleCerrarCaja}
+                    // ui
+                    isSubmiting={isSubmiting}
+                    cajaMontoAnterior={cajaMontoAnterior}
+                    openCloseCaja={openCloseCaja}
+                    openConfirmDialog={openConfirmDialog}
+                    setOpenCloseCaja={setOpenCloseCaja}
+                    setOpenConfirDialog={setOpenConfirDialog}
+                    cajaAbierta={cajaAbierta}
+                  />
+                </div>
+                <div className="">
+                  <RegistrosCaja ventas={ventas} movimientos={movimientos} />
+                </div>
               </div>
-              <div className="">
-                <RegistrosCaja movimientos={movimientos} />
-              </div>
-            </div>
+            </motion.div>
           </TabsContent>
           <TabsContent value="movimientoscaja" className="mt-6">
-            {/* <MovimientoForm usuarioId={1} onSuccess={handleSuccess} /> */}
-            <MovimientoCajaPage />
+            <MovimientoCajaPage
+              reloadContext={reloadContext}
+              userID={userID}
+              getMovimientosCaja={refreshMovimientos}
+              getCajaAbierta={getCajaAbierta}
+            />
           </TabsContent>
         </Tabs>
       </motion.div>

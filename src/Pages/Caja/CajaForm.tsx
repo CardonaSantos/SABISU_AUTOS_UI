@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { CajaAbierta, CerrarCaja, IniciarCaja } from "./interfaces";
 import { Textarea } from "@/components/ui/textarea";
 import { AdvancedDialog } from "@/utils/components/AdvancedDialog";
+import { formattFechaWithMinutes } from "../Utils/Utils";
 
 interface CajaInicioProps {
   hasOpen: boolean;
@@ -62,12 +63,16 @@ function CajaForm({
   return (
     <Card className="w-full max-w-lg">
       <CardHeader>
-        <CardTitle className="text-center">
+        <CardTitle className="text-center text-lg">
           {hasOpen ? "Cerrar turno en caja" : "Registrar turno en caja"}
         </CardTitle>
         <CardDescription className="text-center">
           {hasOpen
-            ? `Caja abierta desde ${cajaAbierta?.fechaApertura ?? ""}`
+            ? `Caja abierta desde ${
+                formattFechaWithMinutes(
+                  cajaAbierta?.fechaApertura ?? new Date()
+                ) ?? ""
+              }`
             : "Ingrese su saldo inicial o tome el del día anterior"}
         </CardDescription>
       </CardHeader>
@@ -82,18 +87,7 @@ function CajaForm({
                 Q {cajaAbierta?.saldoInicial?.toFixed(2) ?? "0.00"}
               </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="saldoFinal">Saldo final</Label>
-              <Input
-                id="saldoFinal"
-                name="saldoFinal"
-                type="number"
-                value={cerrarCajaDto?.saldoFinal ?? ""}
-                onChange={handleChangeCerrar}
-                placeholder="Saldo final al cierre"
-                required
-              />
-            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="comentarioFinal">
                 Comentario final (opcional)
@@ -126,9 +120,7 @@ function CajaForm({
                 className="text-xs text-muted-foreground"
                 aria-live="polite"
               >
-                {truncateInputSaldo
-                  ? "Tomando saldo del día anterior"
-                  : "\u00A0"}
+                {truncateInputSaldo ? "Tomando saldo anterior" : "\u00A0"}
               </span>
             </div>
             <div className="grid gap-2">

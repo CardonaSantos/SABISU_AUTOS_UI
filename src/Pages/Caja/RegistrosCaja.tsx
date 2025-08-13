@@ -31,8 +31,20 @@ import {
   Users,
   AlertCircle,
   CheckCircle2,
+  ShoppingCart,
+  X,
 } from "lucide-react";
-
+import { formattMonedaGT } from "@/utils/formattMoneda";
+import { formattFechaWithMinutes } from "../Utils/Utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { VentaLigadaACaja } from "./VentasCaja/interface";
+import { VentaCard } from "./VentasCaja/venta-card";
+import { useState } from "react";
+import { toast } from "sonner";
+import { deleteMovimiento } from "./api";
+import { getApiErrorMessageAxios } from "../Utils/UtilsErrorApi";
+import { AdvancedDialog } from "@/utils/components/AdvancedDialog";
+import { Button } from "@/components/ui/button";
 // Interfaces
 export type TipoMovimiento =
   | "INGRESO"
@@ -70,35 +82,15 @@ export interface MovimientoCajaItem {
 
 interface MovimientosCajaProps {
   movimientos: MovimientoCajaItem[];
+  ventas: VentaLigadaACaja[];
 }
 
 interface PropsCardRegistroMovimiento {
   movimiento: MovimientoCajaItem;
+  setMovimientoSelected: React.Dispatch<React.SetStateAction<number>>;
+  movimientoSelected: number;
+  setOpenDelete: React.Dispatch<React.SetStateAction<boolean>>;
 }
-
-// Utilidades
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat("es-GT", {
-    style: "currency",
-    currency: "GTQ",
-    minimumFractionDigits: 2,
-  }).format(amount);
-
-const formatDate = (dateString: string) => {
-  try {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("es-GT", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    }).format(date);
-  } catch {
-    return "Fecha inválida";
-  }
-};
 
 // Configuración de iconos y colores por tipo
 const getTipoConfig = (tipo: TipoMovimiento) => {
@@ -135,9 +127,9 @@ const getTipoConfig = (tipo: TipoMovimiento) => {
     },
     DEPOSITO_BANCO: {
       icon: Building2,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
-      variant: "default" as const,
+      color: "text-violet-600",
+      bg: "bg-violet-50",
+      variant: "outline" as const,
     },
     CHEQUE: {
       icon: Receipt,
@@ -183,55 +175,149 @@ const getCategoriaLabel = (categoria: CategoriaMovimiento) => {
   return labels[categoria] || categoria;
 };
 
-function RegistrosCaja({ movimientos = [] }: MovimientosCajaProps) {
+function RegistrosCaja({ movimientos = [], ventas }: MovimientosCajaProps) {
   console.log("Los movimientos de esta caja son: ", movimientos);
+  console.log(
+    "Las ventas en componente registros que deberia mapearlos es: ",
+    ventas
+  );
+  const [movimientoSelected, setMovimientoSelected] = useState<number>(0);
+  const [openDelete, setOpenDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteMovimientoByID = async (
+    movimientoID: number,
+    onDeleted?: (id: number) => void
+  ) => {
+    if (isDeleting) return;
+    try {
+      setIsDeleting(true);
 
-  if (!movimientos || movimientos.length === 0) {
-    return (
-      <div className="h-full">
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Wallet className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No hay movimientos</h3>
-            <p className="text-muted-foreground text-center">
-              Aún no se han registrado movimientos en esta caja.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+      await toast.promise(
+        deleteMovimiento(movimientoID), // <- devuelve una Promise
+        {
+          loading: "Eliminando movimiento de la caja...",
+          success: "Movimiento eliminado",
+          error: (e) => getApiErrorMessageAxios(e),
+        }
+      );
+      onDeleted?.(movimientoID);
+      setOpenDelete(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
-    <div className="h-full">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Wallet className="h-5 w-5" />
-          <span className="font-medium">Movimientos de Caja</span>
-          <Badge variant="secondary">{movimientos.length}</Badge>
-        </div>
-      </div>
+    <div className="mb-4 flex items-center justify-between w-full">
+      <div className="flex items-center gap-2 w-full">
+        <Tabs defaultValue="movimientosCaja" className="flex-1 w-full">
+          <TabsList className="w-full">
+            <TabsTrigger value="movimientosCaja" className="flex-1">
+              Movimientos de caja
+              <Badge className="ml-2" variant="secondary">
+                {movimientos.length}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="ventas" className="flex-1">
+              Ventas en turno
+              <Badge className="ml-2" variant="secondary">
+                {ventas.length}
+              </Badge>
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="movimientosCaja">
+            <ScrollArea className="max-h-[70vh] pr-2 overflow-y-auto">
+              <div className="space-y-3">
+                {Array.isArray(movimientos) && movimientos.length > 0 ? (
+                  movimientos.map((movimiento) => (
+                    <CardMovimientoRegistro
+                      key={movimiento.id}
+                      movimiento={movimiento}
+                      movimientoSelected={movimientoSelected}
+                      setMovimientoSelected={setMovimientoSelected}
+                      setOpenDelete={setOpenDelete}
+                    />
+                  ))
+                ) : (
+                  <div className="h-full min-h-40">
+                    <Card className="border-dashed">
+                      <CardContent className="flex flex-col items-center justify-center py-12">
+                        <Wallet className="h-12 w-12 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">
+                          No hay movimientos
+                        </h3>
+                        <p className="text-muted-foreground text-center">
+                          Aún no se han registrado movimientos en esta caja.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
 
-      <ScrollArea className="max-h-[70vh] pr-2 overflow-y-auto">
-        <div className="space-y-3">
-          {movimientos.map((movimiento) => (
-            <CardMovimientoRegistro
-              key={movimiento.id}
-              movimiento={movimiento}
-            />
-          ))}
-        </div>
-      </ScrollArea>
+          <TabsContent value="ventas">
+            <ScrollArea className="max-h-[70vh] pr-2 overflow-y-auto">
+              {ventas?.length ? (
+                ventas.map((v, index) => <VentaCard sale={v} key={index} />)
+              ) : (
+                <div className="h-full">
+                  <Card className="border-dashed">
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <ShoppingCart className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">
+                        No hay ventas
+                      </h3>
+                      <p className="text-muted-foreground text-center">
+                        Aún no se han registrado ventas en esta caja.
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
+      </div>
+      <AdvancedDialog
+        type="warning"
+        title="Eliminación de registro de movimiento en caja"
+        description="Se estará eliminando este registro en el turno de la caja a la cual fue ligado, en consecuencia esto afectará el movimiento final en el turno."
+        question="¿Desea continuar?"
+        open={openDelete}
+        onOpenChange={setOpenDelete}
+        confirmButton={{
+          label: "Si, continuar y eliminar registro",
+          disabled: isDeleting,
+          loading: isDeleting,
+          onClick: () => deleteMovimientoByID(movimientoSelected),
+        }}
+        cancelButton={{
+          label: "Cancelar",
+          disabled: isDeleting,
+          variant: "destructive",
+          onClick: () => setOpenDelete(false),
+          loadingText: "Cancelando...",
+        }}
+      />
     </div>
   );
 }
 
 const CardMovimientoRegistro = ({
   movimiento,
+  // movimientoSelected,
+  setMovimientoSelected,
+  setOpenDelete,
 }: PropsCardRegistroMovimiento) => {
   const tipoConfig = getTipoConfig(movimiento.tipo);
   const IconComponent = tipoConfig.icon;
-  const isEgreso = ["EGRESO", "RETIRO"].includes(movimiento.tipo);
+  // const isEgreso = ["EGRESO", "RETIRO", "DEPOSITO_PROVEEDOR"].includes(
+  //   movimiento.tipo
+  // );
 
   return (
     <Card className="border-muted hover:shadow-md transition-all duration-200">
@@ -263,10 +349,20 @@ const CardMovimientoRegistro = ({
               {movimiento.tipo.replace("_", " ")}
             </Badge>
             <span className={`font-semibold text-sm ${tipoConfig.color}`}>
-              {isEgreso ? "-" : "+"}
-              {formatCurrency(movimiento.monto)}
+              {formattMonedaGT(movimiento.monto)}
             </span>
           </div>
+          <Button
+            className="w-9 h-9 rounded-full"
+            size={"sm"}
+            variant={"outline"}
+            onClick={() => {
+              setMovimientoSelected(movimiento.id);
+              setOpenDelete(true);
+            }}
+          >
+            <X className="w-6 h-6" />
+          </Button>
         </div>
       </CardHeader>
 
@@ -287,16 +383,16 @@ const CardMovimientoRegistro = ({
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <span className="font-medium">Fecha:</span>
-                      <span className="text-muted-foreground">
-                        {formatDate(movimiento.fecha)}
+                      <span className="font-medium text-xs">Fecha:</span>
+                      <span className="text-muted-foreground text-xs">
+                        {formattFechaWithMinutes(movimiento.fecha)}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <span className="font-medium">Usuario:</span>
-                      <span className="text-muted-foreground">
+                      <span className="font-medium text-xs">Usuario:</span>
+                      <span className="text-muted-foreground text-xs">
                         {movimiento.usuario?.nombre || "N/A"}
                       </span>
                     </div>
@@ -346,7 +442,6 @@ const CardMovimientoRegistro = ({
                 </div>
 
                 <Separator />
-
                 {/* Estados y flags */}
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline" className="text-xs">
@@ -367,7 +462,6 @@ const CardMovimientoRegistro = ({
                     {getCategoriaLabel(movimiento.categoria)}
                   </Badge>
                 </div>
-
                 {/* Descripción completa si existe */}
                 {movimiento.descripcion && (
                   <>

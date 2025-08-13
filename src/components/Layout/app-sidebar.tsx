@@ -4,8 +4,6 @@ import {
   Ticket,
   Wallet,
   ClipboardList,
-  NotebookText,
-  CoinsIcon,
   Bolt,
   ClipboardPen,
   FileText,
@@ -191,22 +189,7 @@ const menuItemsAdmin = [
     icon: Wallet,
     label: "Caja",
     submenu: [
-      {
-        icon: Wallet,
-        label: "Depósitos y Egresos",
-        href: "/depositos-egresos/",
-      },
       { icon: ClipboardList, label: "Registrar Caja", href: "/registro-caja/" },
-      {
-        icon: NotebookText,
-        label: "Registros de Caja",
-        href: "/registros-caja/",
-      },
-      {
-        icon: CoinsIcon,
-        label: "Saldo y Egresos",
-        href: "/historial/depositos-egresos",
-      },
     ],
   },
 
