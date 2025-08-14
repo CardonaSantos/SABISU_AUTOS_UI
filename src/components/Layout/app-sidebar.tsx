@@ -3,7 +3,6 @@ import {
   ShieldCheck,
   Ticket,
   Wallet,
-  ClipboardList,
   Bolt,
   ClipboardPen,
   FileText,
@@ -18,6 +17,8 @@ import {
   Repeat1,
   PackageSearch,
   Blocks,
+  NotebookPen,
+  ListOrdered,
 } from "lucide-react";
 
 import {
@@ -66,7 +67,6 @@ const menuVendedor = [
   { icon: Home, label: "Home", href: "/" },
   { icon: ShoppingCart, label: "Punto de Venta", href: "/punto-venta" },
   { icon: Clock, label: "Historial de Ventas", href: "/historial/ventas" },
-
   // Sección de Inventario y Stock
   {
     icon: Package,
@@ -189,7 +189,12 @@ const menuItemsAdmin = [
     icon: Wallet,
     label: "Caja",
     submenu: [
-      { icon: ClipboardList, label: "Registrar Caja", href: "/registro-caja/" },
+      { icon: NotebookPen, label: "Registrar Caja", href: "/registro-caja" },
+      {
+        icon: ListOrdered,
+        label: "Registros de Cajas",
+        href: "/registros-cajas",
+      },
     ],
   },
 

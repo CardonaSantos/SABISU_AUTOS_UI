@@ -32,7 +32,6 @@ import ReceiveWarrantyPage from "./Pages/Warranty/ReceiveWarrantyPage";
 import WarrantyPage from "./components/PDF/PDF-Warranty/WarrantyPage";
 import WarrantyFinalPage from "./components/PDF/WarrantyFinal/WarrantyFinalPDFPage";
 import RegistroDeposito from "./Pages/CashRegister/RegistroDeposito";
-import CashRegisters from "./Pages/CashRegister/CashRegisters";
 import BalanceSucursal from "./Pages/CashRegister/BalanceSucursal";
 import UserConfig from "./Pages/Config/UserConfig";
 import SalesDeleted from "./Pages/SalesDeleted/SalesDeleted";
@@ -69,6 +68,8 @@ import MovimientosStock from "./Pages/HistorialCambiosStock/HistorialCambiosStoc
 import InventarioStockPage from "./Pages/InventarioYStock/InventarioStockPage";
 import DashboardPageMain from "./Pages/NewDashboard/dashboard/page";
 import Caja from "./Pages/Caja/Caja";
+import CajaRegistros from "./Pages/CajaRegistros/CajaRegistros";
+import CajaDetalle from "./Pages/CajaDetalle/caja-detalle";
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -357,10 +358,19 @@ function App() {
             />
 
             <Route
-              path="/registros-caja"
+              path="/registros-cajas"
               element={
                 <ProtectRouteAdmin>
-                  <CashRegisters />
+                  <CajaRegistros />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/caja/:id"
+              element={
+                <ProtectRouteAdmin>
+                  <CajaDetalle />
                 </ProtectRouteAdmin>
               }
             />
