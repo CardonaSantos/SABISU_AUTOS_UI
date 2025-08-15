@@ -70,6 +70,7 @@ import DashboardPageMain from "./Pages/NewDashboard/dashboard/page";
 import Caja from "./Pages/Caja/Caja";
 import CajaRegistros from "./Pages/CajaRegistros/CajaRegistros";
 import CajaDetalle from "./Pages/CajaDetalle/caja-detalle";
+import MovimientoCajaDetalle from "./Pages/movimientoCajaDetalle/movimientoCajaDetalle";
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -371,6 +372,15 @@ function App() {
               element={
                 <ProtectRouteAdmin>
                   <CajaDetalle />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/movimiento-caja/:id"
+              element={
+                <ProtectRouteAdmin>
+                  <MovimientoCajaDetalle />
                 </ProtectRouteAdmin>
               }
             />

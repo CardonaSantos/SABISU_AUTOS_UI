@@ -93,3 +93,9 @@ export interface PaginatedRegistrosCajaResponse {
   pages: number;
   items: RegistroCajaResponse[]; // <- este es el tipo que consume la tabla
 }
+
+//PARA LENGTH DE REGISTROS
+export interface lenghtData {
+  cajasLength: number;
+  movimientosLength: number;
+}

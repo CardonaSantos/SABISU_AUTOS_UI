@@ -2,16 +2,21 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Database, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Table from "./Table/Table";
 import {
   RegistroCajaResponse,
   PaginatedRegistrosCajaResponse,
+  lenghtData,
 } from "./interfaces/registroscajas.interfaces";
 import { getRegistrosCajas } from "./API/api"; // Asumiendo que existe
 import { useStore } from "@/components/Context/ContextSucursal";
+import MovimientosTable from "../movimientos-cajas/TableMovimientosCaja";
+import { MovimientoCajaItem } from "../movimientos-cajas/Interfaces/registroCajas";
+import { PagedResponseMovimientos } from "../movimientos-cajas/Interfaces/types";
+import { getRegistrosMovimientos } from "../movimientos-cajas/API/api";
+import { Badge } from "@/components/ui/badge";
 
 const DesvanecerHaciaArriba = {
   initial: { opacity: 0, y: 20 },
@@ -47,7 +52,16 @@ function CajaRegistros() {
   const [pageData, setPageData] =
     useState<PaginatedRegistrosCajaResponse | null>(null);
 
-  const rows: RegistroCajaResponse[] = pageData?.items ?? [];
+  const [pageDataMovimientos, setPageDataMovimientos] =
+    useState<PagedResponseMovimientos | null>(null);
+
+  const cajas: RegistroCajaResponse[] = pageData?.items ?? [];
+  const movimientos: MovimientoCajaItem[] = pageDataMovimientos?.items ?? [];
+
+  const [registLenght, setRegistLenght] = useState<lenghtData>({
+    cajasLength: 0,
+    movimientosLength: 0,
+  });
 
   const getData = async () => {
     setLoading(true);
@@ -55,12 +69,39 @@ function CajaRegistros() {
       const dt = await getRegistrosCajas({
         page,
         limit,
-        sucursalId:
-          typeof sucursalIdFromStore === "number" && sucursalIdFromStore >= 1
-            ? sucursalIdFromStore
-            : undefined,
+        // sucursalId:
+        //   typeof sucursalIdFromStore === "number" && sucursalIdFromStore >= 1
+        //     ? sucursalIdFromStore
+        //     : undefined,
       });
       setPageData(dt);
+      setRegistLenght((prev) => ({
+        ...prev,
+        cajasLength: dt.total,
+      }));
+    } catch (error) {
+      console.error("Error al obtener registros de caja:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getDataMovimientoCaja = async () => {
+    setLoading(true);
+    try {
+      const dt = await getRegistrosMovimientos({
+        page,
+        limit,
+        // sucursalId:
+        //   typeof sucursalIdFromStore === "number" && sucursalIdFromStore >= 1
+        //     ? sucursalIdFromStore
+        //     : undefined,
+      });
+      setPageDataMovimientos(dt);
+      setRegistLenght((prev) => ({
+        ...prev,
+        movimientosLength: dt.total,
+      }));
     } catch (error) {
       console.error("Error al obtener registros de caja:", error);
     } finally {
@@ -70,11 +111,16 @@ function CajaRegistros() {
 
   useEffect(() => {
     getData();
+    getDataMovimientoCaja();
   }, [page, limit, sucursalIdFromStore]);
 
   const refreshData = () => {
     getData();
+    getDataMovimientoCaja();
   };
+
+  console.log("Los movimientos de cajas son: ", pageDataMovimientos);
+  console.log("Los registros de cajas son: ", pageData);
 
   return (
     <motion.div
@@ -133,9 +179,9 @@ function CajaRegistros() {
               <div className="flex items-center gap-1.5">
                 <TrendingUp className="h-3 w-3" />
                 <span className="truncate">Registros de Caja</span>
-                {rows.length > 0 && (
+                {cajas.length > 0 && (
                   <Badge variant="secondary" className="ml-1 text-xs px-1">
-                    {rows.length}
+                    {registLenght.cajasLength}
                   </Badge>
                 )}
               </div>
@@ -147,6 +193,11 @@ function CajaRegistros() {
               <div className="flex items-center gap-1.5">
                 <Database className="h-3 w-3" />
                 <span className="truncate">Movimientos de Caja</span>
+                {cajas.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 text-xs px-1">
+                    {registLenght.movimientosLength}
+                  </Badge>
+                )}
               </div>
             </TabsTrigger>
           </TabsList>
@@ -166,7 +217,7 @@ function CajaRegistros() {
                 </Card>
               ) : (
                 <Table
-                  data={rows}
+                  data={cajas}
                   page={page}
                   limit={limit}
                   pages={pageData?.pages ?? 0}
@@ -174,26 +225,38 @@ function CajaRegistros() {
                   loading={loading}
                   onChangePage={setPage}
                   onChangeLimit={setLimit}
+                  // registLenght={registLenght}
                 />
               )}
             </motion.div>
           </TabsContent>
 
           <TabsContent value="movimientoscaja" className="mt-4">
-            <motion.div {...DesvanecerHaciaArriba}>
-              <Card>
-                <CardContent className="py-8">
-                  <div className="text-center space-y-3">
-                    <div className="text-2xl">🚧</div> {/* Reducido tamaño */}
-                    <div className="text-lg font-semibold">
-                      Próximamente
-                    </div>{" "}
-                    <div className="text-muted-foreground text-sm">
-                      La sección de movimientos estará disponible pronto
+            <motion.div {...DesvanecerHaciaArriba} className="w-full">
+              {loading ? (
+                <Card>
+                  <CardContent className="py-8">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />{" "}
+                      <div className="text-muted-foreground text-sm">
+                        Cargando registros...
+                      </div>{" "}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              ) : (
+                <MovimientosTable
+                  data={movimientos}
+                  page={page}
+                  limit={limit}
+                  pages={pageData?.pages ?? 0}
+                  total={pageData?.total ?? 0}
+                  loading={loading}
+                  onChangePage={setPage}
+                  onChangeLimit={setLimit}
+                  // registLenght={registLenght}
+                />
+              )}
             </motion.div>
           </TabsContent>
         </Tabs>

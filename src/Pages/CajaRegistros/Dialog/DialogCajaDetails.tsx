@@ -128,9 +128,13 @@ function DialogCajaDetails({
                     <span className="text-sm font-medium">Saldo Final</span>
                   </div>
                   <p className="text-xl font-bold text-blue-600">
-                    {selected.saldoFinal
-                      ? formattMonedaGT(selected.saldoFinal)
-                      : "Pendiente"}
+                    {selected.depositado ? (
+                      <span>Depositado</span>
+                    ) : selected.saldoFinal ? (
+                      formattMonedaGT(selected.saldoFinal)
+                    ) : (
+                      "Pendiente a calcular..."
+                    )}
                   </p>
                 </div>
               </CardContent>
