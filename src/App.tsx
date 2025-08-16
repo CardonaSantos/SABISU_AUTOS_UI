@@ -32,7 +32,6 @@ import ReceiveWarrantyPage from "./Pages/Warranty/ReceiveWarrantyPage";
 import WarrantyPage from "./components/PDF/PDF-Warranty/WarrantyPage";
 import WarrantyFinalPage from "./components/PDF/WarrantyFinal/WarrantyFinalPDFPage";
 import RegistroDeposito from "./Pages/CashRegister/RegistroDeposito";
-import BalanceSucursal from "./Pages/CashRegister/BalanceSucursal";
 import UserConfig from "./Pages/Config/UserConfig";
 import SalesDeleted from "./Pages/SalesDeleted/SalesDeleted";
 import ClientHistorialPurchase from "./Pages/Client/ClientHistorialPurchase";
@@ -71,6 +70,8 @@ import Caja from "./Pages/Caja/Caja";
 import CajaRegistros from "./Pages/CajaRegistros/CajaRegistros";
 import CajaDetalle from "./Pages/CajaDetalle/caja-detalle";
 import MovimientoCajaDetalle from "./Pages/movimientoCajaDetalle/movimientoCajaDetalle";
+import ResumenDiarioPage from "./Pages/ResumenesDelDia/ResumenPage";
+import ResumenHistoricoPage from "./Pages/ResumenesDelDia/ResumenHistorico";
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -386,10 +387,19 @@ function App() {
             />
 
             <Route
-              path="/historial/depositos-egresos"
+              path="/admin/caja/diario"
               element={
                 <ProtectRouteAdmin>
-                  <BalanceSucursal />
+                  <ResumenDiarioPage />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/admin/historicos"
+              element={
+                <ProtectRouteAdmin>
+                  <ResumenHistoricoPage />
                 </ProtectRouteAdmin>
               }
             />

@@ -9,16 +9,17 @@ import {
   CreditCard,
   WrenchIcon,
   ChevronDown,
-  Building2,
   FileSpreadsheet,
   Target,
   Goal,
-  ChartPie,
   Repeat1,
   PackageSearch,
   Blocks,
   NotebookPen,
   ListOrdered,
+  PiggyBank,
+  ChartBarBig,
+  SquareChartGantt,
 } from "lucide-react";
 
 import {
@@ -224,8 +225,23 @@ const menuItemsAdmin = [
   { icon: Target, label: "Metas", href: "/metas" },
   { icon: Goal, label: "Mis Metas", href: "/mis-metas" },
 
-  { icon: Building2, label: "Resumen sucursales", href: "/sumary" },
-  { icon: ChartPie, label: "Resumen Ventas", href: "/resumen-ventas" },
+  {
+    icon: ChartBarBig,
+    label: "Resumen Admin",
+    submenu: [
+      {
+        icon: PiggyBank,
+        label: "Resumen diario",
+        href: "/admin/caja/diario",
+      },
+
+      {
+        icon: SquareChartGantt,
+        label: "Historicos",
+        href: "/admin/historicos",
+      },
+    ],
+  },
   { icon: Repeat1, label: "Requisiciones", href: "/requisiciones" },
 
   { icon: FileSpreadsheet, label: "Reportes", href: "/reportes" },
