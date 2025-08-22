@@ -73,3 +73,13 @@ export const getRequisicionToEdit = async (requisicionID: number) => {
 export const updateRequisicion = async (data: UpdateRequisitionDto) => {
   return await axios.put(`${API_URL}/requisicion/update`, data);
 };
+
+export interface dataCreateCompra {
+  requisicionID: number | undefined;
+  userID: number;
+}
+
+//GENERAR COMPRA
+export const generarCompra = (data: dataCreateCompra) => {
+  return axios.post(`${API_URL}/compra-requisicion/generar-compra`, data);
+};

@@ -39,10 +39,16 @@ export function ResumenDiarioKpis({ items }: ResumenDiarioKpisProps) {
       acc.caja.ingresos += ingresosCaja; // o it.ingresos, debería calzar
       acc.caja.egresos += egresosCaja; // o it.egresos, debería calzar
       acc.caja.saldoFinal += it.saldoInicio + ingresosCaja - egresosCaja;
+      // acc.caja.resultadoOperativo += antes 18
+      //   it.totales.ventasEfectivo -
+      //   it.totales.costoVenta -
+      //   it.totales.gastosOperativos;
       acc.caja.resultadoOperativo +=
         it.totales.ventasEfectivo -
         it.totales.costoVenta -
+        it.totales.depositosProveedor - // <-- agrega esto
         it.totales.gastosOperativos;
+
       acc.caja.registros += it.registros;
 
       // Banco (hoy sólo depósitos de cierre)

@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   Calendar,
   User,
-  Building2,
   DollarSign,
   TrendingUp,
   TrendingDown,
@@ -17,64 +16,251 @@ import {
   Receipt,
   Clock,
   CheckCircle,
-  XCircle,
-  AlertCircle,
   Banknote,
   Hash,
   ImageIcon,
   Package,
+  ArrowUpDown,
+  Copy,
+  Wallet,
 } from "lucide-react";
-import { RegistroCajaResponse } from "../CajaRegistros/interfaces/registroscajas.interfaces";
 import { getRegistroCaja } from "./api";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { formattMonedaGT } from "@/utils/formattMoneda";
 import { formateDateWithMinutes } from "@/Crm/Utils/FormateDate";
 import { getApiErrorMessageAxios } from "../Utils/UtilsErrorApi";
 import { formattFechaWithMinutes } from "../Utils/Utils";
+import {
+  MovimientoCaja,
+  RegistroCajaResponse,
+  VentaCaja,
+} from "../CajaRegistros/interfaces/registroscajas.interfaces";
 
-// Animaciones
+// =====================
+// Animations
+// =====================
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1,
-    },
-  },
+  visible: { opacity: 1 },
 };
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.3 },
-  },
+  visible: { opacity: 1, y: 0 },
 };
 
 const tableVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.3,
-      staggerChildren: 0.05,
-    },
-  },
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
 };
 
 const rowVariants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.2 },
-  },
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
 };
+
+// =====================
+// UI helpers
+// =====================
+const getEstadoBadge = (estado: string) => {
+  switch (estado) {
+    case "ABIERTO":
+      return (
+        <Badge variant="secondary" className="text-xs">
+          ABIERTO
+        </Badge>
+      );
+    case "CERRADO":
+      return (
+        <Badge variant="default" className="text-xs">
+          CERRADO
+        </Badge>
+      );
+    default:
+      return (
+        <Badge variant="outline" className="text-xs">
+          N/A
+        </Badge>
+      );
+  }
+};
+
+const signPrefix = (n: number) => (n > 0 ? "+" : n < 0 ? "−" : "");
+
+// =====================
+// KPIs (enfocados en saldos/ingresos/egresos)
+// =====================
+function calcularKPIs(registro: RegistroCajaResponse) {
+  const mvs: MovimientoCaja[] = registro.movimientosCaja ?? [];
+  const ventas: VentaCaja[] = registro.ventas ?? [];
+  const toNum = (v: unknown) => Number(v || 0);
+  const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
+
+  const saldoInicial = toNum(registro.saldoInicial);
+
+  // Identificador de depósito de cierre
+  const esDepCierre = (m: MovimientoCaja) =>
+    m.esDepositoCierre === true && m.motivo === "DEPOSITO_CIERRE";
+
+  // Caja (efectivo)
+  const ingresosCaja = sum(
+    mvs.filter((m) => toNum(m.deltaCaja) > 0).map((m) => toNum(m.deltaCaja))
+  );
+  const egresosCajaSinDep = sum(
+    mvs
+      .filter((m) => toNum(m.deltaCaja) < 0 && !esDepCierre(m))
+      .map((m) => Math.abs(toNum(m.deltaCaja)))
+  );
+  const depositosCierreCaja = sum(
+    mvs.filter(esDepCierre).map((m) => Math.abs(toNum(m.deltaCaja)))
+  );
+  const deltaCaja = sum(mvs.map((m) => toNum(m.deltaCaja)));
+  const enCajaEsperado = saldoInicial + deltaCaja;
+
+  // Banco
+  const ingresosBanco = sum(
+    mvs.filter((m) => toNum(m.deltaBanco) > 0).map((m) => toNum(m.deltaBanco))
+  );
+  const egresosBanco = sum(
+    mvs
+      .filter((m) => toNum(m.deltaBanco) < 0)
+      .map((m) => Math.abs(toNum(m.deltaBanco)))
+  );
+  const deltaBanco = ingresosBanco - egresosBanco;
+
+  // Ventas
+  const ventasTotal = sum(ventas.map((v) => toNum(v.totalVenta)));
+  const ventasCantidad = ventas.length;
+  const ticketPromedio = ventasCantidad ? ventasTotal / ventasCantidad : 0;
+
+  const ventasEfectivoCaja = sum(
+    mvs
+      .filter((m) => m.motivo === "VENTA" && toNum(m.deltaCaja) > 0)
+      .map((m) => toNum(m.deltaCaja))
+  );
+  const ventasBancoTurno = sum(
+    mvs
+      .filter((m) => m.motivo === "VENTA" && toNum(m.deltaBanco) > 0)
+      .map((m) => toNum(m.deltaBanco))
+  );
+
+  // Egresos admin por tipo (desde cualquier canal)
+  const gastosOperativos = sum(
+    mvs
+      .filter((m) => m.clasificacion === "GASTO_OPERATIVO")
+      .map((m) => Math.abs(toNum(m.deltaCaja)) + Math.abs(toNum(m.deltaBanco)))
+  );
+  const costosVenta = sum(
+    mvs
+      .filter((m) => m.clasificacion === "COSTO_VENTA")
+      .map((m) => Math.abs(toNum(m.deltaCaja)) + Math.abs(toNum(m.deltaBanco)))
+  );
+
+  const resultadoOperativo = ventasTotal - (gastosOperativos + costosVenta);
+
+  // Diferencia contra conteo final
+  const diferencia =
+    registro.estado === "CERRADO" && registro.saldoFinal !== null
+      ? toNum(registro.saldoFinal) - enCajaEsperado
+      : null;
+
+  // Depósitos por cuenta
+  const depositosPorCuenta: Array<{ cuenta: string; monto: number }> = [];
+  const porCuenta = new Map<string, number>();
+  for (const m of mvs.filter(esDepCierre)) {
+    const key = m.cuentaBancaria
+      ? `${m.cuentaBancaria.banco ?? "Banco"} • ${
+          m.cuentaBancaria.alias || m.cuentaBancaria.numeroMasked || "Cuenta"
+        }`
+      : "N/A";
+    porCuenta.set(
+      key,
+      (porCuenta.get(key) || 0) + Math.abs(toNum(m.deltaBanco))
+    );
+  }
+  porCuenta.forEach((monto, cuenta) =>
+    depositosPorCuenta.push({ cuenta, monto })
+  );
+
+  return {
+    caja: {
+      saldoInicial,
+      ingresosCaja,
+      egresosCajaSinDep,
+      depositosCierreCaja,
+      deltaCaja,
+      enCajaEsperado,
+      saldoFinal: registro.saldoFinal ?? null,
+      diferencia,
+    },
+    ventas: {
+      total: ventasTotal,
+      cantidad: ventasCantidad,
+      ticketPromedio,
+      efectivoCaja: ventasEfectivoCaja,
+      banco: ventasBancoTurno,
+    },
+    banco: {
+      ingresosBanco,
+      egresosBanco,
+      deltaBanco,
+      depositosPorCuenta,
+    },
+    admin: {
+      gastosOperativos,
+      costosVenta,
+      resultadoOperativo,
+    },
+  } as const;
+}
+
+// =====================
+// Movimiento helpers
+// =====================
+function getMovimientoInfo(movimiento: MovimientoCaja) {
+  const deltaCaja = movimiento.deltaCaja ?? 0;
+  const deltaBanco = movimiento.deltaBanco ?? 0;
+
+  let canal: "Caja" | "Banco" | "Transferencia" | "N/A" = "N/A";
+  let signo = 0;
+  let tipoMovimiento: "INGRESO" | "EGRESO" | "TRANSFERENCIA" | "NEUTRO" =
+    "NEUTRO";
+
+  if (deltaCaja !== 0) {
+    canal = "Caja";
+    signo = Math.sign(deltaCaja);
+  } else if (deltaCaja === 0 && deltaBanco !== 0) {
+    canal = "Banco";
+    signo = Math.sign(deltaBanco);
+  }
+
+  if (deltaCaja < 0 && deltaBanco > 0) {
+    canal = "Transferencia";
+    tipoMovimiento = "TRANSFERENCIA";
+    signo = 0;
+  } else if (signo > 0) {
+    tipoMovimiento = "INGRESO";
+  } else if (signo < 0) {
+    tipoMovimiento = "EGRESO";
+  }
+
+  return { canal, signo, tipoMovimiento };
+}
+
+function getTipoMovimientoIcon(tipoMovimiento: string) {
+  switch (tipoMovimiento) {
+    case "INGRESO":
+      return <TrendingUp className="h-4 w-4 text-green-600" />;
+    case "EGRESO":
+      return <TrendingDown className="h-4 w-4 text-red-600" />;
+    case "TRANSFERENCIA":
+      return <ArrowUpDown className="h-4 w-4 text-blue-600" />;
+    default:
+      return <DollarSign className="h-4 w-4 text-gray-600" />;
+  }
+}
 
 export default function CajaDetalle() {
   const navigate = useNavigate();
@@ -82,81 +268,44 @@ export default function CajaDetalle() {
   const cajaID = Number(id);
 
   const [registro, setRegistro] = useState<RegistroCajaResponse | null>(null);
-
-  const getSetData = async () => {
-    const data = await getRegistroCaja(cajaID); // lanza error si falla
-    setRegistro(data);
-  };
-
-  const getData = async () => {
-    await toast.promise(getSetData(), {
-      error: (err) => getApiErrorMessageAxios(err),
-    });
-  };
-
-  useEffect(() => {
-    if (!Number.isFinite(cajaID) || cajaID <= 0) {
-      toast.error("ID de caja inválido");
-      navigate(-1);
-      return;
-    }
-    getData();
-  }, [cajaID]);
-
   const onBack = () => navigate(-1);
 
-  const getEstadoBadge = (estado: string) => {
-    const variants = {
-      ABIERTO: {
-        variant: "default" as const,
-        icon: AlertCircle,
-        color: "text-blue-600",
-      },
-      CERRADO: {
-        variant: "secondary" as const,
-        icon: CheckCircle,
-        color: "text-green-600",
-      },
-      ARQUEO: {
-        variant: "outline" as const,
-        icon: XCircle,
-        color: "text-orange-600",
-      },
+  useEffect(() => {
+    const fetchRegistro = async () => {
+      try {
+        const response = await getRegistroCaja(cajaID);
+        setRegistro(response);
+      } catch (error) {
+        toast.error(getApiErrorMessageAxios(error));
+      }
     };
 
-    const config =
-      variants[estado as keyof typeof variants] || variants.ABIERTO;
-    const Icon = config.icon;
+    if (!Number.isNaN(cajaID)) fetchRegistro();
+  }, [cajaID]);
 
-    return (
-      <Badge variant={config.variant} className="gap-1">
-        <Icon className={`h-3 w-3 ${config.color}`} />
-        {estado}
-      </Badge>
-    );
+  const kpis = useMemo(
+    () => (registro ? calcularKPIs(registro) : null),
+    [registro]
+  );
+
+  const movimientosSinVentas: MovimientoCaja[] = useMemo(
+    () => (registro?.movimientosCaja || []).filter((m) => m.motivo !== "VENTA"),
+    [registro]
+  );
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copiado al portapapeles");
   };
 
-  const getTipoMovimientoIcon = (tipo: string) => {
-    switch (tipo) {
-      case "INGRESO":
-        return <TrendingUp className="h-4 w-4 text-green-600" />;
-      case "EGRESO":
-        return <TrendingDown className="h-4 w-4 text-red-600" />;
-      case "DEPOSITO_BANCO":
-        return <Banknote className="h-4 w-4 text-blue-600" />;
-      default:
-        return <DollarSign className="h-4 w-4 text-gray-600" />;
-    }
-  };
-  console.log("La caja recibida es: ", registro);
-
-  if (!registro) {
+  if (!registro || !kpis) {
     return (
-      <div className="">
-        <h2>Registro no encontrado</h2>
+      <div className="p-4">
+        <h2 className="text-sm text-muted-foreground">Cargando registro…</h2>
       </div>
     );
   }
+
   return (
     <motion.div
       variants={containerVariants}
@@ -188,6 +337,120 @@ export default function CajaDetalle() {
           <div className="ml-auto">{getEstadoBadge(registro.estado)}</div>
         </motion.div>
 
+        {/* Resumen del Turno (KPIs clave) */}
+        <motion.div variants={itemVariants}>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <DollarSign className="h-4 w-4" /> Resumen del Turno
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {/* Saldo Inicial */}
+                <div className="text-center">
+                  <DollarSign className="h-6 w-6 mx-auto text-blue-600 mb-1" />
+                  <p className="text-lg font-semibold">
+                    {formattMonedaGT(kpis.caja.saldoInicial)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Saldo Inicial</p>
+                </div>
+
+                {/* Ingresos Caja */}
+                <div className="text-center">
+                  <TrendingUp className="h-6 w-6 mx-auto text-green-600 mb-1" />
+                  <p className="text-lg font-semibold">
+                    {formattMonedaGT(kpis.caja.ingresosCaja)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Ingresos Caja</p>
+                </div>
+
+                {/* Egresos Caja */}
+                <div className="text-center">
+                  <TrendingDown className="h-6 w-6 mx-auto text-red-600 mb-1" />
+                  <p className="text-lg font-semibold">
+                    {formattMonedaGT(kpis.caja.egresosCajaSinDep)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Egresos Caja</p>
+                </div>
+
+                {/* Depósitos Cierre */}
+                <div className="text-center">
+                  <Banknote className="h-6 w-6 mx-auto text-indigo-600 mb-1" />
+                  <p className="text-lg font-semibold">
+                    {formattMonedaGT(kpis.caja.depositosCierreCaja)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Depósitos de Cierre
+                  </p>
+                </div>
+
+                {/* En Caja Esperado */}
+                <div className="text-center">
+                  <Wallet className="h-6 w-6 mx-auto text-purple-600 mb-1" />
+                  <p className="text-lg font-semibold">
+                    {formattMonedaGT(kpis.caja.enCajaEsperado)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    En Caja Esperado
+                  </p>
+                </div>
+
+                {/* Estado de Depósito */}
+                <div className="text-center">
+                  <Banknote className="h-6 w-6 mx-auto text-teal-600 mb-1" />
+                  <p className="text-lg font-semibold">
+                    {registro.depositado ? "Sí" : "No"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Depositado</p>
+                  <Badge
+                    variant={registro.depositado ? "default" : "secondary"}
+                    className="text-xs mt-1"
+                  >
+                    {registro.depositado ? "Completado" : "Pendiente"}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Si está cerrado, mostramos saldo final y diferencia */}
+              {registro.estado === "CERRADO" &&
+                registro.saldoFinal !== null && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                    <div className="text-center">
+                      <CheckCircle className="h-6 w-6 mx-auto text-orange-600 mb-1" />
+                      <p className="text-lg font-semibold">
+                        {formattMonedaGT(registro.saldoFinal)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Saldo Final
+                      </p>
+                    </div>
+
+                    <div className="text-center">
+                      <ShoppingCart className="h-6 w-6 mx-auto text-blue-600 mb-1" />
+                      <p className="text-lg font-semibold">
+                        {formattMonedaGT(kpis.ventas.total)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Ventas Totales
+                      </p>
+                    </div>
+
+                    <div className="text-center">
+                      <Wallet className="h-6 w-6 mx-auto text-slate-600 mb-1" />
+                      <p className="text-lg font-semibold">
+                        {formattMonedaGT(kpis.admin.resultadoOperativo)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Resultado Operativo
+                      </p>
+                    </div>
+                  </div>
+                )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Información General */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <motion.div variants={itemVariants}>
@@ -214,7 +477,9 @@ export default function CajaDetalle() {
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium">Cierre</p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {formateDateWithMinutes(registro.fechaCierre)}
+                      {registro.estado === "CERRADO"
+                        ? formateDateWithMinutes(registro.fechaCierre)
+                        : "En curso"}
                     </p>
                   </div>
                 </div>
@@ -226,27 +491,27 @@ export default function CajaDetalle() {
             <Card className="h-full">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-green-600" />
+                  <ShoppingCart className="h-4 w-4 text-blue-600" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium">Saldo Inicial</p>
-                    <p className="text-sm font-semibold text-green-600">
-                      {formattMonedaGT(registro.saldoInicial)}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <Card className="h-full">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-blue-600" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium">Saldo Final</p>
+                    <p className="text-xs font-medium">Ventas</p>
                     <p className="text-sm font-semibold text-blue-600">
-                      {formattMonedaGT(registro.saldoFinal)}
+                      {registro.ventas?.length || 0}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <Card className="h-full">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium">Movimientos</p>
+                    <p className="text-sm font-semibold text-green-600">
+                      {movimientosSinVentas.length}
                     </p>
                   </div>
                 </div>
@@ -261,8 +526,7 @@ export default function CajaDetalle() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Usuarios
+                  <User className="h-4 w-4" /> Usuarios
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -287,8 +551,7 @@ export default function CajaDetalle() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Receipt className="h-4 w-4" />
-                  Comentarios
+                  <Receipt className="h-4 w-4" /> Comentarios
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -310,61 +573,333 @@ export default function CajaDetalle() {
           </motion.div>
         </div>
 
-        {/* Resumen de Actividad */}
+        {/* Ventas (resumen) */}
         <motion.div variants={itemVariants}>
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                Resumen de Actividad
+                <ShoppingCart className="h-4 w-4" /> Ventas — resumen
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 <div className="text-center">
                   <ShoppingCart className="h-6 w-6 mx-auto text-blue-600 mb-1" />
                   <p className="text-lg font-semibold">
-                    {registro.ventasLenght}
+                    {formattMonedaGT(kpis.ventas.total)}
                   </p>
-                  <p className="text-xs text-muted-foreground">Ventas</p>
+                  <p className="text-xs text-muted-foreground">Total</p>
                 </div>
                 <div className="text-center">
-                  <TrendingUp className="h-6 w-6 mx-auto text-green-600 mb-1" />
+                  <Wallet className="h-6 w-6 mx-auto text-green-600 mb-1" />
                   <p className="text-lg font-semibold">
-                    {registro.movimientosLenght}
+                    {formattMonedaGT(kpis.ventas.efectivoCaja)}
                   </p>
-                  <p className="text-xs text-muted-foreground">Movimientos</p>
+                  <p className="text-xs text-muted-foreground">En Caja</p>
                 </div>
                 <div className="text-center">
-                  <Banknote className="h-6 w-6 mx-auto text-purple-600 mb-1" />
+                  <Banknote className="h-6 w-6 mx-auto text-emerald-600 mb-1" />
                   <p className="text-lg font-semibold">
-                    {registro.depositado ? "Sí" : "No"}
+                    {formattMonedaGT(kpis.ventas.banco)}
                   </p>
-                  <p className="text-xs text-muted-foreground">Depositado</p>
+                  <p className="text-xs text-muted-foreground">En Banco</p>
                 </div>
                 <div className="text-center">
-                  <DollarSign className="h-6 w-6 mx-auto text-orange-600 mb-1" />
+                  <Hash className="h-6 w-6 mx-auto text-slate-600 mb-1" />
                   <p className="text-lg font-semibold">
-                    {formattMonedaGT(
-                      registro.saldoFinal - registro.saldoInicial
-                    )}
+                    {kpis.ventas.cantidad}
                   </p>
-                  <p className="text-xs text-muted-foreground">Diferencia</p>
+                  <p className="text-xs text-muted-foreground"># Tickets</p>
+                </div>
+                <div className="text-center">
+                  <DollarSign className="h-6 w-6 mx-auto text-slate-600 mb-1" />
+                  <p className="text-lg font-semibold">
+                    {formattMonedaGT(kpis.ventas.ticketPromedio)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Ticket Prom.</p>
+                </div>
+                <div className="text-center">
+                  <TrendingUp className="h-6 w-6 mx-auto text-slate-600 mb-1" />
+                  <p className="text-lg font-semibold">
+                    {formattMonedaGT(kpis.admin.resultadoOperativo)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Resultado Operativo
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Sección de Ventas */}
-        {/* Sección de Ventas */}
-        {registro.ventas.length > 0 && (
+        {/* Banco (resumen rápido) */}
+        <motion.div variants={itemVariants}>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Banknote className="h-4 w-4" /> Banco — flujos del turno
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div className="text-center">
+                  <TrendingUp className="h-6 w-6 mx-auto text-green-600 mb-1" />
+                  <p className="text-lg font-semibold">
+                    {formattMonedaGT(kpis.banco.ingresosBanco)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Ingresos Banco
+                  </p>
+                </div>
+                <div className="text-center">
+                  <TrendingDown className="h-6 w-6 mx-auto text-red-600 mb-1" />
+                  <p className="text-lg font-semibold">
+                    {formattMonedaGT(kpis.banco.egresosBanco)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Egresos Banco</p>
+                </div>
+                <div className="text-center">
+                  <ArrowUpDown className="h-6 w-6 mx-auto text-blue-600 mb-1" />
+                  <p className="text-lg font-semibold">
+                    {formattMonedaGT(kpis.banco.deltaBanco)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Δ Banco</p>
+                </div>
+                {kpis.banco.depositosPorCuenta.length > 0 && (
+                  <div className="md:col-span-2 lg:col-span-3 text-left">
+                    <p className="text-xs font-medium mb-1">
+                      Depósitos por cuenta
+                    </p>
+                    <div className="space-y-1">
+                      {kpis.banco.depositosPorCuenta.map((d) => (
+                        <div
+                          key={d.cuenta}
+                          className="flex items-center justify-between text-xs"
+                        >
+                          <span className="truncate mr-2">{d.cuenta}</span>
+                          <span className="font-semibold">
+                            {formattMonedaGT(d.monto)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Movimientos (excluye ventas) */}
+        {movimientosSinVentas.length > 0 && (
           <motion.div variants={itemVariants}>
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4" />
-                  Ventas ({registro.ventas.length})
+                  <TrendingUp className="h-4 w-4" /> Movimientos (
+                  {movimientosSinVentas.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <motion.div
+                  variants={tableVariants}
+                  className="space-y-3 max-h-96 overflow-y-auto"
+                >
+                  {movimientosSinVentas.map((movimiento) => {
+                    const { canal, signo, tipoMovimiento } =
+                      getMovimientoInfo(movimiento);
+
+                    return (
+                      <motion.div
+                        key={movimiento.id}
+                        variants={rowVariants}
+                        className="border rounded-lg p-3 hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              {getTipoMovimientoIcon(tipoMovimiento)}
+                              <Badge
+                                variant={
+                                  tipoMovimiento === "INGRESO"
+                                    ? "default"
+                                    : tipoMovimiento === "EGRESO"
+                                    ? "destructive"
+                                    : "secondary"
+                                }
+                                className="text-xs"
+                              >
+                                {tipoMovimiento}
+                              </Badge>
+                            </div>
+
+                            <Badge variant="outline" className="text-xs">
+                              {canal}
+                            </Badge>
+
+                            <span className="text-xs text-muted-foreground">
+                              {formattFechaWithMinutes(movimiento.fecha)}
+                            </span>
+                          </div>
+
+                          <div className="text-right">
+                            <p
+                              className={`text-sm font-semibold ${
+                                tipoMovimiento === "INGRESO"
+                                  ? "text-green-600"
+                                  : tipoMovimiento === "EGRESO"
+                                  ? "text-red-600"
+                                  : "text-blue-600"
+                              }`}
+                            >
+                              {tipoMovimiento === "TRANSFERENCIA"
+                                ? ""
+                                : signPrefix(signo)}
+                              {formattMonedaGT(movimiento.monto)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <p className="text-xs">
+                            <span className="font-medium">Descripción:</span>{" "}
+                            {movimiento.descripcion || "—"}
+                          </p>
+
+                          {movimiento.categoria && (
+                            <div>
+                              <Badge variant="secondary" className="text-xs">
+                                {movimiento.categoria}{" "}
+                              </Badge>
+                            </div>
+                          )}
+
+                          <div className="flex flex-wrap gap-2">
+                            {movimiento.clasificacion && (
+                              <Badge variant="outline" className="text-xs">
+                                {movimiento.clasificacion}
+                              </Badge>
+                            )}
+
+                            {movimiento.motivo && (
+                              <Badge variant="outline" className="text-xs">
+                                {movimiento.motivo}
+                              </Badge>
+                            )}
+
+                            {movimiento.metodoPago && (
+                              <Badge variant="outline" className="text-xs">
+                                {movimiento.metodoPago}
+                              </Badge>
+                            )}
+
+                            {movimiento.esDepositoCierre && (
+                              <Badge
+                                variant="default"
+                                className="text-xs bg-blue-600"
+                              >
+                                Depósito de Cierre
+                              </Badge>
+                            )}
+
+                            {movimiento.esDepositoProveedor && (
+                              <Badge
+                                variant="default"
+                                className="text-xs bg-purple-600"
+                              >
+                                Depósito a Proveedor
+                              </Badge>
+                            )}
+
+                            {movimiento.gastoOperativoTipo && (
+                              <Badge variant="outline" className="text-xs">
+                                {movimiento.gastoOperativoTipo}
+                              </Badge>
+                            )}
+
+                            {movimiento.costoVentaTipo && (
+                              <Badge variant="outline" className="text-xs">
+                                {movimiento.costoVentaTipo}
+                              </Badge>
+                            )}
+
+                            {movimiento.afectaInventario && (
+                              <Badge variant="secondary" className="text-xs">
+                                Afecta Inventario
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <span className="font-medium">Usuario:</span>{" "}
+                              {movimiento.usuario?.nombre || "N/A"}
+                            </div>
+
+                            <div>
+                              <span className="font-medium">Proveedor:</span>{" "}
+                              {movimiento.proveedor?.nombre || "N/A"}
+                            </div>
+
+                            <div>
+                              <span className="font-medium">
+                                Cuenta Bancaria:
+                              </span>{" "}
+                              {movimiento.cuentaBancaria ? (
+                                <span>
+                                  {movimiento.cuentaBancaria.banco || "N/A"} -{" "}
+                                  {movimiento.cuentaBancaria.alias || "N/A"} (
+                                  {movimiento.cuentaBancaria.numeroMasked ||
+                                    "N/A"}
+                                  )
+                                </span>
+                              ) : (
+                                "N/A"
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <span className="font-medium">Boleta:</span>{" "}
+                              {movimiento.numeroBoleta || "—"}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Referencia:</span>
+                              <span>{movimiento.referencia || "—"}</span>
+                              {movimiento.referencia && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-4 w-4 p-0"
+                                  onClick={() =>
+                                    copyToClipboard(movimiento.referencia!)
+                                  }
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Sección de Ventas (detalle) */}
+        {registro.ventas?.length > 0 && (
+          <motion.div variants={itemVariants}>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4" /> Ventas (
+                  {registro.ventas.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -502,85 +1037,6 @@ export default function CajaDetalle() {
                       </div>
                     </motion.div>
                   ))}
-                </motion.div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Sección de Movimientos */}
-        {registro.movimientosCaja.length > 0 && (
-          <motion.div variants={itemVariants}>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Movimientos de Caja ({registro.movimientosCaja.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <motion.div
-                  variants={tableVariants}
-                  className="overflow-x-auto"
-                >
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b text-xs">
-                        <th className="text-left p-2 font-medium">Tipo</th>
-                        <th className="text-left p-2 font-medium">Fecha</th>
-                        <th className="text-left p-2 font-medium">
-                          Descripción
-                        </th>
-                        <th className="text-left p-2 font-medium">Categoría</th>
-                        <th className="text-left p-2 font-medium">Usuario</th>
-                        <th className="text-right p-2 font-medium">Monto</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {registro.movimientosCaja.map((movimiento) => (
-                        <motion.tr
-                          key={movimiento.id}
-                          variants={rowVariants}
-                          className="border-b hover:bg-muted/50"
-                        >
-                          <td className="p-2">
-                            <div className="flex items-center gap-2">
-                              {getTipoMovimientoIcon(movimiento.tipo)}
-                              <span className="text-xs">{movimiento.tipo}</span>
-                            </div>
-                          </td>
-                          <td className="p-2 text-xs">
-                            {formateDateWithMinutes(movimiento.fecha)}
-                          </td>
-                          <td className="p-2 text-xs max-w-32 truncate">
-                            {movimiento.descripcion || "Sin descripción"}
-                          </td>
-                          <td className="p-2">
-                            {movimiento.categoria && (
-                              <Badge variant="secondary" className="text-xs">
-                                {movimiento.categoria}
-                              </Badge>
-                            )}
-                          </td>
-                          <td className="p-2 text-xs">
-                            {movimiento.usuario?.nombre || "N/A"}
-                          </td>
-                          <td className="p-2 text-xs text-right font-semibold">
-                            <span
-                              className={
-                                movimiento.tipo === "INGRESO"
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }
-                            >
-                              {movimiento.tipo === "INGRESO" ? "+" : "-"}
-                              {formattMonedaGT(Math.abs(movimiento.monto))}
-                            </span>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </motion.div>
               </CardContent>
             </Card>

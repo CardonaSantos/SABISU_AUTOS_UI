@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -116,11 +118,6 @@ export default function EntregasStock() {
     null
   );
 
-  // Función para formatear la fecha
-  const formatDate = (date: string) => {
-    return format(new Date(date), "dd 'de' MMMM 'de' yyyy", { locale: es });
-  };
-
   const getEntregasRegist = async () => {
     try {
       const response = await axios.get(
@@ -144,6 +141,35 @@ export default function EntregasStock() {
 
   console.log("Las entregas: ", entregas);
 
+  // Funciones helper para manejar datos faltantes
+  const safeGet = (obj: any, path: string, defaultValue: any = "N/A") => {
+    return obj &&
+      obj[path] !== null &&
+      obj[path] !== undefined &&
+      obj[path] !== ""
+      ? obj[path]
+      : defaultValue;
+  };
+
+  const safeFormatCurrency = (amount: number | null | undefined) => {
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      return "Q0.00";
+    }
+    return new Intl.NumberFormat("es-GT", {
+      style: "currency",
+      currency: "GTQ",
+    }).format(amount);
+  };
+
+  const safeFormatDate = (date: string | null | undefined) => {
+    if (!date) return "Fecha no disponible";
+    try {
+      return format(new Date(date), "dd 'de' MMMM 'de' yyyy", { locale: es });
+    } catch (error) {
+      return "Fecha inválida";
+    }
+  };
+
   // Componente para mostrar los detalles de la entrega
   const EntregaDetails = ({ entrega }: { entrega: EntregaStock }) => (
     <ScrollArea className="h-[calc(100vh-180px)] w-full">
@@ -163,17 +189,14 @@ export default function EntregasStock() {
               <div>
                 <p className="text-sm font-medium">Monto Total</p>
                 <p className="text-2xl font-bold">
-                  {Intl.NumberFormat("es-GT", {
-                    style: "currency",
-                    currency: "GTQ",
-                  }).format(entrega.montoTotal)}
+                  {safeFormatCurrency(entrega.montoTotal)}
                 </p>
               </div>
               <div className="col-span-2">
                 <p className="text-sm font-medium">Fecha de Entrega</p>
                 <p className="text-lg flex items-center">
                   <CalendarIcon className="mr-2" size={16} />
-                  {formatDate(entrega.fechaEntrega)}
+                  {safeFormatDate(entrega.fechaEntrega)}
                 </p>
               </div>
             </div>
@@ -189,14 +212,29 @@ export default function EntregasStock() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="font-medium">{entrega.proveedor.nombre}</p>
-              <p className="text-sm text-muted-foreground">
-                Correo: {entrega.proveedor.correo}
-              </p>
-              <p className="text-sm text-muted-foreground flex items-center mt-1">
-                <PhoneIcon className="mr-2" size={14} />
-                {entrega.proveedor.telefono}
-              </p>
+              {entrega.proveedor ? (
+                <>
+                  <p className="font-medium">
+                    {safeGet(
+                      entrega.proveedor,
+                      "nombre",
+                      "Proveedor sin nombre"
+                    )}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Correo: {safeGet(entrega.proveedor, "correo", "Sin correo")}
+                  </p>
+                  <p className="text-sm text-muted-foreground flex items-center mt-1">
+                    <PhoneIcon className="mr-2" size={14} />
+                    {safeGet(entrega.proveedor, "telefono", "Sin teléfono")}
+                  </p>
+                </>
+              ) : (
+                <div className="text-muted-foreground">
+                  <p className="font-medium">Proveedor no especificado</p>
+                  <p className="text-sm">Sin información de contacto</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -208,9 +246,15 @@ export default function EntregasStock() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="font-medium">{entrega.sucursal.nombre}</p>
+              <p className="font-medium">
+                {safeGet(entrega.sucursal, "nombre", "Sucursal sin nombre")}
+              </p>
               <p className="text-sm text-muted-foreground">
-                {entrega.sucursal.direccion}
+                {safeGet(
+                  entrega.sucursal,
+                  "direccion",
+                  "Dirección no disponible"
+                )}
               </p>
             </CardContent>
           </Card>
@@ -224,9 +268,15 @@ export default function EntregasStock() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-medium">{entrega.usuarioRecibido.nombre}</p>
+            <p className="font-medium">
+              {safeGet(
+                entrega.usuarioRecibido,
+                "nombre",
+                "Usuario no especificado"
+              )}
+            </p>
             <Badge variant="secondary" className="mt-1">
-              {entrega.usuarioRecibido.rol}
+              {safeGet(entrega.usuarioRecibido, "rol", "Sin rol")}
             </Badge>
           </CardContent>
         </Card>
@@ -239,47 +289,63 @@ export default function EntregasStock() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {entrega.stockEntregado.map((stock) => (
-                <div key={stock.id} className="bg-muted p-4 rounded-lg">
-                  <h4 className="font-semibold mb-2">
-                    {stock.producto.nombre}
-                  </h4>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                    <p>
-                      <span className="font-medium">Código:</span>{" "}
-                      {stock.producto.codigoProducto}
-                    </p>
+            {entrega.stockEntregado && entrega.stockEntregado.length > 0 ? (
+              <div className="space-y-4">
+                {entrega.stockEntregado.map((stock) => (
+                  <div key={stock.id} className="bg-muted p-4 rounded-lg">
+                    <h4 className="font-semibold mb-2">
+                      {safeGet(stock.producto, "nombre", "Producto sin nombre")}
+                    </h4>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <p>
+                        <span className="font-medium">Código:</span>{" "}
+                        {safeGet(
+                          stock.producto,
+                          "codigoProducto",
+                          "Sin código"
+                        )}
+                      </p>
 
-                    <p>
-                      <span className="font-medium">Cantidad Inicial:</span>{" "}
-                      {stock.cantidadInicial}
-                    </p>
+                      <p>
+                        <span className="font-medium">Cantidad Inicial:</span>{" "}
+                        {stock.cantidadInicial || 0}
+                      </p>
 
-                    <p>
-                      <span className="font-medium">Cantidad:</span>{" "}
-                      {stock.cantidad}
-                    </p>
-                    <p>
-                      <span className="font-medium">Costo Total:</span> Q
-                      {stock.costoTotal.toFixed(2)}
-                    </p>
-                    <p>
-                      <span className="font-medium">Precio Costo:</span> Q
-                      {stock.precioCosto.toFixed(2)}
-                    </p>
-                    <p className="col-span-2">
-                      <span className="font-medium">Fecha de Ingreso:</span>{" "}
-                      {formateDateWithMinutes(stock.fechaIngreso)}
-                    </p>
-                    <p className="col-span-2">
-                      <span className="font-medium">Fecha de Vencimiento:</span>{" "}
-                      {formatDate(stock.fechaVencimiento)}
-                    </p>
+                      <p>
+                        <span className="font-medium">Cantidad:</span>{" "}
+                        {stock.cantidad || 0}
+                      </p>
+                      <p>
+                        <span className="font-medium">Costo Total:</span>{" "}
+                        {safeFormatCurrency(stock.costoTotal)}
+                      </p>
+                      <p>
+                        <span className="font-medium">Precio Costo:</span>{" "}
+                        {safeFormatCurrency(stock.precioCosto)}
+                      </p>
+                      <p className="col-span-2">
+                        <span className="font-medium">Fecha de Ingreso:</span>{" "}
+                        {stock.fechaIngreso
+                          ? formateDateWithMinutes(stock.fechaIngreso)
+                          : "Fecha no disponible"}
+                      </p>
+                      <p className="col-span-2">
+                        <span className="font-medium">
+                          Fecha de Vencimiento:
+                        </span>{" "}
+                        {safeFormatDate(stock.fechaVencimiento)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                <PackageIcon className="mx-auto mb-2" size={48} />
+                <p className="font-medium">Sin productos registrados</p>
+                <p className="text-sm">Esta entrega no tiene stock asociado</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -331,39 +397,49 @@ export default function EntregasStock() {
                     <TableCell>
                       <div className="flex items-center">
                         <User2Icon className="mr-2" size={16} />
-                        {entrega.proveedor.nombre}
+                        {entrega.proveedor
+                          ? safeGet(
+                              entrega.proveedor,
+                              "nombre",
+                              "Proveedor sin nombre"
+                            )
+                          : "Sin proveedor"}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center">
                         <Calendar className="mr-2" size={16} />
-                        {formatDate(entrega.fechaEntrega)}
+                        {safeFormatDate(entrega.fechaEntrega)}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center">
                         <Building className="mr-2" size={16} />
-                        {entrega.sucursal.nombre}
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center">
-                        <Package className="mr-2" size={16} />
-                        {entrega.stockEntregado.reduce(
-                          (total, prod) => total + prod.cantidad,
-                          0
+                        {safeGet(
+                          entrega.sucursal,
+                          "nombre",
+                          "Sucursal sin nombre"
                         )}
                       </div>
                     </TableCell>
 
                     <TableCell>
                       <div className="flex items-center">
+                        <Package className="mr-2" size={16} />
+                        {entrega.stockEntregado &&
+                        entrega.stockEntregado.length > 0
+                          ? entrega.stockEntregado.reduce(
+                              (total, prod) => total + (prod.cantidad || 0),
+                              0
+                            )
+                          : 0}
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex items-center">
                         <Coins className="mr-2" size={16} />
-                        {new Intl.NumberFormat("es-GT", {
-                          style: "currency",
-                          currency: "GTQ",
-                        }).format(entrega.montoTotal)}
+                        {safeFormatCurrency(entrega.montoTotal)}
                       </div>
                     </TableCell>
                     <TableCell>

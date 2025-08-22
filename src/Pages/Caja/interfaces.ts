@@ -8,7 +8,7 @@ export interface IniciarCaja {
 //MODIFICAR DESPUES PARA ACEPTAR DATA DE EGRESOS Y DEMÁS, CALCULAR EN EL FRONT Y ENVIAR
 export interface CerrarCaja {
   comentarioFinal?: string;
-  cajaID: number;
+  registroCajaId: number;
   usuarioCierra: number;
 }
 
@@ -23,6 +23,7 @@ export interface CajaAbierta {
   usuarioInicioId: number;
   usuarioInicioNombre: string;
   estado: EstadoTurnoCaja;
+  fondoFijo?: number;
 }
 
 export enum EstadoTurnoCaja {

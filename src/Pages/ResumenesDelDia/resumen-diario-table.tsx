@@ -94,8 +94,13 @@ export function ResumenDiarioTable({ items, fecha }: ResumenDiarioTableProps) {
           row.egresos,
           row.saldoFinal,
           row.registros,
+          // row.totales.ventasEfectivo - antes 18
+          //   row.totales.costoVenta -
+          //   row.totales.gastosOperativos,
+
           row.totales.ventasEfectivo -
             row.totales.costoVenta -
+            row.totales.depositosProveedor - // <-- agrega esto
             row.totales.gastosOperativos,
         ].join(",")
       ),
@@ -244,9 +249,15 @@ export function ResumenDiarioTable({ items, fecha }: ResumenDiarioTableProps) {
               </TableHeader>
               <TableBody>
                 {sortedItems.map((item, index) => {
+                  // const resultadoOperativo = Antes
+                  //   item.totales.ventasEfectivo -
+                  //   item.totales.costoVenta -
+                  //   item.totales.gastosOperativos;
+
                   const resultadoOperativo =
                     item.totales.ventasEfectivo -
                     item.totales.costoVenta -
+                    item.totales.depositosProveedor - // <-- agrega esto
                     item.totales.gastosOperativos;
 
                   return (

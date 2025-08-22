@@ -57,7 +57,7 @@ export async function getRegistrosCajas(params: GetCajasQuery = {}) {
       query.groupBySucursal = params.groupBySucursal;
 
     const { data } = await axios.get<PaginatedRegistrosCajaResponse>(
-      `${API_URL}/caja-registros`,
+      `${API_URL}/caja/list-cajas`,
       {
         params: query,
         paramsSerializer: {

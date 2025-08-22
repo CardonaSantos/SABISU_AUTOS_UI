@@ -6,16 +6,16 @@ import { useResumenDiario } from "./use-resumen-diario";
 import { ResumenDiarioFilters } from "./resumen-diario-filters";
 import { ResumenDiarioKpis } from "./resumen-diario-kpis";
 import { ResumenDiarioTable } from "./resumen-diario-table";
-import { ResumenDiarioChart } from "./resumen-diario-chart";
+import { ResumenDiarioProgressChart } from "./resumen-diario-chart";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Sucursal } from "./types";
 import { AlertTriangle, RefreshCw, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { getSucursales } from "./api";
 import { getApiErrorMessageAxios } from "../Utils/UtilsErrorApi";
+import { Sucursal } from "./types";
 
 export default function ResumenDiarioPage() {
   const [fecha, setFecha] = useState(() => {
@@ -79,8 +79,13 @@ export default function ResumenDiarioPage() {
           item.egresos,
           item.saldoFinal,
           item.registros,
+          // item.totales.ventasEfectivo - Anterior
+          //   item.totales.costoVenta -
+          //   item.totales.gastosOperativos,
+
           item.totales.ventasEfectivo -
             item.totales.costoVenta -
+            item.totales.depositosProveedor - // <-- agrega esto
             item.totales.gastosOperativos,
         ].join(",")
       ),
@@ -219,6 +224,7 @@ export default function ResumenDiarioPage() {
       </div>
     );
   }
+  console.log("Los items llegando al main resumen page es: ", data);
 
   return (
     <div className="container mx-auto ">
@@ -250,14 +256,9 @@ export default function ResumenDiarioPage() {
 
       <ResumenDiarioKpis items={data.items} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-1">
-        <div className="lg:col-span-2">
-          <ResumenDiarioTable items={data.items} fecha={fecha} />
-        </div>
-        <div className="lg:col-span-1">
-          <ResumenDiarioChart items={data.items} />
-        </div>
-      </div>
+      <ResumenDiarioTable items={data.items} fecha={fecha} />
+
+      <ResumenDiarioProgressChart items={data.items} />
     </div>
   );
 }

@@ -6,7 +6,8 @@ export type RequisitionEstado =
   | "ENVIADA"
   | "RECIBIDA"
   | "COMPLETADA"
-  | "CANCELADA";
+  | "CANCELADA"
+  | "ENVIADA_COMPRAS";
 
 /* ---- resúmenes anidados ---- */
 export interface ProductoResumen {

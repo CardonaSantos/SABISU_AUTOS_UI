@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import type {
   RequisitionResponse,
   RequisitionEstado,
-  CreateRequisicionRecepcion,
 } from "./requisicion.interfaces";
 import {
   Table,
@@ -54,10 +53,7 @@ import { formattMoneda as formatearMoneda, formattFecha } from "../Utils/Utils";
 import { formattFecha as formatearFecha } from "../Utils/Utils";
 import { Link } from "react-router-dom";
 import { ConfirmDialog } from "../Utils/ConfirmDialog";
-import {
-  deleteRequisicionRegis,
-  makeReEnterRequisicion,
-} from "./requisicion.api";
+import { deleteRequisicionRegis, generarCompra } from "./requisicion.api";
 import { toast } from "sonner";
 import { AdvancedDialog } from "@/utils/components/AdvancedDialog";
 import { useStore } from "@/components/Context/ContextSucursal";
@@ -76,7 +72,6 @@ const RequisicionesMap = ({
   fetchAlerts,
 }: PropsRequisiciones) => {
   const userId = useStore((state) => state.userId) ?? 0;
-  const sucursalId = useStore((state) => state.sucursalId) ?? 0;
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -150,31 +145,19 @@ const RequisicionesMap = ({
 
   console.log("las lineas a enviar son: ", selectedRequisicion?.lineas);
 
-  const handleMakeReEnterRequisicion = async () => {
+  const handleCreateCompra = async () => {
     try {
       setOpenReIngreso(false);
       setSubmitting(true);
 
-      const dto: CreateRequisicionRecepcion = {
-        proveedorId: 1,
-        requisicionId: selectedRequisicion?.id ?? 0,
-        usuarioId: userId,
-        sucursalId: sucursalId,
-        observaciones: "",
-        lineas: (selectedRequisicion?.lineas ?? []).map((linea) => ({
-          cantidadRecibida: linea.cantidadSugerida,
-          cantidadSolicitada: linea.cantidadSugerida,
-          precioUnitario: linea.producto.precioCostoActual,
-          productoId: linea.producto.id,
-          requisicionLineaId: linea.id,
-          ingresadaAStock: true,
-          fechaExpiracion: linea.fechaExpiracion ?? null,
-        })),
+      const dto = {
+        requisicionID: selectedRequisicion?.id,
+        userID: userId,
       };
 
-      await makeReEnterRequisicion(dto);
+      await generarCompra(dto);
       await getRequisiciones();
-      toast.success("Productos ingresados correctamente");
+      toast.success("Registro enviado a modulo compras");
       setIsDialogOpen(false); // Cerrar diálogo
       setSelectedRequisicion(null); // Resetear selección
       await fetchAlerts();
@@ -198,6 +181,85 @@ const RequisicionesMap = ({
       setSelectedRequisicion(null);
     }
   }, [isDialogOpen]);
+
+  const CLOSED_STATES = new Set<RequisitionEstado>([
+    "COMPLETADA",
+    "RECIBIDA",
+    "ENVIADA_COMPRAS",
+  ]);
+  type ReqFlags = {
+    isClosed: boolean;
+    isEnviadaCompras: boolean;
+    canSendToCompras: boolean;
+    canEdit: boolean;
+    sendLabel: string;
+  };
+
+  function getReqFlags(req: RequisitionResponse | null | undefined): ReqFlags {
+    const estado = req?.estado;
+    const isClosed = !!estado && CLOSED_STATES.has(estado as RequisitionEstado);
+    const isEnviadaCompras = estado === "ENVIADA_COMPRAS";
+    const canSendToCompras = !!req && !isClosed;
+    const canEdit = !!req && !req.ingresadaAStock && !isClosed;
+
+    return {
+      isClosed,
+      isEnviadaCompras,
+      canSendToCompras,
+      canEdit,
+      sendLabel: isEnviadaCompras
+        ? "Enviado a compras"
+        : "Enviar lista a módulo compras",
+    };
+  }
+
+  const InfoRow = ({
+    label,
+    children,
+    bold = false,
+  }: {
+    label: string;
+    children: React.ReactNode;
+    bold?: boolean;
+  }) => (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={bold ? "font-bold" : "font-medium"}>{children}</span>
+    </div>
+  );
+
+  const ActionBar = ({
+    canSend,
+    sendLabel,
+    onSend,
+    canEdit,
+    editHref,
+    editDisabledReason,
+  }: {
+    canSend: boolean;
+    sendLabel: string;
+    onSend: () => void;
+    canEdit: boolean;
+    editHref: string;
+    editDisabledReason?: string;
+  }) => (
+    <div className="flex gap-2">
+      <Button disabled={!canSend} onClick={onSend} variant="destructive">
+        {sendLabel}
+      </Button>
+
+      {canEdit ? (
+        <Link to={editHref}>
+          <Button variant="outline">Editar Registro</Button>
+        </Link>
+      ) : (
+        // Opcional: botón fantasma deshabilitado para no "saltar" el layout
+        <Button variant="outline" disabled title={editDisabledReason}>
+          Editar Registro
+        </Button>
+      )}
+    </div>
+  );
 
   if (isLoadingRequisiciones) {
     return (
@@ -409,22 +471,16 @@ const RequisicionesMap = ({
         </CardContent>
       </Card>
       {/* Dialog para ver detalles */}
-      <Dialog
-        open={isDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelectedRequisicion(null);
-          }
-          setIsDialogOpen(open);
-        }}
-      >
-        {" "}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <FileText className="h-5 w-5" />
               <span>
-                Detalles de Requisición - {selectedRequisicion?.folio}
+                Detalles de Requisición
+                {selectedRequisicion?.folio
+                  ? ` - ${selectedRequisicion.folio}`
+                  : ""}
               </span>
             </DialogTitle>
             <DialogDescription>
@@ -432,281 +488,223 @@ const RequisicionesMap = ({
             </DialogDescription>
           </DialogHeader>
 
-          {selectedRequisicion && (
+          {/* Limpieza del reset al cerrar */}
+          {/** Si prefieres, en vez de hacerlo en onOpenChange:
+           *  useEffect(() => { if (!isDialogOpen) setSelectedRequisicion(null); }, [isDialogOpen]);
+           */}
+
+          {selectedRequisicion ? (
             <ScrollArea className="max-h-[70vh]">
-              <div className="space-y-6">
-                {/* Información general */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium">
-                        Información General
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          Folio:
-                        </span>
-                        <span className="text-sm font-medium">
-                          {selectedRequisicion.folio}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          Fecha:
-                        </span>
-                        <span className="text-sm">
-                          {formatearFecha(selectedRequisicion.fecha)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          Estado:
-                        </span>
-                        <Badge
-                          variant={getEstadoBadgeVariant(
-                            selectedRequisicion.estado
-                          )}
-                        >
-                          {selectedRequisicion.estado}
-                        </Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          Total Líneas:
-                        </span>
-                        <Badge variant="outline">
-                          {selectedRequisicion.totalLineas}
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium">
-                        Detalles Adicionales
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          Sucursal:
-                        </span>
-                        <span className="text-sm font-medium">
-                          {selectedRequisicion.sucursal.nombre}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          Usuario:
-                        </span>
-                        <span className="text-sm">
-                          {selectedRequisicion.usuario.nombre}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          Rol:
-                        </span>
-                        <span className="text-sm">
-                          {selectedRequisicion.usuario.rol}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          Total:
-                        </span>
-                        <span className="text-sm font-bold">
-                          {formatearMoneda(
-                            selectedRequisicion.totalRequisicion
-                          )}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    disabled={selectedRequisicion?.ingresadaAStock}
-                    onClick={() => {
-                      setOpenReIngreso(true);
-                    }}
-                    variant={"destructive"}
-                  >
-                    {selectedRequisicion.ingresadaAStock
-                      ? "Ingresado al stock"
-                      : " Generar Re-Ingreso de Stocks"}
-                  </Button>
-
-                  {selectedRequisicion.ingresadaAStock ? null : (
-                    <Link to={`/requisicion-edit/${selectedRequisicion.id}`}>
-                      <Button
-                        disabled={selectedRequisicion?.ingresadaAStock}
-                        variant={"outline"}
-                      >
-                        Editar Registro
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-
-                {/* Observaciones */}
-                {selectedRequisicion.observaciones && (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium">
-                        Observaciones
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">
-                        {selectedRequisicion.observaciones}
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-
-                <Separator />
-
-                {/* Líneas de productos */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
-                    <Package className="h-5 w-5" />
-                    <span>
-                      Líneas de Productos ({selectedRequisicion.lineas.length})
-                    </span>
-                  </h3>
-
-                  <div className="space-y-3">
-                    {selectedRequisicion.lineas.map((linea) => (
-                      <Card
-                        key={linea.id}
-                        className="border-l-4 border-l-primary"
-                      >
-                        <CardContent className="pt-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div>
-                              <h4 className="font-medium text-sm mb-2">
-                                {linea.producto.nombre}
-                              </h4>
-                              <p className="text-xs text-muted-foreground">
-                                Código: {linea.producto.codigoProducto}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Linea ID: {linea.id}
-                              </p>
-
-                              <p className="text-xs text-muted-foreground">
-                                Fecha Expiración:{" "}
-                                {linea.fechaExpiracion ? (
-                                  <span className="font-semibold">
-                                    {formattFecha(linea?.fechaExpiracion)}
-                                  </span>
-                                ) : (
-                                  "No especificado"
-                                )}
-                              </p>
-                            </div>
-
-                            <div className="space-y-2">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">
-                                  Stock Actual:
-                                </span>
-                                <span className="font-medium">
-                                  {linea.cantidadActual}
-                                </span>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">
-                                  Stock Mínimo:
-                                </span>
-                                <span className="font-medium">
-                                  {linea.stockMinimo}
-                                </span>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">
-                                  Cantidad Sugerida:
-                                </span>
-                                <span className="font-medium text-primary dark:text-white">
-                                  {linea.cantidadSugerida}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">
-                                  Precio Unitario:
-                                </span>
-                                <span className="font-medium">
-                                  {formatearMoneda(linea.precioUnitario)}
-                                </span>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">
-                                  Subtotal:
-                                </span>
-                                <span className="font-bold">
-                                  {formatearMoneda(
-                                    linea.precioUnitario *
-                                      linea.cantidadSugerida
-                                  )}
-                                </span>
-                              </div>
-                            </div>
+              {/**
+               * Flags derivadas: cero lógica repetida en el JSX
+               */}
+              {(() => {
+                const f = getReqFlags(selectedRequisicion);
+                return (
+                  <div className="space-y-6">
+                    {/* Info general */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium">
+                            Información General
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <InfoRow label="Folio:">
+                            {selectedRequisicion.folio}
+                          </InfoRow>
+                          <InfoRow label="Fecha:">
+                            {formatearFecha(selectedRequisicion.fecha)}
+                          </InfoRow>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              Estado:
+                            </span>
+                            <Badge
+                              variant={getEstadoBadgeVariant(
+                                selectedRequisicion.estado
+                              )}
+                            >
+                              {selectedRequisicion.estado}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              Total Líneas:
+                            </span>
+                            <Badge variant="outline">
+                              {selectedRequisicion.totalLineas}
+                            </Badge>
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
-                  </div>
-                </div>
 
-                {/* Fechas de auditoría */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">
-                      Información de Auditoría
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        Creado:
-                      </span>
-                      <span className="text-sm">
-                        {formatearFecha(selectedRequisicion.createdAt)}
-                      </span>
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium">
+                            Detalles Adicionales
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <InfoRow label="Sucursal:">
+                            {selectedRequisicion.sucursal.nombre}
+                          </InfoRow>
+                          <InfoRow label="Usuario:">
+                            {selectedRequisicion.usuario.nombre}
+                          </InfoRow>
+                          <InfoRow label="Rol:">
+                            {selectedRequisicion.usuario.rol}
+                          </InfoRow>
+                          <InfoRow label="Total:" bold>
+                            {formatearMoneda(
+                              selectedRequisicion.totalRequisicion
+                            )}
+                          </InfoRow>
+                        </CardContent>
+                      </Card>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        Actualizado:
-                      </span>
-                      <span className="text-sm">
-                        {formatearFecha(selectedRequisicion.updatedAt)}
-                      </span>
+
+                    {/* Barra de acciones limpia */}
+
+                    <ActionBar
+                      canSend={f.canSendToCompras}
+                      sendLabel={f.sendLabel}
+                      onSend={() => setOpenReIngreso(true)}
+                      canEdit={f.canEdit}
+                      editHref={`/requisicion-edit/${selectedRequisicion.id}`}
+                      editDisabledReason={
+                        selectedRequisicion.ingresadaAStock
+                          ? "Ya fue ingresada a stock"
+                          : f.isClosed
+                          ? "No editable en este estado"
+                          : undefined
+                      }
+                    />
+
+                    {/* Observaciones */}
+                    {selectedRequisicion.observaciones && (
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium">
+                            Observaciones
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedRequisicion.observaciones}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    <Separator />
+
+                    {/* Líneas */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
+                        <Package className="h-5 w-5" />
+                        <span>
+                          {" "}
+                          Líneas de Productos (
+                          {selectedRequisicion.lineas.length})
+                        </span>
+                      </h3>
+
+                      <div className="space-y-3">
+                        {selectedRequisicion.lineas.map((linea) => (
+                          <Card
+                            key={linea.id}
+                            className="border-l-4 border-l-primary"
+                          >
+                            <CardContent className="pt-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div>
+                                  <h4 className="font-medium text-sm mb-2">
+                                    {linea.producto.nombre}
+                                  </h4>
+                                  <p className="text-xs text-muted-foreground">
+                                    Código: {linea.producto.codigoProducto}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Linea ID: {linea.id}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Fecha Expiración:{" "}
+                                    {linea.fechaExpiracion ? (
+                                      <span className="font-semibold">
+                                        {formattFecha(linea.fechaExpiracion)}
+                                      </span>
+                                    ) : (
+                                      "No especificado"
+                                    )}
+                                  </p>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <InfoRow label="Stock Actual:">
+                                    {linea.cantidadActual}
+                                  </InfoRow>
+                                  <InfoRow label="Stock Mínimo:">
+                                    {linea.stockMinimo}
+                                  </InfoRow>
+                                  <InfoRow label="Cantidad Sugerida:">
+                                    <span className="text-primary dark:text-white">
+                                      {linea.cantidadSugerida}
+                                    </span>
+                                  </InfoRow>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <InfoRow label="Precio Unitario:">
+                                    {formatearMoneda(linea.precioUnitario)}
+                                  </InfoRow>
+                                  <InfoRow label="Subtotal:" bold>
+                                    {formatearMoneda(
+                                      linea.precioUnitario *
+                                        linea.cantidadSugerida
+                                    )}
+                                  </InfoRow>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
                     </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button
-                      variant={"destructive"}
-                      onClick={() => {
-                        setOpenConfirmDel(true);
-                      }}
-                    >
-                      Eliminar registro
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </div>
+
+                    {/* Auditoría */}
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium">
+                          Información de Auditoría
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <InfoRow label="Creado:">
+                          {formatearFecha(selectedRequisicion.createdAt)}
+                        </InfoRow>
+                        <InfoRow label="Actualizado:">
+                          {formatearFecha(selectedRequisicion.updatedAt)}
+                        </InfoRow>
+                      </CardContent>
+                      <CardFooter>
+                        <Button
+                          variant="destructive"
+                          onClick={() => setOpenConfirmDel(true)}
+                        >
+                          Eliminar registro
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  </div>
+                );
+              })()}
             </ScrollArea>
-          )}
+          ) : null}
         </DialogContent>
       </Dialog>
+
       <ConfirmDialog
         open={openConfirDel}
         onOpenChange={setOpenConfirmDel}
@@ -730,13 +728,13 @@ const RequisicionesMap = ({
       <AdvancedDialog
         open={openReIngreso}
         onOpenChange={setOpenReIngreso}
-        title="¿Generar requisición de productos?"
-        description="Se crearán y registrarán los productos en stock."
+        title="Enviar lista al módulo de compras"
+        description="La lista será enviada al módulo de compras para su gestión. Esta acción no se puede deshacer."
         confirmButton={{
-          label: "Sí, continuar y dar ingreso",
+          label: "Sí, enviar al módulo de compras",
           disabled: submiting,
           loading: submiting,
-          onClick: handleMakeReEnterRequisicion,
+          onClick: handleCreateCompra,
         }}
         cancelButton={{
           label: "Cancelar",

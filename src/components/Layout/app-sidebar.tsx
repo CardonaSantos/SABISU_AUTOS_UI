@@ -3,7 +3,6 @@ import {
   ShieldCheck,
   Ticket,
   Wallet,
-  Bolt,
   ClipboardPen,
   FileText,
   CreditCard,
@@ -12,14 +11,25 @@ import {
   FileSpreadsheet,
   Target,
   Goal,
-  Repeat1,
   PackageSearch,
-  Blocks,
   NotebookPen,
   ListOrdered,
-  PiggyBank,
-  ChartBarBig,
-  SquareChartGantt,
+  Trash2,
+  Boxes,
+  Truck,
+  ArrowLeftRight,
+  Send,
+  UserCheck,
+  Factory,
+  Building2,
+  Shield,
+  BarChart3,
+  Calendar,
+  Wrench,
+  Settings,
+  ChartPie,
+  ReceiptText,
+  ClipboardList,
 } from "lucide-react";
 
 import {
@@ -42,11 +52,9 @@ import {
   AlertCircle,
   Clock,
   Building,
-  CircleUser,
-  NotebookIcon,
-  SendToBackIcon,
   NotepadText,
   FileStack,
+  History,
 } from "lucide-react";
 import { useStore } from "../Context/ContextSucursal";
 import { Link } from "react-router-dom";
@@ -64,128 +72,159 @@ import {
 import { useMemo } from "react";
 
 const menuVendedor = [
-  // Sección de Ventas
-  { icon: Home, label: "Home", href: "/" },
+  // === Inicio ===
+  { icon: Home, label: "Inicio", href: "/" },
+
+  // === Ventas ===
   { icon: ShoppingCart, label: "Punto de Venta", href: "/punto-venta" },
   { icon: Clock, label: "Historial de Ventas", href: "/historial/ventas" },
-  // Sección de Inventario y Stock
   {
-    icon: Package,
-    label: "Inventario y Stock",
+    icon: ClipboardPen,
+    label: "Gestión de Ventas",
     submenu: [
-      { icon: Package, label: "Inventario", href: "/inventario" },
-      {
-        icon: NotepadText,
-        label: "Historial Cambios Precio",
-        href: "/historial-cambios-precio",
-      },
-      {
-        icon: FileStack,
-        label: "Stock Eliminaciones",
-        href: "/stock-eliminaciones",
-      },
       {
         icon: ClipboardPen,
-        label: "Ventas Eliminaciones",
+        label: "Ventas Eliminadas",
         href: "/historial/ventas-eliminaciones",
       },
     ],
   },
 
-  // Sección de Clientes
-  { icon: Users, label: "Clientes", href: "/clientes-manage" },
-
-  // Vencimientos
-  { icon: AlertCircle, label: "Vencimientos", href: "/vencimientos" },
-  { icon: ShieldCheck, label: "Garantía Manage", href: "/garantia/manage" },
-  { icon: CreditCard, label: "Créditos", href: "/creditos" },
-  { icon: WrenchIcon, label: "Reparaciones", href: "/reparaciones" },
-];
-
-const menuItemsAdmin = [
-  // Sección de Ventas
-  { icon: Home, label: "Home", href: "/" },
-  { icon: ShoppingCart, label: "Punto de Venta", href: "/punto-venta" },
-  { icon: Clock, label: "Historial de Ventas", href: "/historial/ventas" },
-  // Sección de Inventario y Stock con submenú
+  // === Inventario ===
   {
     icon: Package,
     label: "Inventario y Stock",
     submenu: [
-      {
-        icon: Blocks,
-        label: "Inventario y Stock",
-        href: "/inventario-stock",
-      },
-
+      { icon: Boxes, label: "Inventario", href: "/inventario" },
       {
         icon: NotepadText,
-        label: "Historial Cambios Precio",
+        label: "Historial de Precios",
         href: "/historial-cambios-precio",
       },
       {
         icon: FileStack,
-        label: "Stock Eliminaciones",
+        label: "Stock Eliminado",
         href: "/stock-eliminaciones",
       },
-      { icon: NotebookIcon, label: "Entregas Stock", href: "/entregas-stock" },
+    ],
+  },
 
+  // === Clientes ===
+  { icon: Users, label: "Clientes", href: "/clientes-manage" },
+
+  // === Créditos ===
+  { icon: CreditCard, label: "Créditos", href: "/creditos" },
+
+  // === Garantías y Reparaciones ===
+  { icon: ShieldCheck, label: "Garantías", href: "/garantia/manage" },
+  { icon: WrenchIcon, label: "Reparaciones", href: "/reparaciones" },
+
+  // === Otros ===
+  { icon: AlertCircle, label: "Vencimientos", href: "/vencimientos" },
+];
+
+const menuItemsAdmin = [
+  // === Inicio ===
+  { icon: Home, label: "Inicio", href: "/" },
+
+  // === Ventas ===
+  { icon: ShoppingCart, label: "Punto de Venta", href: "/punto-venta" },
+  { icon: Clock, label: "Historial de Ventas", href: "/historial/ventas" },
+  {
+    icon: ClipboardPen,
+    label: "Gestión de Ventas",
+    submenu: [
+      {
+        icon: Trash2,
+        label: "Ventas Eliminadas",
+        href: "/historial/ventas-eliminaciones",
+      },
+      {
+        icon: FileText,
+        label: "Plantillas de Créditos",
+        href: "/plantillas-venta-cuotas",
+      },
+    ],
+  },
+
+  // === Créditos ===
+  { icon: CreditCard, label: "Créditos", href: "/creditos" },
+
+  // === Inventario y Stock ===
+  {
+    icon: Package,
+    label: "Inventario y Stock",
+    submenu: [
+      { icon: Boxes, label: "Inventario General", href: "/inventario-stock" },
       {
         icon: PackageSearch,
         label: "Movimientos de Stock",
         href: "/movimientos-stock",
       },
+      {
+        icon: NotepadText,
+        label: "Historial de Precios",
+        href: "/historial-cambios-precio",
+      },
+      {
+        icon: FileStack,
+        label: "Stock Eliminado",
+        href: "/stock-eliminaciones",
+      },
+      {
+        icon: Truck,
+        label: "Entregas de Stock",
+        href: "/entregas-stock",
+      },
     ],
   },
 
-  // Vencimientos
-  { icon: AlertCircle, label: "Vencimientos", href: "/vencimientos" },
-
-  // Sección de Transferencias
+  // === Transferencias ===
   {
-    icon: SendToBackIcon,
+    icon: ArrowLeftRight,
     label: "Transferencias",
     submenu: [
       {
-        icon: NotepadText,
+        icon: Send,
         label: "Transferir Productos",
         href: "/transferencia",
       },
       {
-        icon: NotepadText,
-        label: "Transferencia Historial",
+        icon: History,
+        label: "Historial de Transferencias",
         href: "/transferencia-historial",
       },
     ],
   },
 
-  // Sección de Clientes y Proveedores con submenú
+  // === Clientes y Proveedores ===
   {
     icon: Users,
     label: "Clientes y Proveedores",
     submenu: [
-      { icon: Users, label: "Clientes", href: "/clientes-manage" },
-      { icon: CircleUser, label: "Proveedores", href: "/agregar-proveedor" },
+      { icon: UserCheck, label: "Clientes", href: "/clientes-manage" },
+      { icon: Factory, label: "Proveedores", href: "/agregar-proveedor" },
     ],
   },
 
-  // Sección de Sucursales
+  // === Sucursales ===
   {
     icon: Building,
     label: "Sucursales",
-    submenu: [{ icon: Building, label: "Mis Sucursales", href: "/sucursal" }],
+    submenu: [{ icon: Building2, label: "Mis Sucursales", href: "/sucursal" }],
   },
-  // Gestión de Garantías y Tickets
+
+  // === Garantías y Tickets ===
   {
     icon: ShieldCheck,
-    label: "Garantía y Ticket",
+    label: "Garantías y Tickets",
     submenu: [
-      { icon: ShieldCheck, label: "Garantía Manage", href: "/garantia/manage" },
-      { icon: Ticket, label: "Ticket Manage", href: "/ticket/manage" },
+      { icon: Shield, label: "Gestión Garantías", href: "/garantia/manage" },
+      { icon: Ticket, label: "Gestión Tickets", href: "/ticket/manage" },
     ],
   },
 
-  // Gestión de Caja
+  // === Caja ===
   {
     icon: Wallet,
     label: "Caja",
@@ -199,54 +238,40 @@ const menuItemsAdmin = [
     ],
   },
 
-  // Configuración
-  // Ventas Eliminaciones y Plantillas de Créditos
+  // === Administración ===
   {
-    icon: ClipboardPen,
-    label: "Gestión de Ventas",
+    icon: BarChart3,
+    label: "Resumen Admin",
     submenu: [
-      {
-        icon: ClipboardPen,
-        label: "Ventas Eliminaciones",
-        href: "/historial/ventas-eliminaciones",
-      },
-      {
-        icon: FileText,
-        label: "Plantillas de Créditos",
-        href: "/plantillas-venta-cuotas",
-      },
+      { icon: ChartPie, label: "Resumen Diario", href: "/admin/caja/diario" },
+      { icon: Calendar, label: "Históricos", href: "/admin/historicos" },
     ],
   },
 
-  // Créditos
-  { icon: CreditCard, label: "Créditos", href: "/creditos" },
-  { icon: WrenchIcon, label: "Reparaciones", href: "/reparaciones" },
+  // === Compras ===
+  {
+    icon: ShoppingCart,
+    label: "Compras",
+    submenu: [
+      { icon: ClipboardList, label: "Requisiciones", href: "/requisiciones" },
+      { icon: ReceiptText, label: "Ver Compras", href: "/compras" },
+      { icon: Package, label: "Pedidos", href: "/pedidos" },
+    ],
+  },
 
+  // === Operaciones ===
+  { icon: AlertCircle, label: "Vencimientos", href: "/vencimientos" },
+  { icon: Wrench, label: "Reparaciones", href: "/reparaciones" },
+
+  // === Metas ===
   { icon: Target, label: "Metas", href: "/metas" },
   { icon: Goal, label: "Mis Metas", href: "/mis-metas" },
 
-  {
-    icon: ChartBarBig,
-    label: "Resumen Admin",
-    submenu: [
-      {
-        icon: PiggyBank,
-        label: "Resumen diario",
-        href: "/admin/caja/diario",
-      },
-
-      {
-        icon: SquareChartGantt,
-        label: "Historicos",
-        href: "/admin/historicos",
-      },
-    ],
-  },
-  { icon: Repeat1, label: "Requisiciones", href: "/requisiciones" },
-
+  // === Reportes ===
   { icon: FileSpreadsheet, label: "Reportes", href: "/reportes" },
 
-  { icon: Bolt, label: "Config", href: "/config/user" },
+  // === Configuración ===
+  { icon: Settings, label: "Configuración", href: "/config/user" },
 ];
 
 export function AppSidebar() {

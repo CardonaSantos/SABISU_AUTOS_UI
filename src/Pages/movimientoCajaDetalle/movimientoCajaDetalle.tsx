@@ -17,12 +17,15 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Banknote,
   FileText,
   CreditCard,
+  ArrowLeftRight,
+  Wallet,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 import type { MovimientoCajaDetail } from "./interface";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formattMonedaGT } from "@/utils/formattMoneda";
@@ -51,7 +54,7 @@ const itemVariants = {
   },
 };
 
-export default function MovimientoCajaDetalle() {
+export default function MovimientoFinancieroDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
   const movimientoID = Number(id);
@@ -82,7 +85,50 @@ export default function MovimientoCajaDetalle() {
 
   const onBack = () => navigate(-1);
 
-  const getTipoBadge = (tipo: string) => {
+  const getMovimientoInfo = (movimiento: MovimientoCajaDetail) => {
+    const deltaCaja = movimiento.deltaCaja || 0;
+    const deltaBanco = movimiento.deltaBanco || 0;
+
+    // Determinar signo y canal según reglas de negocio
+    let sign = 0;
+    let canal = "N/A";
+    let isTransfer = false;
+
+    if (deltaCaja !== 0) {
+      sign = Math.sign(deltaCaja);
+      canal = "Caja";
+    } else if (deltaCaja === 0 && deltaBanco !== 0) {
+      sign = Math.sign(deltaBanco);
+      canal = "Banco";
+    }
+
+    // Detectar transferencia (Caja→Banco)
+    if (deltaCaja < 0 && deltaBanco > 0) {
+      isTransfer = true;
+      canal = "Caja→Banco";
+    }
+
+    // Determinar tipo basado en deltas (prioridad sobre tipo legacy)
+    let tipoCalculado = "EGRESO";
+    if (isTransfer) {
+      tipoCalculado = "TRANSFERENCIA";
+    } else if (sign > 0) {
+      tipoCalculado = "INGRESO";
+    } else if (sign < 0) {
+      tipoCalculado = "EGRESO";
+    } else {
+      // Fallback al tipo legacy si no hay deltas
+      tipoCalculado = movimiento.tipo;
+      sign = movimiento.tipo === "INGRESO" ? 1 : -1;
+    }
+
+    return { sign, canal, isTransfer, tipoCalculado };
+  };
+
+  const getTipoBadge = (movimiento: MovimientoCajaDetail) => {
+    // const { tipoCalculado, isTransfer } = getMovimientoInfo(movimiento);
+    const { tipoCalculado } = getMovimientoInfo(movimiento);
+
     const variants = {
       INGRESO: {
         variant: "default" as const,
@@ -94,20 +140,21 @@ export default function MovimientoCajaDetalle() {
         icon: TrendingDown,
         color: "text-red-600",
       },
-      DEPOSITO_BANCO: {
+      TRANSFERENCIA: {
         variant: "secondary" as const,
-        icon: Banknote,
+        icon: ArrowLeftRight,
         color: "text-blue-600",
       },
     };
 
-    const config = variants[tipo as keyof typeof variants] || variants.INGRESO;
+    const config =
+      variants[tipoCalculado as keyof typeof variants] || variants.EGRESO;
     const Icon = config.icon;
 
     return (
       <Badge variant={config.variant} className="gap-1">
         <Icon className={`h-3 w-3 ${config.color}`} />
-        {tipo}
+        {tipoCalculado}
       </Badge>
     );
   };
@@ -143,13 +190,108 @@ export default function MovimientoCajaDetalle() {
     );
   };
 
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copiado al portapapeles");
+    } catch (err) {
+      toast.error("Error al copiar");
+    }
+  };
+
+  const renderChips = (movimiento: MovimientoCajaDetail) => {
+    const chips = [];
+
+    if (movimiento.clasificacion) {
+      chips.push(
+        <Badge key="clasificacion" variant="outline">
+          {movimiento.clasificacion}
+        </Badge>
+      );
+    }
+
+    if (movimiento.motivo) {
+      chips.push(
+        <Badge key="motivo" variant="outline">
+          {movimiento.motivo}
+        </Badge>
+      );
+    }
+
+    if (movimiento.metodoPago) {
+      chips.push(
+        <Badge key="metodoPago" variant="outline">
+          {movimiento.metodoPago}
+        </Badge>
+      );
+    }
+
+    if (movimiento.esDepositoCierre) {
+      chips.push(
+        <Badge key="depositoCierre" variant="secondary">
+          Depósito de Cierre
+        </Badge>
+      );
+    }
+
+    if (movimiento.esDepositoProveedor) {
+      chips.push(
+        <Badge key="depositoProveedor" variant="secondary">
+          Depósito a Proveedor
+        </Badge>
+      );
+    }
+
+    if (movimiento.gastoOperativoTipo) {
+      chips.push(
+        <Badge key="gastoOperativo" variant="outline">
+          {movimiento.gastoOperativoTipo}
+        </Badge>
+      );
+    }
+
+    if (movimiento.costoVentaTipo) {
+      chips.push(
+        <Badge key="costoVenta" variant="outline">
+          {movimiento.costoVentaTipo}
+        </Badge>
+      );
+    }
+
+    if (movimiento.afectaInventario) {
+      chips.push(
+        <Badge key="afectaInventario" variant="secondary">
+          Afecta Inventario
+        </Badge>
+      );
+    }
+
+    return chips;
+  };
+
   if (!movimiento) {
     return (
-      <div className="">
-        <h2>Movimiento no encontrado</h2>
+      <div className="min-h-screen bg-background p-2 sm:p-4">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <h2 className="text-lg font-semibold mb-2">Cargando...</h2>
+              <p className="text-muted-foreground">
+                Obteniendo información del movimiento
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
+
+  const { sign, canal, isTransfer } = getMovimientoInfo(movimiento);
+  const montoFormatted = `${
+    sign > 0 ? "+" : sign < 0 ? "−" : ""
+  }${formattMonedaGT(movimiento.monto)}`;
+
+  console.log("El movimiento financiero es: ", movimiento);
 
   return (
     <motion.div
@@ -167,20 +309,34 @@ export default function MovimientoCajaDetalle() {
               size="sm"
               onClick={onBack}
               className="h-8 w-8 p-0"
+              aria-label="Volver"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
           <div>
             <h1 className="text-xl font-semibold">
-              Movimiento de Caja #{movimiento.id}
+              Movimiento Financiero #{movimiento.id}
             </h1>
             <p className="text-xs text-muted-foreground">
               {movimiento?.caja?.sucursal?.nombre || "Sin sucursal"}
             </p>
           </div>
-          <div className="ml-auto">{getTipoBadge(movimiento.tipo)}</div>
+          <div className="ml-auto flex gap-2">
+            {getTipoBadge(movimiento)}
+            <Badge variant="outline" className="gap-1">
+              <Wallet className="h-3 w-3" />
+              {canal}
+            </Badge>
+          </div>
         </motion.div>
+
+        {/* Chips de clasificación */}
+        {renderChips(movimiento).length > 0 && (
+          <motion.div variants={itemVariants} className="flex flex-wrap gap-2">
+            {renderChips(movimiento)}
+          </motion.div>
+        )}
 
         {/* Información General del Movimiento */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -206,7 +362,9 @@ export default function MovimientoCajaDetalle() {
                 <div className="flex items-center gap-2">
                   <DollarSign
                     className={`h-4 w-4 ${
-                      movimiento.tipo === "INGRESO"
+                      isTransfer
+                        ? "text-blue-600"
+                        : sign > 0
                         ? "text-green-600"
                         : "text-red-600"
                     }`}
@@ -215,13 +373,14 @@ export default function MovimientoCajaDetalle() {
                     <p className="text-xs font-medium">Monto</p>
                     <p
                       className={`text-sm font-semibold ${
-                        movimiento.tipo === "INGRESO"
+                        isTransfer
+                          ? "text-blue-600"
+                          : sign > 0
                           ? "text-green-600"
                           : "text-red-600"
                       }`}
                     >
-                      {movimiento.tipo === "INGRESO" ? "+" : "-"}
-                      {formattMonedaGT(Math.abs(movimiento.monto))}
+                      {montoFormatted}
                     </p>
                   </div>
                 </div>
@@ -236,7 +395,14 @@ export default function MovimientoCajaDetalle() {
                   <User className="h-4 w-4 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium">Usuario</p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p
+                      className="text-xs text-muted-foreground truncate"
+                      title={
+                        movimiento.usuario
+                          ? `${movimiento.usuario.correo} (${movimiento.usuario.rol})`
+                          : undefined
+                      }
+                    >
                       {movimiento.usuario?.nombre || "N/A"}
                     </p>
                   </div>
@@ -280,7 +446,7 @@ export default function MovimientoCajaDetalle() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <p className="text-xs font-medium">Categoría</p>
+                  <p className="text-xs font-medium">Categoría (Legacy)</p>
                   <p className="text-xs text-muted-foreground">
                     {movimiento.categoria || "Sin categoría"}
                   </p>
@@ -288,7 +454,7 @@ export default function MovimientoCajaDetalle() {
                 <Separator />
                 <div>
                   <p className="text-xs font-medium">Descripción</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">
                     {movimiento.descripcion || "Sin descripción"}
                   </p>
                 </div>
@@ -296,39 +462,22 @@ export default function MovimientoCajaDetalle() {
                   <>
                     <Separator />
                     <div>
-                      <p className="text-xs font-medium">Referencia</p>
-                      <p className="text-xs text-muted-foreground">
-                        {movimiento.referencia}
-                      </p>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Información Bancaria
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-xs font-medium">Banco</p>
-                  <p className="text-xs text-muted-foreground">
-                    {movimiento.banco || "N/A"}
-                  </p>
-                </div>
-                {movimiento.numeroBoleta && (
-                  <>
-                    <Separator />
-                    <div>
-                      <p className="text-xs font-medium">Número de Boleta</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-medium">Referencia</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() =>
+                            copyToClipboard(movimiento.referencia!)
+                          }
+                          aria-label="Copiar referencia"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
                       <p className="text-xs text-muted-foreground font-mono">
-                        {movimiento.numeroBoleta}
+                        {movimiento.referencia}
                       </p>
                     </div>
                   </>
@@ -347,16 +496,80 @@ export default function MovimientoCajaDetalle() {
               </CardContent>
             </Card>
           </motion.div>
-        </div>
 
-        {/* Información de la Caja Asociada */}
-        {movimiento.caja && (
           <motion.div variants={itemVariants}>
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Caja Asociada #{movimiento.caja.id}
+                  <CreditCard className="h-4 w-4" />
+                  Información Bancaria
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-xs font-medium">Cuenta Bancaria</p>
+                  <p className="text-xs text-muted-foreground">
+                    {movimiento.cuentaBancaria
+                      ? `${movimiento.cuentaBancaria.banco || "N/A"}${
+                          movimiento.cuentaBancaria.alias
+                            ? ` / ${movimiento.cuentaBancaria.alias}`
+                            : ""
+                        }`
+                      : "N/A"}
+                  </p>
+                  {movimiento.cuentaBancaria?.numeroMasked && (
+                    <p className="text-xs text-muted-foreground font-mono">
+                      {movimiento.cuentaBancaria.numeroMasked}
+                    </p>
+                  )}
+                </div>
+                <Separator />
+                <div>
+                  <p className="text-xs font-medium">Número de Boleta</p>
+                  <p className="text-xs text-muted-foreground font-mono">
+                    {movimiento.numeroBoleta || "—"}
+                  </p>
+                </div>
+                {movimiento.metodoPago && (
+                  <>
+                    <Separator />
+                    <div>
+                      <p className="text-xs font-medium">Método de Pago</p>
+                      <p className="text-xs text-muted-foreground">
+                        {movimiento.metodoPago}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Información de la Caja Asociada */}
+        {movimiento.caja ? (
+          <motion.div variants={itemVariants}>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Caja Asociada #{movimiento.caja.id}
+                  </div>
+                  <Link to={`/caja/${movimiento.caja.id}`}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs bg-transparent"
+                      onClick={() => {
+                        /* Navegar a ver caja */
+                      }}
+                      aria-label={`Ver caja ${movimiento.caja!.id}`}
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      Ver caja
+                    </Button>
+                  </Link>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -474,6 +687,17 @@ export default function MovimientoCajaDetalle() {
               </CardContent>
             </Card>
           </motion.div>
+        ) : (
+          <motion.div variants={itemVariants}>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Building2 className="h-4 w-4" />
+                  <p className="text-sm">Sin turno asociado</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         )}
 
         {/* Timestamps */}
@@ -482,7 +706,7 @@ export default function MovimientoCajaDetalle() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Información de Sistema
+                Metadatos
               </CardTitle>
             </CardHeader>
             <CardContent>

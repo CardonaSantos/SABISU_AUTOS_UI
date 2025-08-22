@@ -1,7 +1,11 @@
 // src/lib/api.ts
 import axios from "axios";
-import type { CreateMovimientoCajaDto, Proveedor } from "./types";
+import type { Proveedor } from "./types";
 import { PreviewCierreInterface } from "./previaCerrar.interface";
+import {
+  CrearMovimientoFinancieroDto,
+  CuentaBancaria,
+} from "./movimientos-financieros";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -30,9 +34,11 @@ function getApiErrorMessage(err: unknown): string {
   return fallback;
 }
 
-export async function createMovimientoCaja(data: CreateMovimientoCajaDto) {
+export async function createMovimientoFinanciero(
+  data: CrearMovimientoFinancieroDto
+) {
   try {
-    const res = await axios.post(`${API_URL}/movimiento-caja`, data);
+    const res = await axios.post(`${API_URL}/movimiento-financiero`, data);
     return res.data;
   } catch (err) {
     throw new Error(getApiErrorMessage(err));
@@ -48,6 +54,18 @@ export async function getPreviaCerrar(sucursalID: number, userID: number) {
   try {
     const res = await axios.get<PreviewCierreInterface>(
       `${API_URL}/caja/get-previo-cierre/${sucursalID}/${userID}`
+    );
+    return res.data;
+  } catch (err) {
+    throw new Error(getApiErrorMessage(err));
+  }
+}
+
+//GET PARA SELECT DE CUENTAS BANCARIAS
+export async function getCuentasBancariasArray() {
+  try {
+    const res = await axios.get<CuentaBancaria[]>(
+      `${API_URL}/cuentas-bancarias/get-simple-select`
     );
     return res.data;
   } catch (err) {

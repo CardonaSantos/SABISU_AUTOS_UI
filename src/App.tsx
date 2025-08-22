@@ -70,8 +70,10 @@ import Caja from "./Pages/Caja/Caja";
 import CajaRegistros from "./Pages/CajaRegistros/CajaRegistros";
 import CajaDetalle from "./Pages/CajaDetalle/caja-detalle";
 import MovimientoCajaDetalle from "./Pages/movimientoCajaDetalle/movimientoCajaDetalle";
-import ResumenDiarioPage from "./Pages/ResumenesDelDia/ResumenPage";
-import ResumenHistoricoPage from "./Pages/ResumenesDelDia/ResumenHistorico";
+import { ComprasMainPage } from "./Pages/Compras/ComprasMainPage";
+import CompraDetalle from "./Pages/Compras/compra-detalle";
+import ResumenDiarioPage from "./Pages/resumenes-admin/page";
+import HistoricoSucursal from "./Pages/resumenes-admin/_historico_sucursal/page";
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -399,7 +401,7 @@ function App() {
               path="/admin/historicos"
               element={
                 <ProtectRouteAdmin>
-                  <ResumenHistoricoPage />
+                  <HistoricoSucursal />
                 </ProtectRouteAdmin>
               }
             />
@@ -553,6 +555,24 @@ function App() {
               element={
                 <ProtectRouteAdmin>
                   <RequisitionEditor />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/compras"
+              element={
+                <ProtectRouteAdmin>
+                  <ComprasMainPage />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/compra/:id"
+              element={
+                <ProtectRouteAdmin>
+                  <CompraDetalle />
                 </ProtectRouteAdmin>
               }
             />

@@ -25,6 +25,26 @@ export interface MovimientoCaja {
   usadoParaCierre: boolean | null;
   proveedor: ProveedorCaja | null;
   usuario: UsuarioCaja | null;
+  clasificacion?: string; // ClasificacionAdmin
+  motivo?: string; // MotivoMovimiento
+  metodoPago?: string | null;
+
+  deltaCaja?: number; // signo real
+  deltaBanco?: number;
+
+  esDepositoCierre?: boolean;
+  esDepositoProveedor?: boolean;
+
+  gastoOperativoTipo?: string | null;
+  costoVentaTipo?: string | null;
+  afectaInventario?: boolean;
+
+  cuentaBancaria?: {
+    id: number;
+    banco: string | null;
+    alias: string | null;
+    numeroMasked: string | null;
+  } | null;
 }
 
 export interface ImagenProducto {

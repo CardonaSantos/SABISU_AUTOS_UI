@@ -192,7 +192,7 @@ function CajaRegistros() {
             >
               <div className="flex items-center gap-1.5">
                 <Database className="h-3 w-3" />
-                <span className="truncate">Movimientos de Caja</span>
+                <span className="truncate">Movimientos financieros</span>
                 {cajas.length > 0 && (
                   <Badge variant="secondary" className="ml-1 text-xs px-1">
                     {registLenght.movimientosLength}

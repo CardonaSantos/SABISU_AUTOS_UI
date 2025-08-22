@@ -82,6 +82,27 @@ export interface MovimientoCajaItem {
   usuario: UsuarioSlim | null;
   proveedor: ProveedorSlim | null;
   caja: (CajaSlim & { estado: EstadoCaja; depositado: boolean }) | null;
+  //NUEVOS
+  clasificacion?: string; // ClasificacionAdmin
+  motivo?: string; // MotivoMovimiento
+  metodoPago?: string | null;
+
+  deltaCaja?: number; // para conocer el signo real
+  deltaBanco?: number;
+
+  esDepositoCierre?: boolean;
+  esDepositoProveedor?: boolean;
+
+  gastoOperativoTipo?: string | null;
+  costoVentaTipo?: string | null;
+  afectaInventario?: boolean;
+
+  cuentaBancaria?: {
+    id: number;
+    banco: string | null;
+    alias: string | null;
+    numeroMasked: string | null;
+  } | null;
 }
 
 // Respuesta paginada

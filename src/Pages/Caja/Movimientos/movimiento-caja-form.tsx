@@ -1,7 +1,8 @@
 "use client";
-// src/pages/movimiento-caja/movimiento-caja-form.tsx
-import type React from "react";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
   Card,
   CardContent,
@@ -20,615 +21,797 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { toast } from "sonner";
 import {
-  type CreateMovimientoCajaDto,
-  type MovimientoCajaFormErrors,
-  type Proveedor,
-  TipoMovimientoCaja,
-  CategoriaMovimiento,
-} from "./types";
-import { TIPO_MOVIMIENTO_CAJA_OPTIONS } from "./movimiento-caja-enums";
-import { DollarSign, Calendar, Tag, Check } from "lucide-react";
-import { AdvancedDialog } from "@/utils/components/AdvancedDialog";
-import { motion } from "framer-motion";
-import DesvanecerHaciaArriba from "@/Crm/Motion/DashboardAnimations";
-import dayjs from "dayjs";
-import "dayjs/locale/es";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
-import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
-import { createMovimientoCaja, getPreviaCerrar } from "./api";
-import { CATS_BY_TIPO } from "./tiposYCategorias";
+  DollarSign,
+  Building2,
+  CreditCard,
+  FileText,
+  Hash,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
+import {
+  type CrearMovimientoFinancieroDto,
+  type MovimientoFinancieroFormProps,
+  type MotivoMovimiento,
+  type MetodoPago,
+  type GastoOperativoTipo,
+  type CostoVentaTipo,
+  type CajaAbierta,
+  MOTIVO_OPTIONS,
+  METODO_PAGO_OPTIONS,
+  UI_RULES,
+} from "./movimientos-financieros";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { createMovimientoFinanciero } from "./api";
 import { useStore } from "@/components/Context/ContextSucursal";
-import { CajaAbierta } from "../interfaces";
-import DatePicker, { registerLocale } from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import { es } from "date-fns/locale/es";
-import { cn } from "@/lib/utils";
-import { Switch } from "@/components/ui/switch";
-import { PreviewCierreInterface } from "./previaCerrar.interface";
-registerLocale("es", es);
+import { getUltimaCajaAbierta } from "../api";
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.extend(isSameOrBefore);
-dayjs.extend(isSameOrAfter);
-dayjs.locale("es");
-interface MovimientoCajaFormProps {
-  proveedores: Proveedor[];
-  getMovimientosCaja: () => Promise<void>;
-  userID: number;
-  getCajaAbierta: () => Promise<CajaAbierta | null>;
-  reloadContext: () => Promise<void>;
-}
+// Opciones para subtipos
+const GASTO_OPERATIVO_OPTIONS: Array<{
+  value: GastoOperativoTipo;
+  label: string;
+}> = [
+  { value: "SALARIO", label: "Salario" },
+  { value: "ENERGIA", label: "Energía" },
+  { value: "LOGISTICA", label: "Logística" },
+  { value: "RENTA", label: "Renta" },
+  { value: "INTERNET", label: "Internet" },
+  { value: "PUBLICIDAD", label: "Publicidad" },
+  { value: "VIATICOS", label: "Viáticos" },
+  { value: "OTROS", label: "Otros" },
+];
 
-export function MovimientoCajaForm({
-  proveedores,
+const COSTO_VENTA_OPTIONS: Array<{ value: CostoVentaTipo; label: string }> = [
+  { value: "MERCADERIA", label: "Mercadería" },
+  { value: "FLETE", label: "Flete" },
+  { value: "ENCOMIENDA", label: "Encomienda" },
+  { value: "TRANSPORTE", label: "Transporte" },
+  { value: "OTROS", label: "Otros" },
+];
+
+const MOTIVO_VALUES = [
+  "VENTA",
+  "OTRO_INGRESO",
+  "GASTO_OPERATIVO",
+  "COMPRA_MERCADERIA",
+  "COSTO_ASOCIADO",
+  "DEPOSITO_CIERRE",
+  "DEPOSITO_PROVEEDOR",
+  "PAGO_PROVEEDOR_BANCO",
+  "AJUSTE_SOBRANTE",
+  "AJUSTE_FALTANTE",
+  "DEVOLUCION",
+] as const;
+
+const METODO_PAGO_VALUES = [
+  "EFECTIVO",
+  "TRANSFERENCIA",
+  "DEPOSITO",
+  "TARJETA",
+  "CHEQUE",
+  "OTRO",
+] as const;
+
+const GASTO_OPERATIVO_VALUES = [
+  "SALARIO",
+  "ENERGIA",
+  "LOGISTICA",
+  "RENTA",
+  "INTERNET",
+  "PUBLICIDAD",
+  "VIATICOS",
+  "OTROS",
+] as const;
+
+const COSTO_VENTA_VALUES = [
+  "MERCADERIA",
+  "FLETE",
+  "ENCOMIENDA",
+  "TRANSPORTE",
+  "OTROS",
+] as const;
+
+// Schema de validación dinámico
+const createValidationSchema = (
+  motivo?: MotivoMovimiento,
+  metodoPago?: MetodoPago,
+  isDepositoCierreTotal?: boolean,
+  efectivoDisponible?: number
+) => {
+  const rules = motivo ? UI_RULES[motivo] : null;
+
+  return z.object({
+    // ✔️ ahora sí matchea el overload correcto
+    motivo: z.enum(MOTIVO_VALUES, { message: "El motivo es requerido" }),
+
+    metodoPago: z
+      .enum(METODO_PAGO_VALUES) // puedes añadir { message: "..."} si quieres
+      .optional()
+      .refine((val) => {
+        if (motivo === "DEPOSITO_CIERRE" || motivo === "PAGO_PROVEEDOR_BANCO") {
+          return val === "TRANSFERENCIA" || val === "DEPOSITO";
+        }
+        return true;
+      }, "Método de pago inválido para este motivo"),
+
+    monto: z
+      .number()
+      .refine((val) => {
+        if (motivo === "DEPOSITO_CIERRE" && isDepositoCierreTotal) {
+          return true;
+        }
+        return val > 0;
+      }, "El monto debe ser mayor a 0")
+      .refine((val) => {
+        if (
+          motivo === "DEPOSITO_CIERRE" &&
+          !isDepositoCierreTotal &&
+          typeof efectivoDisponible === "number"
+        ) {
+          return val <= efectivoDisponible;
+        }
+        return true;
+      }, `No puedes depositar más de Q ${efectivoDisponible?.toFixed(2) || 0}`),
+
+    descripcion: z.string().optional(),
+    referencia: z.string().optional(),
+
+    proveedorId: z
+      .number()
+      .optional()
+      .refine((val) => {
+        if (rules?.requireProveedor) return val !== undefined;
+        return true;
+      }, "Proveedor es requerido"),
+
+    cuentaBancariaId: z
+      .number()
+      .optional()
+      .refine((val) => {
+        if (typeof rules?.requireCuenta === "function") {
+          return rules.requireCuenta(metodoPago) ? val !== undefined : true;
+        }
+        if (rules?.requireCuenta === true) return val !== undefined;
+        return true;
+      }, "Cuenta bancaria es requerida"),
+
+    gastoOperativoTipo: z
+      .enum(GASTO_OPERATIVO_VALUES)
+      .optional()
+      .refine((val) => {
+        if (rules?.requireSubtipoGO) return val !== undefined;
+        return true;
+      }, "Subtipo de gasto operativo es requerido"),
+
+    costoVentaTipo: z
+      .enum(COSTO_VENTA_VALUES)
+      .optional()
+      .refine((val) => {
+        if (rules?.requireCostoVentaTipo) return val !== undefined;
+        return true;
+      }, "Tipo de costo de venta es requerido"),
+  });
+};
+
+type FormData = z.infer<ReturnType<typeof createValidationSchema>>;
+
+export function MovimientoFinancieroForm({
   userID,
+  proveedores,
+  cuentasBancarias,
+  getPreviaCerrar,
   reloadContext,
-}: MovimientoCajaFormProps) {
+}: MovimientoFinancieroFormProps) {
   const sucursalID = useStore((state) => state.sucursalId) ?? 0;
 
-  const buildInitialFormData = (): CreateMovimientoCajaDto => ({
-    tipo: TipoMovimientoCaja.INGRESO,
-    categoria: undefined,
-    monto: 0,
-    usuarioId: userID,
-    fecha: dayjs().format("YYYY-MM-DDTHH:mm"),
-    sucursalId: sucursalID,
-  });
-
-  const [formData, setFormData] = useState<CreateMovimientoCajaDto>(
-    buildInitialFormData()
+  const [cajaAbierta, setCajaAbierta] = useState<CajaAbierta | null>(null);
+  const [efectivoDisponible, setEfectivoDisponible] = useState<number | null>(
+    null
   );
-  const [errors, setErrors] = useState<MovimientoCajaFormErrors>({});
+  const [isDepositoCierreTotal, setIsDepositoCierreTotal] = useState(true);
+  const [loadingPreview, setLoadingPreview] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Estado para previa (cierre total/parcial)
-  const [previewCierre, setPreviewCierre] =
-    useState<PreviewCierreInterface | null>(null);
-  const [loadingPreview, setLoadingPreview] = useState(false);
-  const [parcialEnable, setParcialEnable] = useState(false);
+  // Form setup
+  const form = useForm<FormData>({
+    resolver: zodResolver(
+      createValidationSchema(
+        undefined,
+        undefined,
+        isDepositoCierreTotal,
+        efectivoDisponible || undefined
+      )
+    ),
+    defaultValues: {
+      motivo: undefined,
+      metodoPago: undefined,
+      monto: 0,
+      descripcion: "",
+      referencia: "",
+    },
+  });
 
-  // Helpers de UI
-  const isDepositoBanco = formData.tipo === TipoMovimientoCaja.DEPOSITO_BANCO;
-  const isDepositoCierre =
-    formData.tipo === "DEPOSITO_BANCO" &&
-    formData.categoria === "DEPOSITO_CIERRE";
-  const isCostoVentaOrDepositoProveedor =
-    formData.categoria === CategoriaMovimiento.COSTO_VENTA ||
-    formData.categoria === CategoriaMovimiento.DEPOSITO_PROVEEDOR;
+  const watchedMotivo = form.watch("motivo");
+  const watchedMetodoPago = form.watch("metodoPago");
+  const watchedMonto = form.watch("monto");
 
-  const efectivoDisponible = previewCierre?.efectivoDisponible ?? null;
+  // Obtener reglas UI para el motivo actual
+  const currentRules = watchedMotivo ? UI_RULES[watchedMotivo] : null;
 
-  // Handlers básicos
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "number" ? Number.parseFloat(value) : value,
-    }));
-    setErrors((prev) => ({ ...prev, [name]: undefined }));
-  };
+  // Verificar si necesita caja abierta
+  const needsCaja = currentRules?.needsCajaIf
+    ? typeof currentRules.needsCajaIf === "function"
+      ? currentRules.needsCajaIf(watchedMetodoPago)
+      : currentRules.needsCajaIf
+    : false;
 
-  const handleChangeFecha = (date: Date | null) => {
-    setFormData((prev) => ({
-      ...prev,
-      fecha: date ? dayjs(date).format("YYYY-MM-DDTHH:mm") : "",
-    }));
-    setErrors((prev) => ({ ...prev, fecha: undefined }));
-  };
-
-  const handleSelectChange = (
-    name: keyof CreateMovimientoCajaDto,
-    value: string
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "proveedorId" ? Number(value) : value,
-    }));
-    setErrors((prev) => ({ ...prev, [name]: undefined }));
-  };
-
-  // Cascadas por Tipo/Categoría (limpieza de campos incompatibles)
-  useEffect(() => {
-    const allowed = CATS_BY_TIPO[formData.tipo];
-    setFormData((prev) => {
-      const next = { ...prev };
-      if (!allowed) {
-        next.categoria = undefined;
-        next.proveedorId = undefined;
-        next.usadoParaCierre = false;
-        next.banco = undefined;
-        next.numeroBoleta = undefined;
-        return next;
-      }
-      if (next.categoria && !allowed.includes(next.categoria))
-        next.categoria = undefined;
-      return next;
-    });
-    setErrors((e) => ({ ...e, categoria: undefined }));
-  }, [formData.tipo]);
-
-  useEffect(() => {
-    setFormData((prev) => {
-      const next = { ...prev };
-      if (
-        prev.tipo === "DEPOSITO_BANCO" &&
-        prev.categoria === "DEPOSITO_CIERRE"
-      ) {
-        next.usadoParaCierre = true;
-        next.proveedorId = undefined;
-      } else if (prev.tipo === "DEPOSITO_BANCO") {
-        next.usadoParaCierre = false;
-      }
-      if (
-        prev.categoria !== "COSTO_VENTA" &&
-        prev.categoria !== "DEPOSITO_PROVEEDOR"
-      ) {
-        next.proveedorId = undefined;
-      }
-      if (prev.tipo !== "DEPOSITO_BANCO") {
-        next.banco = undefined;
-        next.numeroBoleta = undefined;
-      }
-      return next;
-    });
-  }, [formData.categoria, formData.tipo]);
-
-  // Si es depósito de cierre y NO parcial, el monto lo calcula el server
-  useEffect(() => {
-    if (isDepositoCierre && !parcialEnable) {
-      setFormData((prev) => ({ ...prev, monto: 0 }));
+  const loadCajaAbierta = async (): Promise<CajaAbierta | null> => {
+    try {
+      return await getUltimaCajaAbierta(sucursalID, userID);
+    } catch (error) {
+      console.error("Error al cargar caja abierta:", error);
+      return null;
     }
-  }, [isDepositoCierre, parcialEnable]);
+  };
 
-  // Toggle de cierre parcial: trae previa
-  const fetchPreview = async () => {
+  // Cargar caja abierta cuando sea necesario
+  useEffect(() => {
+    if (needsCaja) {
+      loadCajaAbierta().then((data) => {
+        if (data) setCajaAbierta(data);
+      });
+    }
+  }, [needsCaja]);
+
+  // Forzar método de pago para ciertos motivos
+  useEffect(() => {
+    if (
+      watchedMotivo === "DEPOSITO_CIERRE" ||
+      watchedMotivo === "PAGO_PROVEEDOR_BANCO"
+    ) {
+      form.setValue("metodoPago", "TRANSFERENCIA");
+    }
+  }, [watchedMotivo, form]);
+
+  // Cargar previa de cierre cuando sea necesario
+  const loadPreviaCierre = async () => {
+    if (!getPreviaCerrar) return;
+
     setLoadingPreview(true);
     try {
-      const data = await getPreviaCerrar(sucursalID, userID);
-      setPreviewCierre(data);
-    } catch {
-      toast.error("Error al calcular la previa de cierre.");
+      const data = await getPreviaCerrar(sucursalID);
+      setEfectivoDisponible(data.efectivoDisponible);
+    } catch (error) {
+      toast.error("Error al cargar la previa de cierre");
     } finally {
       setLoadingPreview(false);
     }
   };
 
-  const handleToggleParcial = (checked: boolean) => {
-    setParcialEnable(checked);
-    if (checked && isDepositoCierre) fetchPreview();
+  // Manejar toggle de depósito parcial/total
+  const handleToggleDepositoCierre = (isTotal: boolean) => {
+    setIsDepositoCierreTotal(isTotal);
+    if (!isTotal) {
+      loadPreviaCierre();
+    } else {
+      form.setValue("monto", 0);
+    }
   };
 
-  // Validación
-  const validateForm = (): boolean => {
-    const newErrors: MovimientoCajaFormErrors = {};
-    if (!formData.tipo) newErrors.tipo = "El tipo de movimiento es requerido.";
-    if (!formData.usuarioId)
-      newErrors.usuarioId = "El ID de usuario es requerido.";
-    if (!formData.fecha) newErrors.fecha = "La fecha es requerida.";
+  // Limpiar campos cuando cambia el motivo
+  useEffect(() => {
+    form.setValue("proveedorId", undefined);
+    form.setValue("cuentaBancariaId", undefined);
+    form.setValue("gastoOperativoTipo", undefined);
+    form.setValue("costoVentaTipo", undefined);
 
-    const allowed = CATS_BY_TIPO[formData.tipo];
-    if (allowed && !formData.categoria) {
-      newErrors.categoria = "La categoría es requerida para este tipo.";
+    // Resetear depósito de cierre
+    if (watchedMotivo === "DEPOSITO_CIERRE") {
+      setIsDepositoCierreTotal(true);
+      setEfectivoDisponible(null);
+    }
+  }, [watchedMotivo, form]);
+
+  // Validar y enviar
+  const onSubmit = () => {
+    // Validar caja abierta si es necesaria
+    if (needsCaja && !cajaAbierta) {
+      toast.error("No hay una caja abierta. Abre una caja antes de continuar.");
+      return;
     }
 
-    // EGRESO
-    if (formData.tipo === "EGRESO") {
-      if (
-        !["COSTO_VENTA", "GASTO_OPERATIVO"].includes(formData.categoria as any)
-      ) {
-        newErrors.categoria = "Categoría inválida para EGRESO.";
-      }
-      if (formData.categoria === "COSTO_VENTA" && !formData.proveedorId) {
-        newErrors.proveedorId = "Proveedor obligatorio en Costo de Venta.";
-      }
-      if (formData.monto <= 0) newErrors.monto = "El monto debe ser mayor a 0.";
-    }
-
-    // DEPÓSITO BANCO
-    if (formData.tipo === "DEPOSITO_BANCO") {
-      if (
-        !["DEPOSITO_CIERRE", "DEPOSITO_PROVEEDOR"].includes(
-          formData.categoria as any
-        )
-      ) {
-        newErrors.categoria = "Categoría inválida para Depósito.";
-      }
-      if (formData.categoria === "DEPOSITO_CIERRE") {
-        if (!formData.banco) newErrors.banco = "Banco es obligatorio.";
-        if (!formData.numeroBoleta)
-          newErrors.numeroBoleta = "Boleta es obligatoria.";
-
-        if (parcialEnable) {
-          if (formData.monto <= 0) newErrors.monto = "Ingresa un monto válido.";
-          if (
-            efectivoDisponible != null &&
-            formData.monto > efectivoDisponible
-          ) {
-            newErrors.monto = `No puedes depositar más de Q ${efectivoDisponible.toFixed(
-              2
-            )}.`;
-          }
-        }
-      }
-      if (formData.categoria === "DEPOSITO_PROVEEDOR") {
-        if (!formData.proveedorId) {
-          newErrors.proveedorId =
-            "Proveedor es obligatorio para depósito a proveedor.";
-        }
-        if (formData.monto <= 0)
-          newErrors.monto = "El monto debe ser mayor a 0.";
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Submit
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validateForm()) setIsConfirmDialogOpen(true);
-    else toast.error("Por favor, corrige los errores del formulario.");
+    setIsConfirmDialogOpen(true);
   };
 
   const handleConfirmSubmit = async () => {
+    const data = form.getValues();
     setIsSubmitting(true);
     setIsConfirmDialogOpen(false);
 
-    // payload con flag depositarTodo para depósito de cierre
-    const payload: CreateMovimientoCajaDto & { depositarTodo?: boolean } = {
-      ...formData,
-      usuarioId: Number(formData.usuarioId),
-      fecha: formData.fecha
-        ? new Date(formData.fecha).toISOString()
-        : undefined,
-    };
-
-    if (isDepositoCierre) {
-      if (parcialEnable) {
-        payload.depositarTodo = false; // usa payload.monto
-        payload.monto = Number(formData.monto);
-      } else {
-        payload.depositarTodo = true; // server calcula y deposita todo
-        delete (payload as any).monto;
-      }
-    } else {
-      payload.monto = Number(formData.monto);
-    }
-
     try {
-      await toast.promise(
-        (async () => {
-          await createMovimientoCaja(payload);
-          await reloadContext(); // 1 sola recarga
-        })(),
-        {
-          loading: "Registrando movimiento...",
-          success: "Registrado",
-          error: (e) => e?.message || "Error al registrar el movimiento.",
-        }
-      );
-      setFormData(buildInitialFormData());
-      setParcialEnable(false);
-      setPreviewCierre(null);
+      // Construir payload
+      const payload: CrearMovimientoFinancieroDto = {
+        sucursalId: sucursalID,
+        usuarioId: userID,
+        motivo: data.motivo!,
+        metodoPago: data.metodoPago,
+        monto:
+          watchedMotivo === "DEPOSITO_CIERRE" && isDepositoCierreTotal
+            ? 0
+            : data.monto,
+        descripcion: data.descripcion,
+        referencia: data.referencia,
+      };
+
+      // Agregar registroCajaId si necesita caja
+      if (needsCaja && cajaAbierta) {
+        payload.registroCajaId = cajaAbierta.id;
+      }
+
+      // Agregar campos relacionales
+      if (data.proveedorId) payload.proveedorId = data.proveedorId;
+      if (data.cuentaBancariaId)
+        payload.cuentaBancariaId = data.cuentaBancariaId;
+      if (data.gastoOperativoTipo)
+        payload.gastoOperativoTipo = data.gastoOperativoTipo;
+      if (data.costoVentaTipo) payload.costoVentaTipo = data.costoVentaTipo;
+
+      // Agregar flags especiales
+      if (currentRules?.flags?.esDepositoCierre) {
+        payload.esDepositoCierre = true;
+      }
+      if (currentRules?.flags?.esDepositoProveedor) {
+        payload.esDepositoProveedor = true;
+      }
+
+      console.log("La data es: ", payload);
+
+      await createMovimientoFinanciero(payload);
+
+      toast.success("Movimiento financiero registrado exitosamente");
+
+      // Resetear formulario
+      form.reset();
+      setIsDepositoCierreTotal(true);
+      setEfectivoDisponible(null);
+      setCajaAbierta(null);
+
+      // Recargar contexto si está disponible
+      if (reloadContext) {
+        await reloadContext();
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Error al registrar el movimiento");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // UI
-  const allowedCategorias = CATS_BY_TIPO[formData.tipo] ?? null;
-  const categoriaDisabled = !allowedCategorias;
-
   return (
-    <motion.div {...DesvanecerHaciaArriba}>
-      <Card className="mx-auto w-full">
+    <>
+      <Card className="mx-auto w-full max-w-4xl">
         <CardHeader>
-          <CardTitle className="text-lg font-bold text-center">
-            Registrar Movimiento de Caja
+          <CardTitle className="text-xl font-bold text-center flex items-center justify-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Registrar Movimiento Financiero
           </CardTitle>
-          <CardDescription>
-            Completa los detalles para registrar un nuevo movimiento de caja.
+          <CardDescription className="text-center">
+            Completa los detalles para registrar un nuevo movimiento financiero
           </CardDescription>
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={handleSubmit} className="grid gap-6">
-            {/* Fecha / Tipo */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="fecha">
-                  <Calendar className="inline-block h-4 w-4 mr-1" />
-                  Fecha
-                </Label>
-                <DatePicker
-                  disabled
-                  id="fecha"
-                  selected={
-                    formData.fecha ? dayjs(formData.fecha).toDate() : null
-                  }
-                  onChange={handleChangeFecha}
-                  timeIntervals={15}
-                  timeCaption="Hora"
-                  dateFormat="yyyy-MM-dd HH:mm"
-                  locale="es"
-                  className={cn(
-                    "w-full ml-2 py-1 rounded-md p-1 text-black",
-                    errors.fecha && "border-red-500"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Fila 1: Motivo y Método de Pago */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="motivo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Motivo del Movimiento
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona el motivo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {MOTIVO_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
                   )}
                 />
-                {errors.fecha && (
-                  <p className="text-red-500 text-sm">{errors.fecha}</p>
-                )}
+
+                <FormField
+                  control={form.control}
+                  name="metodoPago"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        Método de Pago
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={
+                          watchedMotivo === "DEPOSITO_CIERRE" ||
+                          watchedMotivo === "PAGO_PROVEEDOR_BANCO"
+                        }
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona el método" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {METODO_PAGO_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="tipo">
-                  <Tag className="inline-block h-4 w-4 mr-1" />
-                  Tipo de Movimiento
-                </Label>
-                <Select
-                  value={formData.tipo}
-                  onValueChange={(v) =>
-                    handleSelectChange("tipo", v as TipoMovimientoCaja)
-                  }
-                >
-                  <SelectTrigger
-                    id="tipo"
-                    className={errors.tipo ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Selecciona el tipo" />
-                  </SelectTrigger>
-                  <SelectContent
-                    side="bottom"
-                    className="max-h-60 overflow-y-auto"
-                  >
-                    {TIPO_MOVIMIENTO_CAJA_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>
-                        {o.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.tipo && (
-                  <p className="text-red-500 text-sm">{errors.tipo}</p>
-                )}
-              </div>
-            </div>
-
-            {/* Categoría / Monto */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="categoria">Categoría</Label>
-                {categoriaDisabled ? (
-                  <Input
-                    id="categoria"
-                    value="No aplica"
-                    disabled
-                    className="text-muted-foreground"
-                  />
-                ) : (
-                  <Select
-                    value={formData.categoria}
-                    onValueChange={(v) =>
-                      handleSelectChange("categoria", v as CategoriaMovimiento)
-                    }
-                  >
-                    <SelectTrigger
-                      id="categoria"
-                      className={errors.categoria ? "border-red-500" : ""}
-                    >
-                      <SelectValue placeholder="Selecciona la categoría" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allowedCategorias!.map((v) => (
-                        <SelectItem key={v} value={v}>
-                          {v.replace("_", " ")}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                {errors.categoria && (
-                  <p className="text-red-500 text-sm">{errors.categoria}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="monto">
-                  <DollarSign className="inline-block h-4 w-4 mr-1" />
-                  Monto
-                </Label>
-
-                {/* Depósito cierre total => texto, parcial => input */}
-                {isDepositoCierre && !parcialEnable ? (
-                  <Input
-                    id="monto"
-                    disabled
-                    value="Se calculará automáticamente"
-                  />
-                ) : (
-                  <Input
-                    id="monto"
-                    name="monto"
-                    type="number"
-                    step="0.01"
-                    value={Number(formData.monto) || 0}
-                    onChange={handleChange}
-                    className={errors.monto ? "border-red-500" : ""}
-                  />
-                )}
-
-                {errors.monto && (
-                  <p className="text-red-500 text-sm">{errors.monto}</p>
-                )}
-
-                {isDepositoCierre && (
-                  <div className="flex items-center gap-3 pt-1">
-                    <Switch
-                      id="switchparcial"
-                      checked={parcialEnable}
-                      onCheckedChange={handleToggleParcial}
+              {/* Fila 2: Campos condicionales (Proveedor, Subtipos) y Monto */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Columna izquierda: Campos condicionales */}
+                <div className="space-y-4">
+                  {/* Proveedor */}
+                  {currentRules?.requireProveedor && (
+                    <FormField
+                      control={form.control}
+                      name="proveedorId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Proveedor</FormLabel>
+                          <Select
+                            onValueChange={(value) =>
+                              field.onChange(Number(value))
+                            }
+                            value={field.value?.toString()}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecciona un proveedor" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {proveedores.map((proveedor) => (
+                                <SelectItem
+                                  key={proveedor.id}
+                                  value={proveedor.id.toString()}
+                                >
+                                  {proveedor.nombre}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                    <Label htmlFor="switchparcial" className="cursor-pointer">
-                      Habilitar cierre parcial
-                    </Label>
-                  </div>
-                )}
+                  )}
 
-                {isDepositoCierre && parcialEnable && (
-                  <div className="text-sm text-muted-foreground">
-                    {loadingPreview ? (
-                      <p>Calculando previa…</p>
-                    ) : previewCierre ? (
-                      <>
-                        <p>
-                          Efectivo disponible:{" "}
-                          <strong>
-                            Q {previewCierre.efectivoDisponible.toFixed(2)}
-                          </strong>
-                        </p>
-                        <p>
-                          Saldo tras depósito:{" "}
-                          <strong>
-                            Q{" "}
-                            {(
-                              previewCierre.efectivoDisponible -
-                              (Number(formData.monto) || 0)
-                            ).toFixed(2)}
-                          </strong>
-                        </p>
-                      </>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-            </div>
+                  {/* Subtipo Gasto Operativo */}
+                  {currentRules?.requireSubtipoGO && (
+                    <FormField
+                      control={form.control}
+                      name="gastoOperativoTipo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipo de Gasto Operativo</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecciona el tipo" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {GASTO_OPERATIVO_OPTIONS.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
-            {/* Descripción / Referencia */}
-            <div className="space-y-2">
-              <Label htmlFor="descripcion">Descripción (Opcional)</Label>
-              <Textarea
-                id="descripcion"
-                name="descripcion"
-                value={formData.descripcion || ""}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="referencia">Referencia (Opcional)</Label>
-              <Input
-                id="referencia"
-                name="referencia"
-                value={formData.referencia || ""}
-                onChange={handleChange}
-              />
-            </div>
-
-            {/* Campos de banco/boleta */}
-            {isDepositoBanco && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="banco">Banco</Label>
-                  <Input
-                    id="banco"
-                    name="banco"
-                    value={formData.banco || ""}
-                    onChange={handleChange}
-                    className={errors.banco ? "border-red-500" : ""}
-                  />
-                  {errors.banco && (
-                    <p className="text-red-500 text-sm">{errors.banco}</p>
+                  {/* Subtipo Costo de Venta */}
+                  {currentRules?.requireCostoVentaTipo && (
+                    <FormField
+                      control={form.control}
+                      name="costoVentaTipo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipo de Costo de Venta</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecciona el tipo" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {COSTO_VENTA_OPTIONS.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   )}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="numeroBoleta">Número de Boleta</Label>
-                  <Input
-                    id="numeroBoleta"
-                    name="numeroBoleta"
-                    value={formData.numeroBoleta || ""}
-                    onChange={handleChange}
-                    className={errors.numeroBoleta ? "border-red-500" : ""}
+
+                {/* Columna derecha: Monto y controles */}
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="monto"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4" />
+                          Monto
+                        </FormLabel>
+                        <FormControl>
+                          {watchedMotivo === "DEPOSITO_CIERRE" &&
+                          isDepositoCierreTotal ? (
+                            <Input
+                              disabled
+                              value="Se calculará automáticamente"
+                              className="text-muted-foreground"
+                            />
+                          ) : (
+                            <Input
+                              type="number"
+                              step="0.01"
+                              {...field}
+                              onChange={(e) =>
+                                field.onChange(Number(e.target.value))
+                              }
+                            />
+                          )}
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  {errors.numeroBoleta && (
-                    <p className="text-red-500 text-sm">
-                      {errors.numeroBoleta}
-                    </p>
+
+                  {/* Controles de depósito de cierre */}
+                  {watchedMotivo === "DEPOSITO_CIERRE" && (
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="deposito-total"
+                          checked={isDepositoCierreTotal}
+                          onCheckedChange={handleToggleDepositoCierre}
+                        />
+                        <Label htmlFor="deposito-total" className="text-sm">
+                          Depósito total (automático)
+                        </Label>
+                      </div>
+
+                      {!isDepositoCierreTotal && (
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          {loadingPreview ? (
+                            <p>Calculando efectivo disponible...</p>
+                          ) : efectivoDisponible !== null ? (
+                            <>
+                              <p>
+                                Efectivo disponible:{" "}
+                                <strong>
+                                  Q {efectivoDisponible.toFixed(2)}
+                                </strong>
+                              </p>
+                              <p>
+                                Saldo tras depósito:{" "}
+                                <strong>
+                                  Q{" "}
+                                  {(efectivoDisponible - watchedMonto).toFixed(
+                                    2
+                                  )}
+                                </strong>
+                              </p>
+                            </>
+                          ) : null}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
-            )}
 
-            {/* Proveedor cuando aplica */}
-            {isCostoVentaOrDepositoProveedor && (
-              <div className="space-y-2">
-                <Label htmlFor="proveedorId">Proveedor</Label>
-                <Select
-                  value={formData.proveedorId?.toString() || ""}
-                  onValueChange={(v) => handleSelectChange("proveedorId", v)}
-                >
-                  <SelectTrigger
-                    id="proveedorId"
-                    className={errors.proveedorId ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Selecciona un proveedor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {proveedores.map((p) => (
-                      <SelectItem key={p.id} value={p.id.toString()}>
-                        {p.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.proveedorId && (
-                  <p className="text-red-500 text-sm">{errors.proveedorId}</p>
-                )}
+              {/* Cuenta Bancaria */}
+              {currentRules?.requireCuenta && (
+                <FormField
+                  control={form.control}
+                  name="cuentaBancariaId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        Cuenta Bancaria
+                      </FormLabel>
+                      <Select
+                        onValueChange={(value) => field.onChange(Number(value))}
+                        value={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona una cuenta" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {cuentasBancarias.map((cuenta) => (
+                            <SelectItem
+                              key={cuenta.id}
+                              value={cuenta.id.toString()}
+                            >
+                              {cuenta.banco} - {cuenta.numero}{" "}
+                              {cuenta.alias && `(${cuenta.alias})`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {/* Descripción y Referencia */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="descripcion"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descripción (Opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Descripción del movimiento"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="referencia"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <Hash className="h-4 w-4" />
+                        Referencia (Opcional)
+                      </FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Número de referencia" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-            )}
 
-            {/* Flag visual */}
-            {formData.usadoParaCierre && (
-              <div className="text-red-600 font-semibold flex items-center gap-2">
-                <Check className="h-4 w-4" /> Usado para Cierre de Caja
-              </div>
-            )}
+              {/* Alertas de estado */}
+              {needsCaja && !cajaAbierta && (
+                <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-md">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="text-sm">
+                    No hay una caja abierta. Abre una caja antes de continuar.
+                  </span>
+                </div>
+              )}
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Registrando..." : "Registrar Movimiento"}
-            </Button>
-          </form>
+              {needsCaja && cajaAbierta && (
+                <div className="flex items-center gap-2 p-3 bg-green-50 text-green-700 rounded-md">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-sm">
+                    Caja abierta disponible (ID: {cajaAbierta.id})
+                  </span>
+                </div>
+              )}
+
+              {/* Botón de envío */}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isSubmitting || (needsCaja && !cajaAbierta)}
+              >
+                {isSubmitting ? "Registrando..." : "Registrar Movimiento"}
+              </Button>
+            </form>
+          </Form>
         </CardContent>
-
-        <AdvancedDialog
-          open={isConfirmDialogOpen}
-          onOpenChange={setIsConfirmDialogOpen}
-          title="Confirmar Registro"
-          description="¿Estás seguro de que deseas registrar este movimiento de caja?"
-          confirmButton={{
-            label: "Confirmar",
-            onClick: handleConfirmSubmit,
-            loading: isSubmitting,
-            loadingText: "Registrando...",
-          }}
-          cancelButton={{
-            label: "Cancelar",
-            onClick: () => setIsConfirmDialogOpen(false),
-            disabled: isSubmitting,
-          }}
-          type="confirmation"
-          icon="info"
-        />
       </Card>
-    </motion.div>
+
+      {/* Dialog de confirmación */}
+      <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Registro</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas registrar este movimiento financiero?
+              Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={isSubmitting}>
+                Cancelar
+              </Button>
+            </DialogClose>
+
+            <Button onClick={handleConfirmSubmit} disabled={isSubmitting}>
+              {isSubmitting ? "Registrando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

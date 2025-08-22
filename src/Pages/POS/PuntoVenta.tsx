@@ -37,6 +37,7 @@ import DialogImages from "../DialogImages";
 import { TipoComprobante } from "./interfaces";
 import { formattMonedaGT } from "@/utils/formattMoneda";
 import { ComprobanteSelector } from "./Components/ComprobanteSelector";
+import { getApiErrorMessageAxios } from "../Utils/UtilsErrorApi";
 
 dayjs.extend(localizedFormat);
 dayjs.locale("es");
@@ -307,11 +308,9 @@ export default function PuntoVenta() {
         }, 1000);
 
         getCustomers();
-      } else {
-        toast.error("Error al completar la venta");
       }
     } catch (error) {
-      toast.error("Ocurrió un error al completar la venta");
+      toast.error(getApiErrorMessageAxios(error));
       setIsDisableButton(false);
     }
   };

@@ -59,6 +59,7 @@ export default function EntregasTabs({ isActive }: { isActive: boolean }) {
   };
   const handleCloseModal = () => setSelectedEntrega(null);
   console.log("Error variable es: ", error);
+  console.log("Las entregas de stock son: ", data);
 
   return (
     <div className="mt-4 space-y-4">
