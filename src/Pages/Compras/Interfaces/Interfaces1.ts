@@ -48,6 +48,8 @@ export interface CompraResumenUI {
 }
 
 export interface CompraListItem {
+  folioOrigen: string;
+  tipoOrigen: string;
   id: number;
   estado: "RECIBIDO" | "CANCELADO" | "RECIBIDO_PARCIAL" | "ESPERANDO_ENTREGA";
   total: number;
@@ -61,6 +63,12 @@ export interface CompraListItem {
   actualizadoEn: string | null;
   detalles: CompraDetalleUI[];
   resumen: CompraResumenUI;
+  pedido: Pedido;
+}
+
+interface Pedido {
+  id: number;
+  folio: string;
 }
 
 export interface PaginatedComprasResponse {

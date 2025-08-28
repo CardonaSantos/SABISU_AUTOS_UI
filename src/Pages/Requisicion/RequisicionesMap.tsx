@@ -57,12 +57,19 @@ import { deleteRequisicionRegis, generarCompra } from "./requisicion.api";
 import { toast } from "sonner";
 import { AdvancedDialog } from "@/utils/components/AdvancedDialog";
 import { useStore } from "@/components/Context/ContextSucursal";
+import ReactSelectComponent from "react-select";
+import { useProveedoresSelect } from "@/hooks/getProveedoresSelect/proveedores";
+
 interface PropsRequisiciones {
   requisiciones: RequisitionResponse[];
   isLoadingRequisiciones: boolean;
   setIsLoadingRequisiciones: (value: boolean) => void;
   getRequisiciones: () => void;
   fetchAlerts: () => void;
+}
+interface Option {
+  value: string;
+  label: string;
 }
 
 const RequisicionesMap = ({
@@ -72,6 +79,8 @@ const RequisicionesMap = ({
   fetchAlerts,
 }: PropsRequisiciones) => {
   const userId = useStore((state) => state.userId) ?? 0;
+
+  const { data: proveedores } = useProveedoresSelect();
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -153,7 +162,13 @@ const RequisicionesMap = ({
       const dto = {
         requisicionID: selectedRequisicion?.id,
         userID: userId,
+        proveedorId: parseInt(proveedorSelected),
       };
+
+      if (!dto.proveedorId || !dto.requisicionID || !dto.userID) {
+        toast.warning("Faltan datos para el envío");
+        return;
+      }
 
       await generarCompra(dto);
       await getRequisiciones();
@@ -172,6 +187,14 @@ const RequisicionesMap = ({
     } finally {
       setSubmitting(false);
     }
+  };
+  const [proveedorSelected, setProveedorSelected] = useState<string>("");
+
+  const handleSelect = (option: Option | null) => {
+    if (!option) {
+      setProveedorSelected("");
+    }
+    setProveedorSelected(option ? option.value : "");
   };
 
   console.log("Las requisiciones reigstros son: ", requisiciones);
@@ -194,6 +217,11 @@ const RequisicionesMap = ({
     canEdit: boolean;
     sendLabel: string;
   };
+
+  const options: Option[] = (proveedores ?? []).map((p) => ({
+    value: p.id.toString(),
+    label: `${p.nombre} (${p.telefonoContacto ?? "Sin contacto"})`,
+  }));
 
   function getReqFlags(req: RequisitionResponse | null | undefined): ReqFlags {
     const estado = req?.estado;
@@ -741,6 +769,23 @@ const RequisicionesMap = ({
           onClick: () => setOpenReIngreso(false),
           disabled: submiting,
         }}
+        children={
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Seleccione el proveedor para este pedido
+            </p>
+            <ReactSelectComponent
+              options={options}
+              value={
+                proveedorSelected
+                  ? options.find((opt) => opt.value === proveedorSelected) ??
+                    null
+                  : null
+              }
+              onChange={handleSelect}
+            />
+          </div>
+        }
       />
     </div>
   );

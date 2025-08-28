@@ -74,9 +74,9 @@ export function ComprasDetailDialog({
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">Requisición:</span>
+                    <span className="font-medium">Folio de Registro:</span>
                     <span className="font-mono text-blue-600">
-                      {compra.requisicion?.folio || "—"}
+                      {compra.folioOrigen || "—"}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">

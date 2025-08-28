@@ -74,6 +74,13 @@ import { ComprasMainPage } from "./Pages/Compras/ComprasMainPage";
 import CompraDetalle from "./Pages/Compras/compra-detalle";
 import ResumenDiarioPage from "./Pages/resumenes-admin/page";
 import HistoricoSucursal from "./Pages/resumenes-admin/_historico_sucursal/page";
+import PedidosMainPage from "./Pages/Pedidos/_components/RegistPedido";
+import EditPedido from "./Pages/Pedidos/_componentsEdit/EditPedido";
+import PedidoDetails from "./Pages/Pedidos/_componentsPedidoDetails/PedidoDetails";
+import FlujoCajaHistoricoMain from "./Pages/CajaAdministrativo/flujo-caja-historico";
+import CostosVentaHistoricoPage from "./Pages/CajaAdministrativo/_costo-ventas-historicos/CostosVentaHistoricoPage";
+import GastoOperativoHistoricoPage from "./Pages/CajaAdministrativo/_gastos-operativos-historicos/GastoOperativoHistoricoPage";
+import FlujoEfectivoPage from "./Pages/CajaAdministrativo/_flujoEfectivo/FlujoEfectivoPage";
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -407,6 +414,42 @@ function App() {
             />
 
             <Route
+              path="/caja-administrativo/efectivo-banco"
+              element={
+                <ProtectRouteAdmin>
+                  <FlujoCajaHistoricoMain />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/caja-administrativo/costos-ventas-historicos"
+              element={
+                <ProtectRouteAdmin>
+                  <CostosVentaHistoricoPage />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/caja-administrativo/gastos-operativos-historicos"
+              element={
+                <ProtectRouteAdmin>
+                  <GastoOperativoHistoricoPage />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/caja-administrativo/flujo-efectivo"
+              element={
+                <ProtectRouteAdmin>
+                  <FlujoEfectivoPage />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
               path="/config/user"
               element={
                 <ProtectRouteAdmin>
@@ -564,6 +607,33 @@ function App() {
               element={
                 <ProtectRouteAdmin>
                   <ComprasMainPage />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/pedidos"
+              element={
+                <ProtectRouteAdmin>
+                  <PedidosMainPage />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/pedido-edit/:id"
+              element={
+                <ProtectRouteAdmin>
+                  <EditPedido />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/pedido-detalles/:id"
+              element={
+                <ProtectRouteAdmin>
+                  <PedidoDetails />
                 </ProtectRouteAdmin>
               }
             />

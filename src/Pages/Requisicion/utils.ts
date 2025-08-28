@@ -23,6 +23,7 @@ export interface CreateRequisitionDto {
   sucursalId: number;
   usuarioId: number;
   observaciones?: string;
+  // proveedorId: number;
   lineas: RequisitionLineInput[];
 }
 

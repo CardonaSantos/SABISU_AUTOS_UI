@@ -30,6 +30,11 @@ import {
   ChartPie,
   ReceiptText,
   ClipboardList,
+  Banknote,
+  ChartArea,
+  ChartScatter,
+  SquareChartGantt,
+  HandCoins,
 } from "lucide-react";
 
 import {
@@ -245,6 +250,42 @@ const menuItemsAdmin = [
     submenu: [
       { icon: ChartPie, label: "Resumen Diario", href: "/admin/caja/diario" },
       { icon: Calendar, label: "Históricos", href: "/admin/historicos" },
+
+      {
+        icon: Banknote,
+        label: "Caja Administrativo",
+        href: "/caja-administrativo/efectivo-banco",
+      },
+    ],
+  },
+
+  {
+    icon: ChartArea,
+    label: "Caja Administrativo",
+    submenu: [
+      {
+        icon: Banknote,
+        label: "Flujo de Caja Histórico",
+        href: "/caja-administrativo/efectivo-banco",
+      },
+
+      {
+        icon: ChartScatter,
+        label: "Costo Ventas Historicos",
+        href: "/caja-administrativo/costos-ventas-historicos",
+      },
+
+      {
+        icon: SquareChartGantt,
+        label: "Gastos Operativos Historicos",
+        href: "/caja-administrativo/gastos-operativos-historicos",
+      },
+
+      {
+        icon: HandCoins,
+        label: "Flujo Efectivo",
+        href: "/caja-administrativo/flujo-efectivo",
+      },
     ],
   },
 

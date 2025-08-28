@@ -65,6 +65,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(isSameOrBefore);
@@ -111,6 +112,7 @@ const RequisitionBuilder = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentAlerts = filtrados.slice(startIndex, endIndex);
+
   // Calcular estadísticas
   const selectedCount = Object.keys(selected).length;
   const totalSelectedQty = Object.values(selected).reduce(
@@ -223,6 +225,7 @@ const RequisitionBuilder = () => {
     const dto: CreateRequisitionDto = {
       sucursalId,
       usuarioId,
+      // proveedorId: parseInt(proveedorSelected),
       lineas: Object.entries(selected).map(([id, qty]) => ({
         productoId: Number(id),
         cantidadSugerida: qty.cantidad,
@@ -245,7 +248,6 @@ const RequisitionBuilder = () => {
       await fetchAlerts();
       setOpenGenerateReq(false);
       handleCheckAll();
-      // setAlerts([]);
     } catch (err) {
       console.error(err);
       toast.error("Error al crear la requisición");

@@ -12,6 +12,43 @@ export interface CompraProductoUI {
   precioCostoActual: number | null;
 }
 
+export interface CompraPedidoUI {
+  id: number;
+  folio: string;
+  estado: string;
+  fecha: string | null; // ISO
+  prioridad: string;
+  tipo: string;
+  observaciones: string;
+  usuario: CompraUsuarioUI;
+  cliente: SimpleEntityUI | null;
+}
+
+export type OrigenCompra = "DIRECTA" | "REQUISICION" | "PEDIDO";
+
+export interface CompraRegistroUI {
+  id: number;
+  estado: EstadoCompra;
+  fecha: string | null;
+  total: number;
+  conFactura: boolean;
+  factura: CompraFacturaUI | null;
+  proveedor: SimpleEntityUI | null;
+  sucursal: SimpleEntityUI | null;
+  usuario: CompraUsuarioUI;
+
+  requisicion: CompraRequisicionUI | null;
+  pedido: CompraPedidoUI | null;
+
+  origen: OrigenCompra; // 👈 directo desde DB
+  folioOrigen: string | null; // 👈 dinámico (folio de req/pedido)
+
+  creadoEn: string | null;
+  actualizadoEn: string | null;
+  detalles: CompraDetalleUI[];
+  resumen: CompraResumenUI;
+}
+
 export interface CompraDetalleUI {
   id: number;
   cantidad: number;
@@ -55,19 +92,19 @@ export interface CompraResumenUI {
   subtotal: number;
 }
 
-export interface CompraRegistroUI {
-  id: number;
-  estado: EstadoCompra;
-  fecha: string | null; // ISO
-  total: number;
-  conFactura: boolean;
-  factura: CompraFacturaUI | null;
-  proveedor: SimpleEntityUI | null;
-  sucursal: SimpleEntityUI | null;
-  usuario: CompraUsuarioUI;
-  requisicion: CompraRequisicionUI | null;
-  creadoEn: string | null; // ISO
-  actualizadoEn: string | null; // ISO
-  detalles: CompraDetalleUI[];
-  resumen: CompraResumenUI;
-}
+// export interface CompraRegistroUI {
+//   id: number;
+//   estado: EstadoCompra;
+//   fecha: string | null; // ISO
+//   total: number;
+//   conFactura: boolean;
+//   factura: CompraFacturaUI | null;
+//   proveedor: SimpleEntityUI | null;
+//   sucursal: SimpleEntityUI | null;
+//   usuario: CompraUsuarioUI;
+//   requisicion: CompraRequisicionUI | null;
+//   creadoEn: string | null; // ISO
+//   actualizadoEn: string | null; // ISO
+//   detalles: CompraDetalleUI[];
+//   resumen: CompraResumenUI;
+// }

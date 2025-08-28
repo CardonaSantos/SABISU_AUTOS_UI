@@ -133,6 +133,7 @@ export function ComprasTable({
     setGlobalFilter("");
     setColumnFilters([]);
   };
+  console.log("La data es: ", data);
 
   return (
     <motion.div

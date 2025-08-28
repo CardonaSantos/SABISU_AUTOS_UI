@@ -32,7 +32,10 @@ import {
   getRegistroCompra,
   recepcionarCompraAuto,
 } from "./API/api";
-import { CompraRegistroUI } from "./Interfaces/RegistroCompraInterface";
+import {
+  CompraPedidoUI,
+  CompraRegistroUI,
+} from "./Interfaces/RegistroCompraInterface";
 import { EstadoCompra } from "./API/interfaceQuery";
 import { formattMonedaGT } from "@/utils/formattMoneda";
 import { formattFechaWithMinutes } from "../Utils/Utils";
@@ -58,6 +61,7 @@ import { Label } from "@/components/ui/label";
 import ReactSelectComponent from "react-select";
 import { useStore } from "@/components/Context/ContextSucursal";
 import { getApiErrorMessageAxios } from "../Utils/UtilsErrorApi";
+import { CompraRequisicionUI } from "./Interfaces/Interfaces1";
 
 interface Option {
   label: string;
@@ -263,6 +267,8 @@ export default function CompraDetalle() {
     }
   };
 
+  console.log("banco seleccionado es: ", cuentaBancariaSelected);
+
   const sendtToStock = async () => {
     if (!registro || isSubmiting) return;
     setIsSubmiting(true);
@@ -287,7 +293,10 @@ export default function CompraDetalle() {
       observaciones,
       proveedorId: parseInt(proveedorSelected),
       metodoPago,
+      cuentaBancariaId: parseInt(cuentaBancariaSelected),
     };
+
+    console.log("el payload es: ", payload);
 
     if (isBankMethod(metodoPago)) {
       payload.cuentaBancariaId = parseInt(cuentaBancariaSelected);
@@ -581,49 +590,13 @@ export default function CompraDetalle() {
           </motion.div>
         </div>
 
-        {/* Información de Requisición */}
-        {registro.requisicion && (
-          <motion.div variants={itemVariants}>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4" />
-                  Requisición Asociada
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <Hash className="h-6 w-6 mx-auto text-blue-600 mb-1" />
-                    <p className="text-sm font-semibold">
-                      {registro.requisicion.folio}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Folio</p>
-                  </div>
-                  <div className="text-center">
-                    <Badge variant="secondary" className="mb-1">
-                      {registro.requisicion.estado}
-                    </Badge>
-                    <p className="text-xs text-muted-foreground">Estado</p>
-                  </div>
-                  <div className="text-center">
-                    <FileText className="h-6 w-6 mx-auto text-green-600 mb-1" />
-                    <p className="text-sm font-semibold">
-                      {registro.requisicion.totalLineas}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Líneas</p>
-                  </div>
-                  <div className="text-center">
-                    <Calendar className="h-6 w-6 mx-auto text-purple-600 mb-1" />
-                    <p className="text-sm font-semibold">
-                      {formattFechaWithMinutes(registro.requisicion.fecha)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Fecha</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+        {/* Información de Origen */}
+        {registro.origen === "REQUISICION" && registro.requisicion && (
+          <RequisicionInfo requisicion={registro.requisicion} />
+        )}
+
+        {registro.origen === "PEDIDO" && registro.pedido && (
+          <PedidoInfo pedido={registro.pedido} />
         )}
 
         {/* Información de Factura */}
@@ -1003,6 +976,94 @@ export default function CompraDetalle() {
           </div>
         </DialogContent>
       </Dialog>
+    </motion.div>
+  );
+}
+
+function RequisicionInfo({
+  requisicion,
+}: {
+  requisicion: CompraRequisicionUI;
+}) {
+  return (
+    <motion.div variants={itemVariants}>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" />
+            Requisición Asociada
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <Hash className="h-6 w-6 mx-auto text-blue-600 mb-1" />
+              <p className="text-sm font-semibold">{requisicion.folio}</p>
+              <p className="text-xs text-muted-foreground">Folio</p>
+            </div>
+            <div className="text-center">
+              <Badge variant="secondary" className="mb-1">
+                {requisicion.estado}
+              </Badge>
+              <p className="text-xs text-muted-foreground">Estado</p>
+            </div>
+            <div className="text-center">
+              <FileText className="h-6 w-6 mx-auto text-green-600 mb-1" />
+              <p className="text-sm font-semibold">{requisicion.totalLineas}</p>
+              <p className="text-xs text-muted-foreground">Líneas</p>
+            </div>
+            <div className="text-center">
+              <Calendar className="h-6 w-6 mx-auto text-purple-600 mb-1" />
+              <p className="text-sm font-semibold">
+                {formattFechaWithMinutes(requisicion.fecha)}
+              </p>
+              <p className="text-xs text-muted-foreground">Fecha</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+function PedidoInfo({ pedido }: { pedido: CompraPedidoUI }) {
+  return (
+    <motion.div variants={itemVariants}>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" />
+            Pedido Asociado
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <Hash className="h-6 w-6 mx-auto text-blue-600 mb-1" />
+              <p className="text-sm font-semibold">{pedido.folio}</p>
+              <p className="text-xs text-muted-foreground">Folio</p>
+            </div>
+            <div className="text-center">
+              <Badge variant="secondary" className="mb-1">
+                {pedido.estado}
+              </Badge>
+              <p className="text-xs text-muted-foreground">Estado</p>
+            </div>
+            <div className="text-center">
+              <FileText className="h-6 w-6 mx-auto text-green-600 mb-1" />
+              <p className="text-sm font-semibold">{pedido.tipo}</p>
+              <p className="text-xs text-muted-foreground">Tipo</p>
+            </div>
+            <div className="text-center">
+              <Calendar className="h-6 w-6 mx-auto text-purple-600 mb-1" />
+              <p className="text-sm font-semibold">
+                {formattFechaWithMinutes(pedido.fecha)}
+              </p>
+              <p className="text-xs text-muted-foreground">Fecha</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 }

@@ -34,6 +34,7 @@ export async function recepcionarCompraAuto(params: {
   proveedorId: number;
   observaciones?: string;
   metodoPago: string;
+  cuentaBancariaId?: number;
 }) {
   const { data } = await axios.post(
     `${API_URL}/compra-requisicion/${params.compraId}/recepcionar`,
@@ -43,6 +44,7 @@ export async function recepcionarCompraAuto(params: {
       proveedorId: params.proveedorId,
       compraId: params.compraId,
       metodoPago: params.metodoPago,
+      cuentaBancariaId: params.cuentaBancariaId,
     }
   );
   return data;

@@ -120,11 +120,11 @@ export const comprasColumns: ColumnDef<CompraListItem, any>[] = [
     size: 120,
   }),
 
-  ch.accessor("requisicion.folio", {
+  ch.accessor("folioOrigen", {
     header: () => (
       <div className="flex items-center gap-1">
         <FileText className="h-3 w-3" />
-        <span className="font-medium text-xs">Requisición</span>
+        <span className="font-medium text-xs">Requisición | Pedido</span>
       </div>
     ),
     cell: (info) => (
@@ -228,6 +228,25 @@ export const comprasColumns: ColumnDef<CompraListItem, any>[] = [
     size: 140,
   }),
 
+  ch.accessor("tipoOrigen", {
+    header: () => <span className="font-medium text-xs">Tipo</span>,
+    cell: (info) => (
+      <div className="flex items-center gap-1">
+        <span className="text-xs">{getEstadoIcon(info.getValue())}</span>
+        <span
+          className={`${getEstadoStyles(
+            info.getValue()
+          )} text-xs px-2 py-1 rounded-full font-medium`}
+        >
+          {info.getValue().replace("_", " ")}
+        </span>
+      </div>
+    ),
+    enableSorting: true,
+    enableColumnFilter: true,
+    size: 140,
+  }),
+
   ch.display({
     id: "acciones",
     header: () => <span className="font-medium text-xs">Acciones</span>,
@@ -269,7 +288,12 @@ export const comprasColumns: ColumnDef<CompraListItem, any>[] = [
                     <div>Proveedor: {compra.proveedor.nombre}</div>
                   )}
                   {compra.requisicion && (
-                    <div>Requisición: {compra.requisicion.folio}</div>
+                    <div>
+                      Requisición:{" "}
+                      {compra.requisicion.folio
+                        ? compra.requisicion.folio
+                        : compra.pedido.folio}
+                    </div>
                   )}
                 </div>
 
