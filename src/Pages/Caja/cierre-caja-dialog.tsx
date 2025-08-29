@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -34,9 +34,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+
 import { CerrarCajaV2Dto, PreviaCierreResponse } from "./cierre.types";
 import { cerrarCajaV2 } from "./caja.api";
 import { getPreviaCierre } from "./types2";
+
+// ------------------------------------------------------
+// Types locales
+// ------------------------------------------------------
 
 type CuentaBancaria = {
   id: number;
@@ -55,63 +60,35 @@ type CierreCajaDialogProps = {
   reloadContext: () => Promise<void>;
 };
 
-const createCierreCajaSchema = (previa?: PreviaCierreResponse) =>
-  z
-    .object({
-      modo: z.enum([
-        "SIN_DEPOSITO",
-        "DEPOSITO_PARCIAL",
-        "DEPOSITO_TODO",
-        "CAMBIO_TURNO",
-      ] as const),
-      comentarioFinal: z.string().optional(),
+// ------------------------------------------------------
+// Schema (sin dependencias fuertes de `previa` para evitar
+// problemas al rehidratar el resolver). Hacemos clamps en UI + server.
+// ------------------------------------------------------
+const schemaBase = z.object({
+  modo: z.enum([
+    "SIN_DEPOSITO",
+    "DEPOSITO_PARCIAL",
+    "DEPOSITO_TODO",
+    "CAMBIO_TURNO",
+  ] as const),
+  comentarioFinal: z.string().optional(),
 
-      // depósito
-      cuentaBancariaId: z.number().optional(),
-      montoParcial: z.number().optional(),
+  // Depósito
+  cuentaBancariaId: z.number().optional(),
+  montoParcial: z.number().optional(),
 
-      // cambio de turno
-      abrirSiguiente: z.boolean().optional(),
-      usuarioInicioSiguienteId: z.number().optional(),
-      fondoFijoSiguiente: z.number().optional(),
-      comentarioAperturaSiguiente: z.string().optional(),
-    })
-    .refine(
-      (d) =>
-        ["DEPOSITO_PARCIAL", "DEPOSITO_TODO"].includes(d.modo)
-          ? !!d.cuentaBancariaId
-          : true,
-      {
-        path: ["cuentaBancariaId"],
-        message: "Cuenta bancaria requerida para depósitos",
-      }
-    )
-    .refine(
-      (d) =>
-        d.modo === "DEPOSITO_PARCIAL"
-          ? !!d.montoParcial &&
-            d.montoParcial > 0 &&
-            (!previa || d.montoParcial <= previa.enCaja)
-          : true,
-      {
-        path: ["montoParcial"],
-        message: `Monto debe ser > 0 y <= Q${
-          previa?.enCaja?.toFixed(2) ?? "0.00"
-        }`,
-      }
-    )
-    .refine(
-      (d) =>
-        d.modo === "CAMBIO_TURNO" && d.abrirSiguiente
-          ? !!d.usuarioInicioSiguienteId
-          : true,
-      {
-        path: ["usuarioInicioSiguienteId"],
-        message: "Usuario requerido para abrir siguiente turno",
-      }
-    );
+  // Nuevos
+  dejarEnCaja: z.number().min(0, "No puede ser negativo"),
+  asentarVentas: z.boolean(), // <- antes tenía .default(true)
 
-type CierreCajaFormData = z.infer<ReturnType<typeof createCierreCajaSchema>>;
+  // Cambio de turno
+  abrirSiguiente: z.boolean().optional(),
+  usuarioInicioSiguienteId: z.number().optional(),
+  fondoFijoSiguiente: z.number().optional(),
+  comentarioAperturaSiguiente: z.string().optional(),
+});
+
+type CierreCajaFormData = z.infer<typeof schemaBase>;
 
 export function CierreCajaDialog({
   open,
@@ -126,18 +103,20 @@ export function CierreCajaDialog({
   const [isLoadingPrevia, setIsLoadingPrevia] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Resolver estable (no depende de `previa`)
+  // const resolver = useMemo(() => zodResolver(schemaBase), []);
+
   const form = useForm<CierreCajaFormData>({
-    resolver: zodResolver(createCierreCajaSchema(previa || undefined)),
+    resolver: zodResolver(schemaBase),
     defaultValues: {
       modo: "SIN_DEPOSITO",
       abrirSiguiente: true,
+      dejarEnCaja: 0,
+      asentarVentas: true, // <- default aquí
     },
   });
 
-  console.log("El form es: ", form);
-  console.log("La previa es: ", previa);
-
-  const watchedValues = form.watch();
+  const watched = form.watch();
 
   // Cargar previa al abrir el modal
   useEffect(() => {
@@ -146,7 +125,12 @@ export function CierreCajaDialog({
       getPreviaCierre(registroCajaId)
         .then((data) => {
           setPrevia(data);
-          form.setValue("fondoFijoSiguiente", data.fondoFijoActual);
+          // setear defaults dependientes de `previa`
+          form.setValue("dejarEnCaja", Number(data.fondoFijoActual ?? 0));
+          form.setValue(
+            "fondoFijoSiguiente",
+            Number(data.fondoFijoActual ?? 0)
+          );
         })
         .catch((error) => {
           console.error("Error cargando previa:", error);
@@ -156,51 +140,82 @@ export function CierreCajaDialog({
           setIsLoadingPrevia(false);
         });
     }
-  }, [open, registroCajaId, form]);
+  }, [open, registroCajaId]);
 
-  const efectivoDisponible =
-    previa?.puedeDepositarHasta ?? Math.max(0, previa?.enCaja ?? 0);
+  // Valores calculados de negocio
+  const enCaja = Number(previa?.enCaja ?? 0);
+  const dejarEnCaja = Number(watched.dejarEnCaja ?? 0);
+  const disponibleOperable = Math.max(0, enCaja - dejarEnCaja);
 
-  // Calcular depósito esperado
+  const requiereDeposito = ["DEPOSITO_PARCIAL", "DEPOSITO_TODO"].includes(
+    watched.modo
+  );
+
   const calcularDeposito = (): number => {
     if (!previa) return 0;
-
-    if (watchedValues.modo === "DEPOSITO_TODO") {
-      return efectivoDisponible; // nunca negativo
+    if (watched.modo === "DEPOSITO_TODO") return disponibleOperable;
+    if (watched.modo === "DEPOSITO_PARCIAL") {
+      const v = Number(watched.montoParcial || 0);
+      return Math.min(Math.max(v, 0), disponibleOperable);
     }
-
-    if (watchedValues.modo === "DEPOSITO_PARCIAL") {
-      const val = Number(watchedValues.montoParcial || 0);
-      // clamp 0..efectivoDisponible
-      return Math.min(Math.max(val, 0), efectivoDisponible);
-    }
-
-    return 0; // SIN_DEPOSITO y CAMBIO_TURNO
+    return 0;
   };
 
   const depositoCalculado = calcularDeposito();
-  const saldoFinalEsperado = (previa?.enCaja ?? 0) - depositoCalculado;
+  const saldoFinalEsperado = enCaja - depositoCalculado; // saldo físico al cierre
 
-  const requiereDeposito = ["DEPOSITO_PARCIAL", "DEPOSITO_TODO"].includes(
-    watchedValues.modo
-  );
+  // Validaciones adicionales a nivel UI (además de zod + clamps en server)
+  const cuentaRequeridaError =
+    requiereDeposito && !watched.cuentaBancariaId
+      ? "Cuenta bancaria requerida"
+      : null;
+  const montoParcialError =
+    watched.modo === "DEPOSITO_PARCIAL" &&
+    Number(watched.montoParcial || 0) <= 0
+      ? "Monto debe ser > 0"
+      : null;
 
-  const onSubmit = async (data: CierreCajaFormData) => {
+  // Enviar
+  const onSubmit: SubmitHandler<CierreCajaFormData> = async (data) => {
     if (!previa) return;
+
+    // Validaciones ligeras; el server re-clamp y valida igualmente
+    if (requiereDeposito && !data.cuentaBancariaId) {
+      form.setError("cuentaBancariaId", {
+        message: "Cuenta bancaria requerida",
+      });
+      return;
+    }
+    if (
+      data.modo === "DEPOSITO_PARCIAL" &&
+      (!data.montoParcial || data.montoParcial <= 0)
+    ) {
+      form.setError("montoParcial", { message: "Monto debe ser > 0" });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      const payload: CerrarCajaV2Dto = {
+      const payload: CerrarCajaV2Dto & {
+        dejarEnCaja?: number;
+        asentarVentas?: boolean;
+      } = {
         registroCajaId,
         usuarioCierreId,
         modo: data.modo,
         comentarioFinal: data.comentarioFinal,
+        dejarEnCaja: Number(data.dejarEnCaja ?? 0),
+        asentarVentas: Boolean(data.asentarVentas ?? true),
       };
 
       if (["DEPOSITO_PARCIAL", "DEPOSITO_TODO"].includes(data.modo)) {
         payload.cuentaBancariaId = data.cuentaBancariaId!;
-        if (data.modo === "DEPOSITO_PARCIAL")
-          payload.montoParcial = data.montoParcial!;
+        if (data.modo === "DEPOSITO_PARCIAL") {
+          payload.montoParcial = Math.min(
+            Number(data.montoParcial || 0),
+            disponibleOperable
+          );
+        }
       }
 
       if (data.modo === "CAMBIO_TURNO") {
@@ -213,29 +228,9 @@ export function CierreCajaDialog({
         }
       }
 
-      if (requiereDeposito) {
-        payload.cuentaBancariaId = data.cuentaBancariaId;
-      }
+      console.log("El payload es: ", payload);
 
-      if (data.modo === "DEPOSITO_PARCIAL") {
-        payload.montoParcial = data.montoParcial;
-      }
-
-      if (data.modo === "CAMBIO_TURNO") {
-        payload.abrirSiguiente = data.abrirSiguiente;
-        if (data.abrirSiguiente) {
-          payload.usuarioInicioSiguienteId = data.usuarioInicioSiguienteId;
-          payload.fondoFijoSiguiente = data.fondoFijoSiguiente;
-          payload.comentarioAperturaSiguiente =
-            data.comentarioAperturaSiguiente;
-        }
-      }
-
-      console.log("Cerrando caja con payload:", payload);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Uncomment for real API call:
-      await cerrarCajaV2(payload);
+      await cerrarCajaV2(payload); // POST /caja/cerrar-v3
 
       toast.success("Caja cerrada exitosamente");
       onOpenChange(false);
@@ -262,7 +257,8 @@ export function CierreCajaDialog({
         <DialogHeader>
           <DialogTitle>Cerrar Caja</DialogTitle>
           <DialogDescription>
-            Configure los detalles del cierre de caja
+            Configure los detalles del cierre. El sistema asentará ventas en
+            efectivo y actualizará los snapshots del día.
           </DialogDescription>
         </DialogHeader>
 
@@ -277,7 +273,7 @@ export function CierreCajaDialog({
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Columna principal */}
                 <div className="lg:col-span-2 space-y-6">
-                  {/* Modo de cierre (3 opciones) */}
+                  {/* Modo de cierre */}
                   <FormField
                     control={form.control}
                     name="modo"
@@ -304,7 +300,7 @@ export function CierreCajaDialog({
                               <RadioGroupItem
                                 value="DEPOSITO_PARCIAL"
                                 id="deposito-parcial"
-                                disabled={efectivoDisponible < 0} // <<< aquí
+                                disabled={disponibleOperable <= 0}
                               />
                               <Label htmlFor="deposito-parcial">
                                 Depositar parcial
@@ -315,7 +311,7 @@ export function CierreCajaDialog({
                               <RadioGroupItem
                                 value="DEPOSITO_TODO"
                                 id="deposito-todo"
-                                disabled={efectivoDisponible < 0} // <<< aquí
+                                disabled={disponibleOperable <= 0}
                               />
                               <Label htmlFor="deposito-todo">
                                 Depositar todo
@@ -328,7 +324,54 @@ export function CierreCajaDialog({
                     )}
                   />
 
-                  {/* Cuenta bancaria - solo si hay depósito */}
+                  {/* Asentar ventas */}
+                  <FormField
+                    control={form.control}
+                    name="asentarVentas"
+                    render={({ field }) => (
+                      <FormItem className="mt-2">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            id="asentar-ventas"
+                            type="checkbox"
+                            className="h-4 w-4"
+                            checked={!!field.value}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                          />
+                          <Label htmlFor="asentar-ventas">
+                            Asentar ventas en efectivo antes de depositar
+                          </Label>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Dejar en caja */}
+                  <FormField
+                    control={form.control}
+                    name="dejarEnCaja"
+                    render={({ field }) => (
+                      <FormItem className="mt-2">
+                        <FormLabel>Dejar en caja (base)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min={0}
+                            max={enCaja}
+                            value={Number(field.value ?? 0)}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value))
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Cuenta bancaria si hay depósito */}
                   {requiereDeposito && (
                     <FormField
                       control={form.control}
@@ -359,13 +402,18 @@ export function CierreCajaDialog({
                             </SelectContent>
                           </Select>
                           <FormMessage />
+                          {cuentaRequeridaError ? (
+                            <p className="text-sm text-red-500 mt-1">
+                              {cuentaRequeridaError}
+                            </p>
+                          ) : null}
                         </FormItem>
                       )}
                     />
                   )}
 
-                  {/* Monto parcial - solo para DEPOSITO_PARCIAL */}
-                  {watchedValues.modo === "DEPOSITO_PARCIAL" && (
+                  {/* Monto parcial */}
+                  {watched.modo === "DEPOSITO_PARCIAL" && (
                     <FormField
                       control={form.control}
                       name="montoParcial"
@@ -376,20 +424,32 @@ export function CierreCajaDialog({
                             <Input
                               type="number"
                               step="0.01"
-                              min="0.01"
-                              max={efectivoDisponible} // <<< aquí
-                              defaultValue={field.value}
+                              min={0.01}
+                              max={disponibleOperable}
+                              value={Number(field.value ?? 0)}
                               onChange={(e) =>
                                 field.onChange(Number(e.target.value))
                               }
                             />
                           </FormControl>
                           <FormMessage />
+                          {montoParcialError ? (
+                            <p className="text-sm text-red-500 mt-1">
+                              {montoParcialError}
+                            </p>
+                          ) : null}
+                          {disponibleOperable <= 0 ? (
+                            <p className="text-sm text-yellow-600 mt-1">
+                              No hay disponible para depositar (base ≥ efectivo
+                              en caja).
+                            </p>
+                          ) : null}
                         </FormItem>
                       )}
                     />
                   )}
 
+                  {/* Warnings de previa */}
                   {previa?.warnings?.length ? (
                     <div className="rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
                       {previa.warnings.map((w, i) => (
@@ -414,7 +474,7 @@ export function CierreCajaDialog({
                   />
                 </div>
 
-                {/* Columna lateral - Resumen */}
+                {/* Resumen lateral */}
                 <div className="lg:col-span-1">
                   <Card>
                     <CardHeader>
@@ -426,15 +486,23 @@ export function CierreCajaDialog({
                           Efectivo en caja:
                         </span>
                         <span className="font-medium">
-                          Q {previa?.enCaja?.toFixed(2) || "0.00"}
+                          Q {enCaja.toFixed(2)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">
-                          Fondo fijo:
+                          Base a dejar:
                         </span>
                         <span className="font-medium">
-                          Q {previa?.fondoFijoActual?.toFixed(2) || "0.00"}
+                          Q {dejarEnCaja.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          Disponible para depósito:
+                        </span>
+                        <span className="font-medium">
+                          Q {disponibleOperable.toFixed(2)}
                         </span>
                       </div>
                       <hr />

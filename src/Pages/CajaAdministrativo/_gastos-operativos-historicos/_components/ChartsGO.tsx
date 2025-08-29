@@ -26,6 +26,8 @@ const palette: Record<string, string> = {
   VIATICOS: "#fb923c",
   OTROS: "#a855f7",
   total: "#10b981",
+  caja: "#0ea5e9",
+  banco: "#22c55e",
 };
 
 const labelMap: Record<string, string> = {
@@ -68,22 +70,17 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 export function ChartsGO({ porDia }: { porDia: GastoOperativoPorDiaUI[] }) {
-  const categories = useMemo(() => {
-    const fixed = [
-      "SALARIO",
-      "ENERGIA",
-      "LOGISTICA",
-      "RENTA",
-      "INTERNET",
-      "PUBLICIDAD",
-      "VIATICOS",
-      "OTROS",
-    ];
-    // Mantenemos orden fijo, pero filtramos a las que existan en la data
-    const hasAny = (k: string) =>
-      (porDia ?? []).some((d) => (d as any)[k] && (d as any)[k]! > 0);
-    return fixed.filter(hasAny);
-  }, [porDia]);
+  // Categorías (siempre presentes en el nuevo type, pero mantenemos orden fijo)
+  const categories = [
+    "SALARIO",
+    "ENERGIA",
+    "LOGISTICA",
+    "RENTA",
+    "INTERNET",
+    "PUBLICIDAD",
+    "VIATICOS",
+    "OTROS",
+  ] as const;
 
   const data = useMemo(
     () =>
@@ -91,13 +88,15 @@ export function ChartsGO({ porDia }: { porDia: GastoOperativoPorDiaUI[] }) {
         const base: any = {
           date: dayjs(d.fecha).format("DD/MM"),
           total: d.total,
+          caja: d.caja ?? 0,
+          banco: d.banco ?? 0,
         };
         categories.forEach((k) => {
           base[k] = (d as any)[k] ?? 0;
         });
         return base;
       }),
-    [porDia, categories]
+    [porDia]
   );
 
   const [hidden, setHidden] = useState<Record<string, boolean>>({});
@@ -105,6 +104,7 @@ export function ChartsGO({ porDia }: { porDia: GastoOperativoPorDiaUI[] }) {
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      {/* Gasto por categoría por día */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">
@@ -119,7 +119,7 @@ export function ChartsGO({ porDia }: { porDia: GastoOperativoPorDiaUI[] }) {
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
-              <YAxis tickFormatter={(v) => formattMonedaGT(v)} width={72} />
+              <YAxis tickFormatter={formattMonedaGT} width={72} />
               <Tooltip content={<CustomTooltip />} />
               <Legend onClick={(e: any) => e?.dataKey && toggle(e.dataKey)} />
               {categories.map((k) =>
@@ -133,14 +133,13 @@ export function ChartsGO({ porDia }: { porDia: GastoOperativoPorDiaUI[] }) {
                   />
                 )
               )}
-              {/* Línea de total encima */}
               {!hidden["total"] && (
                 <Line
                   type="monotone"
                   dataKey="total"
                   name="Total"
                   stroke={palette.total}
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   dot={{ r: 2.5 }}
                 />
               )}
@@ -152,11 +151,10 @@ export function ChartsGO({ porDia }: { porDia: GastoOperativoPorDiaUI[] }) {
         </CardContent>
       </Card>
 
+      {/* Caja vs Banco por día */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">
-            Evolución del total diario
-          </CardTitle>
+          <CardTitle className="text-base">Caja vs Banco por día</CardTitle>
         </CardHeader>
         <CardContent className="h-64">
           <ResponsiveContainer width="100%" height="100%">
@@ -166,17 +164,35 @@ export function ChartsGO({ porDia }: { porDia: GastoOperativoPorDiaUI[] }) {
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
-              <YAxis tickFormatter={(v) => formattMonedaGT(v)} width={72} />
+              <YAxis tickFormatter={formattMonedaGT} width={72} />
               <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="total"
-                name="Total"
-                stroke={palette.total}
-                strokeWidth={3}
-                dot={{ r: 3 }}
-              />
+              <Legend onClick={(e: any) => e?.dataKey && toggle(e.dataKey)} />
+              {!hidden["caja"] && (
+                <Bar
+                  dataKey="caja"
+                  name="Caja"
+                  fill={palette.caja}
+                  radius={[6, 6, 0, 0]}
+                />
+              )}
+              {!hidden["banco"] && (
+                <Bar
+                  dataKey="banco"
+                  name="Banco"
+                  fill={palette.banco}
+                  radius={[6, 6, 0, 0]}
+                />
+              )}
+              {!hidden["total"] && (
+                <Line
+                  type="monotone"
+                  dataKey="total"
+                  name="Total"
+                  stroke={palette.total}
+                  strokeWidth={3}
+                  dot={{ r: 3 }}
+                />
+              )}
             </ComposedChart>
           </ResponsiveContainer>
         </CardContent>

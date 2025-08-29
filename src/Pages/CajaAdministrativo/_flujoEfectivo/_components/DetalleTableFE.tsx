@@ -17,12 +17,31 @@ function medio(det: FlujoEfectivoDetalleUI): {
   return { label: "-", icon: "", amount: 0 };
 }
 
-const classColorByClas = (c: string) => {
-  if (c === "VENTA") return "bg-emerald-500/15 text-emerald-700";
-  if (c === "COSTO_VENTA") return "bg-orange-500/15 text-orange-700";
-  if (c === "GASTO_OPERATIVO") return "bg-rose-500/15 text-rose-700";
-  if (c === "DEPOSITO") return "bg-blue-500/15 text-blue-700";
+const classColorByClas = (c?: string | null) => {
+  const key = (c ?? "").toUpperCase();
+  if (key === "INGRESO") return "bg-emerald-500/15 text-emerald-700";
+  if (key === "COSTO_VENTA") return "bg-orange-500/15 text-orange-700";
+  if (key === "GASTO_OPERATIVO") return "bg-rose-500/15 text-rose-700";
+  if (key === "TRANSFERENCIA") return "bg-blue-500/15 text-blue-700";
+  if (key === "AJUSTE") return "bg-violet-500/15 text-violet-700";
+  if (key === "CONTRAVENTA") return "bg-amber-500/15 text-amber-700";
   return "bg-slate-500/15 text-slate-700";
+};
+
+const transferBadge = (direccion?: string) => {
+  if (direccion === "CAJA_A_BANCO")
+    return (
+      <span className="ml-2 rounded-md bg-sky-500/10 text-sky-700 px-2 py-0.5 text-[10px]">
+        Caja → Banco
+      </span>
+    );
+  if (direccion === "BANCO_A_CAJA")
+    return (
+      <span className="ml-2 rounded-md bg-indigo-500/10 text-indigo-700 px-2 py-0.5 text-[10px]">
+        Banco → Caja
+      </span>
+    );
+  return null;
 };
 
 export function DetalleTableFE({
@@ -38,9 +57,9 @@ export function DetalleTableFE({
     const q = search.toLowerCase();
     return (detalle ?? []).filter((r) =>
       [
-        r.sucursal?.nombre,
-        r.clasificacion,
-        r.motivo,
+        r.sucursal?.nombre ?? "",
+        r.clasificacion ?? "",
+        r.motivo ?? "",
         r.descripcion ?? "",
         r.referencia ?? "",
       ].some((v) => (v ?? "").toLowerCase().includes(q))
@@ -68,7 +87,7 @@ export function DetalleTableFE({
           <div className="flex items-center gap-2 text-sm">
             <input
               className="border rounded-md px-3 py-1.5 w-56"
-              placeholder="Buscar (proveedor, motivo, ref)"
+              placeholder="Buscar (sucursal, clasif, motivo, desc, ref)"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -95,6 +114,7 @@ export function DetalleTableFE({
                 <th className="py-2 pr-3">Monto</th>
                 <th className="py-2 pr-3">Medio</th>
                 <th className="py-2 pr-3">Descripción / Ref</th>
+                <th className="py-2 pr-3">Transfer</th>
               </tr>
             </thead>
             <tbody>
@@ -104,6 +124,7 @@ export function DetalleTableFE({
                 const amountStr = `${isPos ? "+" : ""}${formatter.format(
                   m.amount
                 )}`;
+                const isTransfer = !!r.esTransferencia;
                 return (
                   <tr key={r.id} className="border-b hover:bg-muted/40">
                     <td className="py-2 pr-3 font-medium">
@@ -113,17 +134,20 @@ export function DetalleTableFE({
                     <td className="py-2 pr-3">
                       <span
                         className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs ${classColorByClas(
-                          r.clasificacion
+                          r.clasificacion ?? ""
                         )}`}
                       >
-                        {r.clasificacion}
+                        {r.clasificacion ?? "-"}
                       </span>
                     </td>
-                    <td className="py-2 pr-3">{r.motivo}</td>
+                    <td className="py-2 pr-3">{r.motivo ?? "-"}</td>
                     <td
                       className={`py-2 pr-3 tabular-nums ${
                         isPos ? "text-emerald-600" : "text-rose-600"
                       }`}
+                      title={`Abs: ${formatter.format(
+                        r.montoAbs ?? Math.abs(m.amount)
+                      )}`}
                     >
                       {amountStr}
                     </td>
@@ -131,8 +155,11 @@ export function DetalleTableFE({
                       {m.icon} {m.label}
                     </td>
                     <td className="py-2 pr-3">
-                      {r.descripcion ?? "-"}
-                      {r.referencia ? ` — ${r.referencia}` : ""}
+                      {(r.descripcion ?? "-") +
+                        (r.referencia ? ` — ${r.referencia}` : "")}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {isTransfer ? transferBadge(r.direccionTransfer) : "-"}
                     </td>
                   </tr>
                 );

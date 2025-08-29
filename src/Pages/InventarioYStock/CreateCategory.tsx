@@ -113,7 +113,7 @@ export default function CreateCategory({
                   {categories.map((cat) => (
                     <li
                       key={cat.id}
-                      className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                      className="flex justify-between items-center p-2 border-2 rounded"
                     >
                       <span>{cat.nombre}</span>
                       <div className="flex gap-2">

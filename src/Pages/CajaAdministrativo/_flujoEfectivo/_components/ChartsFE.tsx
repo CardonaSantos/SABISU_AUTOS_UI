@@ -68,20 +68,35 @@ export function ChartsFE({
   porDia: FlujoEfectivoPorDiaUI[];
   resumen: FlujoEfectivoResumenUI;
 }) {
-  const data = useMemo(
-    () =>
-      (porDia ?? []).map((d) => ({
-        date: dayjs(d.fecha).format("DD/MM"),
+  // Mapeo + acumulado (para simular evolución de saldos en el periodo)
+  const data = useMemo(() => {
+    let acCaja = 0;
+    let acBanco = 0;
+    let acTotal = 0;
+
+    return (porDia ?? []).map((d) => {
+      const date = dayjs(d.fecha).format("DD/MM");
+      const movCaja = d.movimientoNetoCaja ?? 0;
+      const movBanco = d.movimientoNetoBanco ?? 0;
+      const movTotal = d.movimientoNetoTotal ?? movCaja + movBanco;
+
+      acCaja += movCaja;
+      acBanco += movBanco;
+      acTotal += movTotal;
+
+      return {
+        date,
         ingresosCaja: d.ingresosCaja,
         egresosCaja: d.egresosCaja,
         ingresosBanco: d.ingresosBanco,
         egresosBanco: d.egresosBanco,
-        saldoFinalCaja: d.saldoFinalCaja,
-        saldoFinalBanco: d.saldoFinalBanco,
-        saldoFinalTotal: d.saldoFinalTotal,
-      })),
-    [porDia]
-  );
+        // acumulados del periodo (líneas)
+        acumCaja: acCaja,
+        acumBanco: acBanco,
+        acumTotal: acTotal,
+      };
+    });
+  }, [porDia]);
 
   const egresosPie = useMemo(
     () => [
@@ -104,11 +119,11 @@ export function ChartsFE({
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-      {/* Evolución de saldos (tendencias) */}
+      {/* Acumulado del periodo (tendencias) */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">
-            Evolución de saldos (Caja, Banco, Total)
+            Acumulado del periodo (Caja, Banco, Total)
           </CardTitle>
         </CardHeader>
         <CardContent className="h-64">
@@ -122,31 +137,31 @@ export function ChartsFE({
               <YAxis tickFormatter={(v) => GTQ.format(v)} width={72} />
               <Tooltip content={<CustomTooltip />} />
               <Legend onClick={(e: any) => e?.dataKey && toggle(e.dataKey)} />
-              {!hidden["saldoFinalCaja"] && (
+              {!hidden["acumCaja"] && (
                 <Line
                   type="monotone"
-                  dataKey="saldoFinalCaja"
-                  name="Saldo Caja"
+                  dataKey="acumCaja"
+                  name="Acum. Caja"
                   stroke={palette.lineaCaja}
                   strokeWidth={2}
                   dot={{ r: 2 }}
                 />
               )}
-              {!hidden["saldoFinalBanco"] && (
+              {!hidden["acumBanco"] && (
                 <Line
                   type="monotone"
-                  dataKey="saldoFinalBanco"
-                  name="Saldo Banco"
+                  dataKey="acumBanco"
+                  name="Acum. Banco"
                   stroke={palette.lineaBanco}
                   strokeWidth={2}
                   dot={{ r: 2 }}
                 />
               )}
-              {!hidden["saldoFinalTotal"] && (
+              {!hidden["acumTotal"] && (
                 <Line
                   type="monotone"
-                  dataKey="saldoFinalTotal"
-                  name="Saldo Total"
+                  dataKey="acumTotal"
+                  name="Acum. Total"
                   stroke={palette.lineaTotal}
                   strokeWidth={3}
                   dot={{ r: 2.5 }}
@@ -164,7 +179,7 @@ export function ChartsFE({
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">
-            Ingresos y Egresos por día (Caja/Banco)
+            Ingresos y egresos por día (Caja/Banco)
           </CardTitle>
         </CardHeader>
         <CardContent className="h-64">

@@ -1,6 +1,6 @@
 import axios from "axios";
 import qs from "qs";
-import { CostosVentaHistoricoResponse } from "../costoVentasHistoricosTypes";
+// import { CostosVentaHistoricoResponse } from "../costoVentasHistoricosTypes";
 import { SucursalOption } from "../../interfaces/FlujoCajaHsitoricoTypes";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -14,9 +14,9 @@ export async function getCostosVentaHistorico(params: {
   from: string; // ISO startOfDay
   to: string; // ISO endOfDay
   sucursalId?: number | null;
-}): Promise<CostosVentaHistoricoResponse> {
+}) {
   const url = `${API_URL}/caja-administrativo/costos-venta-historico`;
-  const { data } = await axios.get<CostosVentaHistoricoResponse>(url, {
+  const { data } = await axios.get(url, {
     params: {
       from: params.from,
       to: params.to,

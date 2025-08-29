@@ -39,7 +39,7 @@ export default function FlujoEfectivoPage() {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<FlujoEfectivoResponseUI | null>(null);
 
-  // Controller espera YYYY-MM-DD
+  // Controller espera YYYY-MM-DD (TZ Guatemala)
   const fromYMD = useMemo(
     () =>
       range.from ? dayjs(range.from).tz(TZGT).format("YYYY-MM-DD") : undefined,
@@ -57,10 +57,11 @@ export default function FlujoEfectivoPage() {
         const opts = await getSucursalesOptions();
         setSucursalesOptions(opts);
         if (!sucursal && opts.length > 0) setSucursal(opts[0]);
-      } catch (e) {
+      } catch {
         // ignore
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchData = async () => {

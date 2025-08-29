@@ -6,16 +6,17 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
+
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SucursalOption } from "../interfaces/FlujoCajaHsitoricoTypes";
-import { CostosVentaHistoricoResponse } from "./costoVentasHistoricosTypes";
 import { getCostosVentaHistorico } from "./API/costosVenta";
 import { FiltersBarCV } from "./components/FiltersBarCV";
 import { ResumenGrid } from "./components/ResumenGrid";
 import { ChartsCV } from "./components/ChartsCV";
 import { DetalleTable } from "./components/DetalleTable";
 import useGetSucursales from "@/hooks/getSucursales/use-sucursales";
+import { CostoVentaResponseUI } from "./costoVentasHistoricosTypes";
 
 const TZGT = "America/Guatemala";
 dayjs.extend(utc);
@@ -33,15 +34,13 @@ export default function CostosVentaHistoricoPage() {
 
   const { data: sucursales } = useGetSucursales();
   const optionsSucursales: SucursalOption[] =
-    sucursales?.map((s) => ({
-      label: s.nombre,
-      value: s.id,
-    })) ?? [];
+    sucursales?.map((s) => ({ label: s.nombre, value: s.id })) ?? [];
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<CostosVentaHistoricoResponse | null>(null);
+  const [data, setData] = useState<CostoVentaResponseUI | null>(null);
 
+  // Endpoint actual: seguimos enviando ISO (con TZ GT) como lo tenías
   const fromISO = useMemo(
     () =>
       range.from
@@ -81,7 +80,7 @@ export default function CostosVentaHistoricoPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Costos de Ventas Histórico</h1>
+        <h1 className="text-xl font-semibold">Costos de Ventas — Histórico</h1>
       </div>
 
       <FiltersBarCV
@@ -114,13 +113,8 @@ export default function CostosVentaHistoricoPage() {
           animate={{ opacity: 1 }}
           className="space-y-4"
         >
-          {/* Resumen */}
           <ResumenGrid resumen={data.resumen} />
-
-          {/* Charts */}
           <ChartsCV porDia={data.porDia} />
-
-          {/* Tabla */}
           <DetalleTable detalle={data.detalle} />
         </motion.div>
       )}

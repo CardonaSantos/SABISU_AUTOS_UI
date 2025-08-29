@@ -16,7 +16,7 @@ export async function getPreviaCierre(
 export async function cerrarCajaV2(
   payload: CerrarCajaV2Dto
 ): Promise<CerrarCajaV2Response> {
-  const { data } = await axios.post(`${API_URL}/caja/cerrar-v2`, payload);
+  const { data } = await axios.post(`${API_URL}/caja/cerrar-v3`, payload);
   return data as CerrarCajaV2Response;
 }
 

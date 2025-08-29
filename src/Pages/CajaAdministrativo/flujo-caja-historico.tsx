@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -9,25 +8,29 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 
-import {
-  FlujoCajaGlobalUI,
-  FlujoCajaSucursalUI,
-  SucursalOption,
-} from "./interfaces/FlujoCajaHsitoricoTypes";
 import { FiltersBar } from "./_components/FiltersBar";
 import { SucursalCharts } from "./_components/SucursalCharts";
 import { GlobalTable, SucursalTable } from "./_components/FlujoTable";
 import { GlobalCharts } from "./_components/GlobalCharts";
-import { getFlujoGlobal, getFlujoSucursal } from "./API/apiFlujoSucursal";
-import useGetSucursales from "@/hooks/getSucursales/use-sucursales";
 
-// Configurar TZ Guatemala
+import useGetSucursales from "@/hooks/getSucursales/use-sucursales";
+import { useApiQuery } from "@/hooks/genericoCall/genericoCallHook";
+import { useStore } from "@/components/Context/ContextSucursal";
+import { toast } from "sonner";
+import { getApiErrorMessageAxios } from "../Utils/UtilsErrorApi";
+import { SucursalOption } from "./interfaces/FlujoCajaHsitoricoTypes";
+import { FlujoGlobalDiaUI, FlujoSucursalDiaUI } from "./interfaces/interface2";
+
+// === NUEVOS TYPES ===
+
+// TZ Guatemala
 const TZGT = "America/Guatemala";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 export default function FlujoHistoricoPage() {
   // Filtros
+  const sucursalIdCtx = useStore((state) => state.sucursalId) ?? 0;
   const [range, setRange] = useState<{ from: Date | null; to: Date | null }>(
     () => ({
       from: dayjs().tz(TZGT).subtract(6, "day").startOf("day").toDate(),
@@ -36,20 +39,13 @@ export default function FlujoHistoricoPage() {
   );
   const [sucursal, setSucursal] = useState<SucursalOption | null>(null);
 
-  const { data } = useGetSucursales();
+  // Opciones de sucursal
+  const { data: sucursales } = useGetSucursales();
   const optionsSucursales: SucursalOption[] =
-    data?.map((s) => ({
-      label: s.nombre,
-      value: s.id,
-    })) ?? [];
+    sucursales?.map((s) => ({ label: s.nombre, value: s.id })) ?? [];
+  const sucursalID = sucursal?.value ?? sucursalIdCtx;
 
-  // Data
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [sucursalRows, setSucursalRows] = useState<FlujoCajaSucursalUI>([]);
-  const [globalRows, setGlobalRows] = useState<FlujoCajaGlobalUI>([]);
-
-  // Helpers
+  // Fechas ISO (con TZ GT)
   const fromISO = useMemo(
     () =>
       range.from
@@ -63,39 +59,63 @@ export default function FlujoHistoricoPage() {
     [range.to]
   );
 
-  const fetchAll = async () => {
-    if (!fromISO || !toISO) return;
-    try {
-      setLoading(true);
-      setError(null);
+  // Queries (con nuevos tipos)
+  const {
+    data: flujoGlobalData,
+    error: errorGlobal,
+    isLoading: isLoadingGlobal,
+    refetch: refetchGlobal,
+  } = useApiQuery<FlujoGlobalDiaUI[]>(
+    ["flujoCajaGlobal", fromISO, toISO, sucursalID],
+    "caja-administrativo/global",
+    { params: { from: fromISO, to: toISO, sucursalId: sucursalID } },
+    { enabled: Boolean(fromISO && toISO) }
+  );
 
-      // Global
-      const global = await getFlujoGlobal({ from: fromISO, to: toISO });
-      setGlobalRows(global);
+  const {
+    data: flujoSucursalData,
+    error: errorSucursal,
+    isLoading: isLoadingSucursal,
+    refetch: refetchSucursal,
+  } = useApiQuery<FlujoSucursalDiaUI[]>(
+    ["cajaSucursal", fromISO, toISO, sucursalID],
+    `/caja-administrativo/sucursal/${sucursalID}`,
+    { params: { from: fromISO, to: toISO, sucursalId: sucursalID } },
+    { enabled: Boolean(fromISO && toISO) }
+  );
 
-      // Sucursal (solo si hay seleccion)
-      if (sucursal) {
-        const rows = await getFlujoSucursal({
-          sucursalId: sucursal.value,
-          from: fromISO,
-          to: toISO,
-        });
-        setSucursalRows(rows);
-      } else {
-        setSucursalRows([]);
-      }
-    } catch (err: any) {
-      setError(err?.message ?? "Error al cargar datos");
-    } finally {
-      setLoading(false);
-    }
+  const isLoading = isLoadingGlobal || isLoadingSucursal;
+  const isError = errorGlobal || errorSucursal;
+
+  const reFetchAll = async (): Promise<void> => {
+    await Promise.all([refetchGlobal(), refetchSucursal()]);
   };
 
-  // Refetch al cambiar filtros
   useEffect(() => {
-    fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromISO, toISO, sucursal?.value]);
+    if (errorSucursal) toast.error(getApiErrorMessageAxios(errorSucursal));
+    if (errorGlobal) toast.error(getApiErrorMessageAxios(errorGlobal));
+  }, [errorSucursal, errorGlobal]);
+
+  if (isError) {
+    return (
+      <div className="p-4 text-destructive flex items-center gap-2">
+        <AlertCircle className="w-5 h-5" />
+        <span>Error encontrando registros de flujo de caja</span>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">
+          Cargando datos de flujo de caja…
+        </h2>
+        <Skeleton className="h-28 w-full" />
+        <Skeleton className="h-80 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -110,24 +130,10 @@ export default function FlujoHistoricoPage() {
         sucursal={sucursal}
         sucursalesOptions={optionsSucursales}
         onChangeSucursal={setSucursal}
-        onRefresh={fetchAll}
+        onRefresh={reFetchAll}
       />
 
-      {loading && (
-        <div className="grid grid-cols-1 gap-4">
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-80 w-full" />
-        </div>
-      )}
-
-      {error && (
-        <Card className="p-4 flex items-center gap-2 text-destructive">
-          <AlertCircle className="w-5 h-5" />
-          <span>{error}</span>
-        </Card>
-      )}
-
-      {!loading && !error && (
+      {!isLoading && !isError && (
         <Tabs defaultValue="sucursal" className="w-full">
           <TabsList className="grid grid-cols-2 w-full md:w-auto">
             <TabsTrigger value="sucursal">Por sucursal</TabsTrigger>
@@ -137,8 +143,8 @@ export default function FlujoHistoricoPage() {
           <TabsContent value="sucursal" className="space-y-4">
             {sucursal ? (
               <>
-                <SucursalCharts data={sucursalRows} />
-                <SucursalTable rows={sucursalRows} />
+                <SucursalCharts data={flujoSucursalData ?? []} />
+                <SucursalTable rows={flujoSucursalData ?? []} />
               </>
             ) : (
               <Card className="p-6 text-sm text-muted-foreground">
@@ -148,8 +154,8 @@ export default function FlujoHistoricoPage() {
           </TabsContent>
 
           <TabsContent value="global" className="space-y-4">
-            <GlobalCharts data={globalRows} />
-            <GlobalTable rows={globalRows} />
+            <GlobalCharts data={flujoGlobalData ?? []} />
+            <GlobalTable rows={flujoGlobalData ?? []} />
           </TabsContent>
         </Tabs>
       )}

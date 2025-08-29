@@ -34,16 +34,13 @@ export default function GastoOperativoHistoricoPage() {
 
   const { data: sucursales } = useGetSucursales();
   const optionsSucursales: SucursalOption[] =
-    sucursales?.map((s) => ({
-      label: s.nombre,
-      value: s.id,
-    })) ?? [];
+    sucursales?.map((s) => ({ label: s.nombre, value: s.id })) ?? [];
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<GastoOperativoResponseUI | null>(null);
 
-  // El controller espera YYYY-MM-DD (TZ GT)
+  // Controller espera YYYY-MM-DD (TZ GT)
   const fromYMD = useMemo(
     () =>
       range.from ? dayjs(range.from).tz(TZGT).format("YYYY-MM-DD") : undefined,

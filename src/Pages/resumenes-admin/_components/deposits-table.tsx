@@ -10,20 +10,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { motion } from "framer-motion";
-import { formattMoneda } from "@/Pages/Utils/Utils";
-import { ResumenDiarioAdminResponse } from "../interfaces/resumen";
+import { formattMonedaGT } from "@/utils/formattMoneda";
 
-interface DepositsTableProps {
-  deposits: ResumenDiarioAdminResponse["depositos"]["porCuenta"];
-}
+type DepositRow = {
+  cuentaBancariaId: number;
+  banco: string;
+  alias: string | null;
+  numeroMasked: string | null;
+  monto: number;
+  cantidad: number;
+};
 
-export function DepositsTable({ deposits }: DepositsTableProps) {
-  if (deposits.length === 0) {
+export function DepositsTable({ deposits }: { deposits: DepositRow[] }) {
+  if (!deposits?.length) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.5 }}
+        transition={{ duration: 0.25, delay: 0.15 }}
       >
         <Card>
           <CardHeader>
@@ -43,7 +47,7 @@ export function DepositsTable({ deposits }: DepositsTableProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: 0.5 }}
+      transition={{ duration: 0.25, delay: 0.15 }}
     >
       <Card>
         <CardHeader>
@@ -61,16 +65,14 @@ export function DepositsTable({ deposits }: DepositsTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {deposits.map((deposit) => (
-                <TableRow key={deposit.cuentaBancariaId}>
-                  <TableCell className="font-medium">{deposit.banco}</TableCell>
-                  <TableCell>{deposit.alias || "—"}</TableCell>
-                  <TableCell>{deposit.numeroMasked || "—"}</TableCell>
+              {deposits.map((d) => (
+                <TableRow key={d.cuentaBancariaId}>
+                  <TableCell className="font-medium">{d.banco}</TableCell>
+                  <TableCell>{d.alias || "—"}</TableCell>
+                  <TableCell>{d.numeroMasked || "—"}</TableCell>
+                  <TableCell className="text-right">{d.cantidad}</TableCell>
                   <TableCell className="text-right">
-                    {deposit.cantidad}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formattMoneda(deposit.monto)}
+                    {formattMonedaGT(d.monto)}
                   </TableCell>
                 </TableRow>
               ))}

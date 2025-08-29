@@ -95,6 +95,15 @@ import { formattMonedaGT } from "@/utils/formattMoneda";
 import { Category, CroppedImage, ProductCreate } from "./interfaces.interface";
 import { PrecioProductoInventario } from "../Inventario/preciosInterfaces.interface";
 import CreateCategory from "./CreateCategory";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 dayjs.extend(utc);
 dayjs.extend(localizedFormat);
@@ -677,346 +686,396 @@ export default function Inventario({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentItems.map((product) => (
-                <TableRow
-                  key={product.id}
-                  className="hover:bg-muted/30 transition-colors"
-                >
-                  <TableCell className="font-medium text-sm py-2">
-                    <div className="max-w-32 truncate" title={product.nombre}>
-                      {product.nombre}
-                    </div>
-                  </TableCell>
+              {currentItems.map((product) => {
+                const stock = Array.isArray(product?.stock)
+                  ? product.stock
+                  : [];
+                const visibles = stock.slice(0, 2);
+                const restantes = stock.slice(2);
 
-                  <TableCell className="py-2">
-                    <div className="flex flex-wrap gap-0.5 max-w-24">
-                      {product.categorias.slice(0, 2).map((cat) => (
-                        <Badge
-                          key={cat.nombre}
-                          variant="outline"
-                          className="text-[10px] px-1 py-0 h-4"
-                        >
-                          {cat.nombre.slice(0, 4)}
-                        </Badge>
-                      ))}
-                      {product.categorias.length > 2 && (
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] px-1 py-0 h-4"
-                        >
-                          +{product.categorias.length - 2}
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
+                return (
+                  <TableRow
+                    key={product.id}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
+                    <TableCell className="font-medium text-sm py-2">
+                      <div className="max-w-32 truncate" title={product.nombre}>
+                        {product.nombre}
+                      </div>
+                    </TableCell>
 
-                  <TableCell className="py-2">
-                    {product.stock.length > 0 ? (
-                      <div className="flex flex-wrap gap-1 max-w-28">
-                        {product.stock
-                          .slice(0, 3)
-                          .map(({ id, cantidad, sucursal }) => (
-                            <div
-                              key={id}
-                              className="flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] bg-blue-50 dark:bg-zinc-900"
-                            >
-                              <span className="font-semibold">
-                                {sucursal.nombre.slice(0, 2).toUpperCase()}
-                              </span>
-                              <span className="font-bold">{cantidad}</span>
-                            </div>
-                          ))}
-                        {product.stock.length > 3 && (
-                          <div className="text-[10px] text-muted-foreground">
-                            +{product.stock.length - 3}
-                          </div>
+                    <TableCell className="py-2">
+                      <div className="flex flex-wrap gap-0.5 max-w-24">
+                        {product.categorias.slice(0, 2).map((cat) => (
+                          <Badge
+                            key={cat.nombre}
+                            variant="outline"
+                            className="text-[10px] px-1 py-0 h-4"
+                          >
+                            {cat.nombre.slice(0, 4)}
+                          </Badge>
+                        ))}
+                        {product.categorias.length > 2 && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1 py-0 h-4"
+                          >
+                            +{product.categorias.length - 2}
+                          </Badge>
                         )}
                       </div>
-                    ) : (
-                      <div className="flex items-center text-[10px] text-gray-500">
-                        <Ban className="h-3 w-3 mr-1" />
-                        N/A
-                      </div>
-                    )}
-                  </TableCell>
+                    </TableCell>
 
-                  <TableCell className="py-2 text-sm">
-                    {product.stockThreshold?.stockMinimo ?? "N/A"}
-                  </TableCell>
-
-                  <TableCell className="py-2">
-                    <div className="space-y-0.5 max-w-24">
-                      {product.precios.slice(0, 2).map((precio, idx) => (
-                        <Tooltip key={idx}>
-                          <TooltipTrigger asChild>
-                            <div className="text-xs font-medium cursor-pointer truncate">
-                              {formattMonedaGT(precio.precio)}
+                    <TableCell className="py-2">
+                      {product.stock.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 max-w-28">
+                          {product.stock
+                            .slice(0, 3)
+                            .map(({ id, cantidad, sucursal }) => (
+                              <div
+                                key={id}
+                                className="flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] bg-blue-50 dark:bg-zinc-900"
+                              >
+                                <span className="font-semibold">
+                                  {sucursal.nombre.slice(0, 2).toUpperCase()}
+                                </span>
+                                <span className="font-bold">{cantidad}</span>
+                              </div>
+                            ))}
+                          {product.stock.length > 3 && (
+                            <div className="text-[10px] text-muted-foreground">
+                              +{product.stock.length - 3}
                             </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <div className="text-xs space-y-1">
-                              <p>
-                                <b>Orden:</b> {precio.orden}
-                              </p>
-                              <p>
-                                <b>Precio:</b> {formattMonedaGT(precio.precio)}
-                              </p>
-                              <p>
-                                <b>Rol:</b> {precio.rol}
-                              </p>
-                              <p>
-                                <b>Tipo:</b> {precio.tipo}
-                              </p>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      ))}
-                      {product.precios.length > 2 && (
-                        <div className="text-[10px] text-muted-foreground">
-                          +{product.precios.length - 2} más
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center text-[10px] text-gray-500">
+                          <Ban className="h-3 w-3 mr-1" />
+                          N/A
                         </div>
                       )}
-                    </div>
-                  </TableCell>
+                    </TableCell>
 
-                  <TableCell className="py-2">
-                    {product.stock.length === 0 ? (
-                      <div className="text-[10px] flex items-center">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        Sin stock
-                      </div>
-                    ) : (
-                      <div className="space-y-0.5">
-                        {product.stock.slice(0, 2).map((stock) => (
-                          <Link
-                            key={stock.id}
-                            to={`/stock-edicion/${stock.id}`}
-                            className="text-[10px] block hover:underline hover:text-blue-500"
-                          >
-                            {formatearFecha(stock.fechaIngreso)}
-                          </Link>
+                    <TableCell className="py-2 text-sm">
+                      {product.stockThreshold?.stockMinimo ?? "N/A"}
+                    </TableCell>
+
+                    <TableCell className="py-2">
+                      <div className="space-y-0.5 max-w-24">
+                        {product.precios.slice(0, 2).map((precio, idx) => (
+                          <Tooltip key={idx}>
+                            <TooltipTrigger asChild>
+                              <div className="text-xs font-medium cursor-pointer truncate">
+                                {formattMonedaGT(precio.precio)}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <div className="text-xs space-y-1">
+                                <p>
+                                  <b>Orden:</b> {precio.orden}
+                                </p>
+                                <p>
+                                  <b>Precio:</b>{" "}
+                                  {formattMonedaGT(precio.precio)}
+                                </p>
+                                <p>
+                                  <b>Rol:</b> {precio.rol}
+                                </p>
+                                <p>
+                                  <b>Tipo:</b> {precio.tipo}
+                                </p>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
                         ))}
-                        {product.stock.length > 2 && (
+                        {product.precios.length > 2 && (
                           <div className="text-[10px] text-muted-foreground">
-                            +{product.stock.length - 2}
+                            +{product.precios.length - 2} más
                           </div>
                         )}
                       </div>
-                    )}
-                  </TableCell>
+                    </TableCell>
 
-                  <TableCell className="py-2">
-                    {product.stock.length > 0 ? (
-                      <div className="space-y-0.5">
-                        {product.stock.slice(0, 2).map((stock, index) => {
-                          const fechaVencimiento = new Date(
-                            stock.fechaVencimiento
-                          );
-                          const hoy = new Date();
-                          const estaVencido =
-                            stock.fechaVencimiento &&
-                            fechaVencimiento.setHours(23, 59, 59, 999) <=
-                              hoy.getTime();
-                          const diasRestantes = stock.fechaVencimiento
-                            ? Math.ceil(
-                                (fechaVencimiento.getTime() - hoy.getTime()) /
-                                  (1000 * 60 * 60 * 24)
-                              )
-                            : null;
+                    <TableCell className="py-2">
+                      {stock.length === 0 ? (
+                        <div className="text-[10px] flex items-center">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          Sin stock
+                        </div>
+                      ) : (
+                        <div className="space-y-0.5">
+                          {visibles.map((s) => (
+                            <Link
+                              key={s.id}
+                              to={`/stock-edicion/${s.id}`}
+                              className="text-[10px] block hover:underline hover:text-blue-500"
+                            >
+                              {formatearFecha(s.fechaIngreso)}
+                            </Link>
+                          ))}
 
-                          return (
-                            <div key={index}>
-                              {stock.fechaVencimiento ? (
-                                estaVencido ? (
-                                  <Badge
-                                    variant="destructive"
-                                    className="text-[10px] px-1 py-0 h-4"
+                          {restantes.length > 0 && (
+                            <div className="text-[10px] text-muted-foreground">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="link"
+                                    className="h-auto p-0 text-[10px]"
                                   >
-                                    <Clock className="h-2 w-2 mr-0.5" />
-                                    Expirado
-                                  </Badge>
-                                ) : (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Badge
-                                        variant={
-                                          diasRestantes && diasRestantes < 30
-                                            ? "outline"
-                                            : "secondary"
-                                        }
-                                        className={`text-[10px] px-1 py-0 h-4 ${
-                                          diasRestantes && diasRestantes < 30
-                                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                                            : ""
-                                        }`}
+                                    <span className="text-black dark:text-white font-semibold hover:underline">
+                                      +{restantes.length}
+                                    </span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent
+                                  className="w-56"
+                                  align="center"
+                                  sideOffset={4}
+                                >
+                                  <DropdownMenuLabel className="text-center">
+                                    Lista de entradas
+                                  </DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+
+                                  {/* Usa Group + Item (no RadioGroup) */}
+                                  <DropdownMenuGroup>
+                                    {restantes.map((s) => (
+                                      <DropdownMenuItem
+                                        key={s.id}
+                                        asChild
+                                        className="justify-center"
                                       >
-                                        <Calendar className="h-2 w-2 mr-0.5" />
-                                        {formatearFecha(
-                                          stock.fechaVencimiento
-                                        ).slice(0, 5)}
-                                      </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <div className="text-xs">
-                                        <p>
+                                        <Link
+                                          to={`/stock-edicion/${s.id}`}
+                                          className="w-full text-center text-xs hover:underline hover:text-blue-500 hover:cursor-pointer"
+                                        >
+                                          {formatearFecha(s.fechaIngreso)}
+                                        </Link>
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuGroup>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="py-2">
+                      {product.stock.length > 0 ? (
+                        <div className="space-y-0.5">
+                          {product.stock.slice(0, 2).map((stock, index) => {
+                            const fechaVencimiento = new Date(
+                              stock.fechaVencimiento
+                            );
+                            const hoy = new Date();
+                            const estaVencido =
+                              stock.fechaVencimiento &&
+                              fechaVencimiento.setHours(23, 59, 59, 999) <=
+                                hoy.getTime();
+                            const diasRestantes = stock.fechaVencimiento
+                              ? Math.ceil(
+                                  (fechaVencimiento.getTime() - hoy.getTime()) /
+                                    (1000 * 60 * 60 * 24)
+                                )
+                              : null;
+
+                            return (
+                              <div key={index}>
+                                {stock.fechaVencimiento ? (
+                                  estaVencido ? (
+                                    <Badge
+                                      variant="destructive"
+                                      className="text-[10px] px-1 py-0 h-4"
+                                    >
+                                      <Clock className="h-2 w-2 mr-0.5" />
+                                      Expirado
+                                    </Badge>
+                                  ) : (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Badge
+                                          variant={
+                                            diasRestantes && diasRestantes < 30
+                                              ? "outline"
+                                              : "secondary"
+                                          }
+                                          className={`text-[10px] px-1 py-0 h-4 ${
+                                            diasRestantes && diasRestantes < 30
+                                              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                              : ""
+                                          }`}
+                                        >
+                                          <Calendar className="h-2 w-2 mr-0.5" />
                                           {formatearFecha(
                                             stock.fechaVencimiento
+                                          ).slice(0, 5)}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <div className="text-xs">
+                                          <p>
+                                            {formatearFecha(
+                                              stock.fechaVencimiento
+                                            )}
+                                          </p>
+                                          {diasRestantes && (
+                                            <p>
+                                              {diasRestantes} días restantes
+                                            </p>
                                           )}
-                                        </p>
-                                        {diasRestantes && (
-                                          <p>{diasRestantes} días restantes</p>
-                                        )}
-                                      </div>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                )
-                              ) : (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] px-1 py-0 h-4 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-                                >
-                                  <InfinityIcon className="h-2 w-2 mr-0.5" />
-                                  N/A
-                                </Badge>
-                              )}
-                            </div>
-                          );
-                        })}
-                        {product.stock.length > 2 && (
-                          <div className="text-[10px] text-muted-foreground">
-                            +{product.stock.length - 2}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center text-[10px]">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        Sin stock
-                      </div>
-                    )}
-                  </TableCell>
-
-                  <TableCell className="py-2">
-                    {product && product.stock && product.stock.length > 0 ? (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-6 px-2 text-[10px] bg-transparent"
-                          >
-                            <MapPin className="h-2 w-2 mr-0.5" />
-                            Ver
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-64">
-                          <div className="space-y-2">
-                            <h4 className="font-medium text-xs flex items-center">
-                              <Building2 className="h-3 w-3 mr-1" />
-                              Distribución por Sucursal
-                            </h4>
-                            <Separator />
-                            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                              {product.stock
-                                .reduce(
-                                  (
-                                    acc: {
-                                      sucursal: { nombre: string };
-                                      cantidad: number;
-                                    }[],
-                                    stock: {
-                                      sucursal: { nombre: string };
-                                      cantidad: number;
-                                    }
-                                  ) => {
-                                    const existingStock = acc.find(
-                                      (s) =>
-                                        s.sucursal.nombre ===
-                                        stock.sucursal.nombre
-                                    );
-                                    if (existingStock) {
-                                      existingStock.cantidad += stock.cantidad;
-                                    } else {
-                                      acc.push({ ...stock });
-                                    }
-                                    return acc;
-                                  },
-                                  []
-                                )
-                                .map((stock) => (
-                                  <div
-                                    key={stock.sucursal.nombre}
-                                    className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border border-border/40"
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )
+                                ) : (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1 py-0 h-4 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
                                   >
-                                    <div className="flex items-center">
-                                      <Building className="h-4 w-4 mr-2" />
-                                      <span className="font-medium">
-                                        {stock.sucursal.nombre}
-                                      </span>
-                                    </div>
-                                    <Badge variant="secondary">
-                                      {stock.cantidad} Uds
-                                    </Badge>
-                                  </div>
-                                ))}
+                                    <InfinityIcon className="h-2 w-2 mr-0.5" />
+                                    N/A
+                                  </Badge>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {product.stock.length > 2 && (
+                            <div className="text-[10px] text-muted-foreground">
+                              +{product.stock.length - 2}
                             </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] px-1 py-0 h-4 bg-muted text-muted-foreground"
-                      >
-                        No asignado
-                      </Badge>
-                    )}
-                  </TableCell>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center text-[10px]">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          Sin stock
+                        </div>
+                      )}
+                    </TableCell>
 
-                  <TableCell className="py-2">
-                    <div className="flex items-center space-x-1">
-                      <HoverCard>
-                        <HoverCardTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 rounded-full"
-                            aria-label="Ver detalles"
-                          >
-                            <Eye className="h-3 w-3 text-muted-foreground" />
-                          </Button>
-                        </HoverCardTrigger>
-                        <HoverCardContent className="w-72">
-                          <div className="flex justify-between">
-                            <h4 className="font-semibold text-sm">
-                              Detalles del producto
-                            </h4>
-                            <Badge variant="outline" className="text-[10px]">
-                              {product.codigoProducto || "Sin código"}
-                            </Badge>
-                          </div>
-                          <Separator className="my-2" />
-                          <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">
-                              {product.descripcion ||
-                                "No hay descripción disponible"}
-                            </p>
-                          </div>
-                        </HoverCardContent>
-                      </HoverCard>
+                    <TableCell className="py-2">
+                      {product && product.stock && product.stock.length > 0 ? (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 px-2 text-[10px] bg-transparent"
+                            >
+                              <MapPin className="h-2 w-2 mr-0.5" />
+                              Ver
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64">
+                            <div className="space-y-2">
+                              <h2 className="font-medium text-xs flex items-center">
+                                <Building2 className="h-3 w-3 mr-1" />
+                                Distribución por Sucursal
+                              </h2>
+                              <Separator />
+                              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                {product.stock
+                                  .reduce(
+                                    (
+                                      acc: {
+                                        sucursal: { nombre: string };
+                                        cantidad: number;
+                                      }[],
+                                      stock: {
+                                        sucursal: { nombre: string };
+                                        cantidad: number;
+                                      }
+                                    ) => {
+                                      const existingStock = acc.find(
+                                        (s) =>
+                                          s.sucursal.nombre ===
+                                          stock.sucursal.nombre
+                                      );
+                                      if (existingStock) {
+                                        existingStock.cantidad +=
+                                          stock.cantidad;
+                                      } else {
+                                        acc.push({ ...stock });
+                                      }
+                                      return acc;
+                                    },
+                                    []
+                                  )
+                                  .map((stock) => (
+                                    <div
+                                      key={stock.sucursal.nombre}
+                                      className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border border-border/40"
+                                    >
+                                      <div className="flex items-center">
+                                        <Building className="h-4 w-4 mr-2" />
+                                        <span className="text-xs">
+                                          {stock.sucursal.nombre}
+                                        </span>
+                                      </div>
+                                      <Badge variant="secondary">
+                                        {stock.cantidad} Uds
+                                      </Badge>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      ) : (
+                        <span className="text-[10px] px-1 py-0 h-4 bg-muted text-muted-foreground">
+                          No asignado
+                        </span>
+                      )}
+                    </TableCell>
 
-                      <Link
-                        to={`/editar-producto/${product.id}`}
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-6 w-6 p-0"
-                        aria-label="Editar producto"
-                      >
-                        <Edit className="h-3 w-3 text-blue-500" />
-                        <span className="sr-only">Editar</span>
-                      </Link>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    <TableCell className="py-2">
+                      <div className="flex items-center space-x-1">
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 rounded-full"
+                              aria-label="Ver detalles"
+                            >
+                              <Eye className="h-3 w-3 text-muted-foreground" />
+                            </Button>
+                          </HoverCardTrigger>
+                          <HoverCardContent className="w-72">
+                            <div className="flex justify-between">
+                              <h4 className="font-semibold text-sm">
+                                Detalles del producto
+                              </h4>
+                              <Badge variant="outline" className="text-[10px]">
+                                {product.codigoProducto || "Sin código"}
+                              </Badge>
+                            </div>
+                            <Separator className="my-2" />
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">
+                                {product.descripcion ||
+                                  "No hay descripción disponible"}
+                              </p>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
+
+                        <Link
+                          to={`/editar-producto/${product.id}`}
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-6 w-6 p-0"
+                          aria-label="Editar producto"
+                        >
+                          <Edit className="h-3 w-3 text-blue-500" />
+                          <span className="sr-only">Editar</span>
+                        </Link>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TooltipProvider>

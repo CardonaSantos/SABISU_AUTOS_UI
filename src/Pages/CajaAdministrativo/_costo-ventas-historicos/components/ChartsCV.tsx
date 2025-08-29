@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-import { CostosVentaPorDiaUI } from "../costoVentasHistoricosTypes";
+import { CostoVentaPorDiaUI } from "../costoVentasHistoricosTypes";
 
 const GTQ = new Intl.NumberFormat("es-GT", {
   style: "currency",
@@ -23,12 +23,14 @@ const GTQ = new Intl.NumberFormat("es-GT", {
 });
 
 const palette = {
-  mercaderia: "#22c55e", // verde
-  fletes: "#9ca3af", // gris
-  encomiendas: "#f59e0b", // naranja
-  transporte: "#3b82f6", // azul
-  otros: "#8b5cf6", // morado
-  total: "#10b981", // línea total (emerald)
+  MERCADERIA: "#22c55e", // verde
+  FLETE: "#9ca3af", // gris
+  ENCOMIENDA: "#f59e0b", // naranja
+  TRANSPORTE: "#3b82f6", // azul
+  OTROS: "#8b5cf6", // morado
+  total: "#10b981", // línea total
+  caja: "#0ea5e9", // celeste
+  banco: "#22c55e", // verde
 };
 
 function CustomTooltip({ active, payload, label }: any) {
@@ -57,33 +59,41 @@ function CustomTooltip({ active, payload, label }: any) {
   );
 }
 
-export function ChartsCV({ porDia }: { porDia: CostosVentaPorDiaUI[] }) {
+export function ChartsCV({ porDia }: { porDia: CostoVentaPorDiaUI[] }) {
+  const categories = [
+    "MERCADERIA",
+    "FLETE",
+    "ENCOMIENDA",
+    "TRANSPORTE",
+    "OTROS",
+  ] as const;
+
   const data = useMemo(
     () =>
-      (porDia ?? []).map((d) => ({
-        date: dayjs(d.fecha).format("DD/MM"),
-        total: d.total,
-        mercaderia: d.mercaderia,
-        fletes: d.fletes,
-        encomiendas: d.encomiendas,
-        transporte: d.transporte,
-        otros: d.otros,
-      })),
+      (porDia ?? []).map((d) => {
+        const base: any = {
+          date: dayjs(d.fecha).format("DD/MM"),
+          total: d.total,
+          caja: d.caja ?? 0,
+          banco: d.banco ?? 0,
+        };
+        categories.forEach((k) => (base[k] = (d as any)[k] ?? 0));
+        return base;
+      }),
     [porDia]
   );
 
-  // Permitir ocultar series desde la leyenda (clic)
   const [hidden, setHidden] = useState<Record<string, boolean>>({});
   const toggle = (k: string) => setHidden((s) => ({ ...s, [k]: !s[k] }));
   const isHidden = (k: string) => !!hidden[k];
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-      {/* Combo: Barras agrupadas + línea de Total (comparación clara) */}
+      {/* Comparativo diario por categoría + líneas por canal + total */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">
-            Comparativo diario por categoría + Total
+            Comparativo diario (categoría / canal)
           </CardTitle>
         </CardHeader>
         <CardContent className="h-64">
@@ -98,54 +108,45 @@ export function ChartsCV({ porDia }: { porDia: CostosVentaPorDiaUI[] }) {
               <Tooltip content={<CustomTooltip />} />
               <Legend onClick={(e: any) => e?.dataKey && toggle(e.dataKey)} />
 
-              {!isHidden("mercaderia") && (
-                <Bar
-                  dataKey="mercaderia"
-                  name="Mercadería"
-                  fill={palette.mercaderia}
-                  radius={[6, 6, 0, 0]}
-                />
-              )}
-              {!isHidden("fletes") && (
-                <Bar
-                  dataKey="fletes"
-                  name="Fletes"
-                  fill={palette.fletes}
-                  radius={[6, 6, 0, 0]}
-                />
-              )}
-              {!isHidden("encomiendas") && (
-                <Bar
-                  dataKey="encomiendas"
-                  name="Encomiendas"
-                  fill={palette.encomiendas}
-                  radius={[6, 6, 0, 0]}
-                />
-              )}
-              {!isHidden("transporte") && (
-                <Bar
-                  dataKey="transporte"
-                  name="Transporte"
-                  fill={palette.transporte}
-                  radius={[6, 6, 0, 0]}
-                />
-              )}
-              {!isHidden("otros") && (
-                <Bar
-                  dataKey="otros"
-                  name="Otros"
-                  fill={palette.otros}
-                  radius={[6, 6, 0, 0]}
-                />
+              {categories.map((k) =>
+                isHidden(k) ? null : (
+                  <Bar
+                    key={k}
+                    dataKey={k}
+                    name={k}
+                    fill={(palette as any)[k]}
+                    radius={[6, 6, 0, 0]}
+                  />
+                )
               )}
 
+              {!isHidden("caja") && (
+                <Line
+                  type="monotone"
+                  dataKey="caja"
+                  name="Caja"
+                  stroke={palette.caja}
+                  strokeWidth={2}
+                  dot={{ r: 2 }}
+                />
+              )}
+              {!isHidden("banco") && (
+                <Line
+                  type="monotone"
+                  dataKey="banco"
+                  name="Banco"
+                  stroke={palette.banco}
+                  strokeWidth={2}
+                  dot={{ r: 2 }}
+                />
+              )}
               {!isHidden("total") && (
                 <Line
                   type="monotone"
                   dataKey="total"
                   name="Total"
                   stroke={palette.total}
-                  strokeWidth={2}
+                  strokeWidth={3}
                   dot={{ r: 3 }}
                 />
               )}
@@ -158,7 +159,7 @@ export function ChartsCV({ porDia }: { porDia: CostosVentaPorDiaUI[] }) {
         </CardContent>
       </Card>
 
-      {/* 100% apilado para ver proporciones (lectura de composición) */}
+      {/* Participación porcentual por día (stack 100%) */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">
@@ -181,60 +182,19 @@ export function ChartsCV({ porDia }: { porDia: CostosVentaPorDiaUI[] }) {
               <Tooltip content={<CustomTooltip />} />
               <Legend onClick={(e: any) => e?.dataKey && toggle(e.dataKey)} />
 
-              {!isHidden("mercaderia") && (
-                <Area
-                  type="monotone"
-                  dataKey="mercaderia"
-                  name="Mercadería"
-                  stackId="1"
-                  fill={palette.mercaderia}
-                  stroke={palette.mercaderia}
-                  fillOpacity={0.35}
-                />
-              )}
-              {!isHidden("fletes") && (
-                <Area
-                  type="monotone"
-                  dataKey="fletes"
-                  name="Fletes"
-                  stackId="1"
-                  fill={palette.fletes}
-                  stroke={palette.fletes}
-                  fillOpacity={0.35}
-                />
-              )}
-              {!isHidden("encomiendas") && (
-                <Area
-                  type="monotone"
-                  dataKey="encomiendas"
-                  name="Encomiendas"
-                  stackId="1"
-                  fill={palette.encomiendas}
-                  stroke={palette.encomiendas}
-                  fillOpacity={0.35}
-                />
-              )}
-              {!isHidden("transporte") && (
-                <Area
-                  type="monotone"
-                  dataKey="transporte"
-                  name="Transporte"
-                  stackId="1"
-                  fill={palette.transporte}
-                  stroke={palette.transporte}
-                  fillOpacity={0.35}
-                />
-              )}
-              {!isHidden("otros") && (
-                <Area
-                  type="monotone"
-                  dataKey="otros"
-                  name="Otros"
-                  stackId="1"
-                  fill={palette.otros}
-                  stroke={palette.otros}
-                  fillOpacity={0.35}
-                />
+              {categories.map((k) =>
+                isHidden(k) ? null : (
+                  <Area
+                    key={k}
+                    type="monotone"
+                    dataKey={k}
+                    name={k}
+                    stackId="1"
+                    fill={(palette as any)[k]}
+                    stroke={(palette as any)[k]}
+                    fillOpacity={0.35}
+                  />
+                )
               )}
             </AreaChart>
           </ResponsiveContainer>

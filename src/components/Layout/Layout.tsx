@@ -106,6 +106,7 @@ export default function Layout2({ children }: LayoutProps) {
   const [sucursalInfo, setSucursalInfo] = useState<Sucursal>();
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [usuario, setUsuario] = useState<Usuario | null>(null);
+  console.log("State sin usar: ", setUsuario);
 
   // Decodificar y setear datos del POS al iniciar
   useEffect(() => {
@@ -132,20 +133,6 @@ export default function Layout2({ children }: LayoutProps) {
   ]);
 
   // Obtener datos de usuario del backend cuando cambie el userID
-  useEffect(() => {
-    if (!userID) return;
-    const fetchUser = async () => {
-      try {
-        const { data } = await axios.get<Usuario>(
-          `${API_URL}/user/find-my-user/${userID}`
-        );
-        setUsuario(data);
-      } catch (error) {
-        console.error("Error fetching usuario:", error);
-      }
-    };
-    fetchUser();
-  }, [userID]);
 
   useEffect(() => {
     if (!sucursalId) return;
