@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import logo from "@/assets/ferrecentro.png";
+import logo from "@/assets/sabisu-logo.png";
+
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { useParams } from "react-router-dom";
@@ -110,6 +111,14 @@ const Invoice = () => {
       0
     ) || 0;
 
+  const nombreCliente =
+    [venta.cliente?.nombre, venta.cliente?.apellidos]
+      .map((s) => s?.trim())
+      .filter(Boolean)
+      .join(" ") ||
+    venta.nombreClienteFinal ||
+    "CF";
+
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
       {/* Factura para PDF */}
@@ -129,7 +138,7 @@ const Invoice = () => {
         {/* Header con logo y título */}
         <div className="flex justify-between items-start mb-8">
           <div className="flex items-center space-x-4">
-            <div className="bg-gray-200">
+            <div className="">
               <img className="w-24 h-24" src={logo} />
             </div>
             <div>
@@ -190,10 +199,7 @@ const Invoice = () => {
               <div className="grid grid-cols-2 gap-4 text-xs">
                 <div>
                   <p>
-                    <strong>Nombre:</strong>{" "}
-                    {venta.cliente?.nombre ||
-                      venta.nombreClienteFinal ||
-                      "Cliente Final"}
+                    <strong>Nombre:</strong> {nombreCliente}
                   </p>
                   <p>
                     <strong>Teléfono:</strong>{" "}
@@ -295,16 +301,6 @@ const Invoice = () => {
         </div>
 
         {/* Footer */}
-        <div className="border-t-2 border-[#6d9bf7] pt-3 text-center">
-          <div className="text-[10px] text-gray-600 space-y-1">
-            <p className="font-normal text-gray-800">¡Gracias por su compra!</p>
-            <p>{venta.sucursal.nombre}</p>
-            <p>
-              Encuentra todo lo que necesitas en un solo lugar: perfilería,
-              herramientas, iluminación, pintura y mucho más.
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Visor de PDF */}
