@@ -1,7 +1,7 @@
 import {
   Home,
   ShieldCheck,
-  Ticket,
+  // Ticket,
   Wallet,
   ClipboardPen,
   FileText,
@@ -11,7 +11,7 @@ import {
   FileSpreadsheet,
   Target,
   Goal,
-  PackageSearch,
+  // PackageSearch,
   NotebookPen,
   ListOrdered,
   Trash2,
@@ -35,6 +35,8 @@ import {
   ChartScatter,
   SquareChartGantt,
   HandCoins,
+  Landmark,
+  PiggyBank,
 } from "lucide-react";
 
 import {
@@ -161,11 +163,11 @@ const menuItemsAdmin = [
     label: "Inventario y Stock",
     submenu: [
       { icon: Boxes, label: "Inventario General", href: "/inventario-stock" },
-      {
-        icon: PackageSearch,
-        label: "Movimientos de Stock",
-        href: "/movimientos-stock",
-      },
+      // {
+      //   icon: PackageSearch,
+      //   label: "Movimientos de Stock",
+      //   href: "/movimientos-stock",
+      // },
       {
         icon: NotepadText,
         label: "Historial de Precios",
@@ -222,10 +224,10 @@ const menuItemsAdmin = [
   // === Garantías y Tickets ===
   {
     icon: ShieldCheck,
-    label: "Garantías y Tickets",
+    label: "Garantías",
     submenu: [
       { icon: Shield, label: "Gestión Garantías", href: "/garantia/manage" },
-      { icon: Ticket, label: "Gestión Tickets", href: "/ticket/manage" },
+      // { icon: Ticket, label: "Gestión Tickets", href: "/ticket/manage" },
     ],
   },
 
@@ -250,12 +252,6 @@ const menuItemsAdmin = [
     submenu: [
       { icon: ChartPie, label: "Resumen Diario", href: "/admin/caja/diario" },
       { icon: Calendar, label: "Históricos", href: "/admin/historicos" },
-
-      {
-        icon: Banknote,
-        label: "Caja Administrativo",
-        href: "/caja-administrativo/efectivo-banco",
-      },
     ],
   },
 
@@ -285,6 +281,18 @@ const menuItemsAdmin = [
         icon: HandCoins,
         label: "Flujo Efectivo",
         href: "/caja-administrativo/flujo-efectivo",
+      },
+    ],
+  },
+
+  {
+    icon: PiggyBank,
+    label: "Cuentas Bancarias",
+    submenu: [
+      {
+        icon: Landmark,
+        label: "Cuentas Bancarias",
+        href: "/cuentas-bancarias",
       },
     ],
   },

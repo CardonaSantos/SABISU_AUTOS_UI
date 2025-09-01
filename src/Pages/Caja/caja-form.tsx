@@ -18,6 +18,7 @@ import { AdvancedDialog } from "@/utils/components/AdvancedDialog";
 import { CierreCajaDialog } from "./cierre-caja-dialog";
 import { CajaAbierta, CerrarCaja, IniciarCaja } from "./interfaces";
 import { formattFechaWithMinutes } from "../Utils/Utils";
+import { CuentasBancariasSelect } from "@/Types/CuentasBancarias/CuentasBancariasSelect";
 
 interface CajaInicioProps {
   hasOpen: boolean;
@@ -42,6 +43,8 @@ interface CajaInicioProps {
   setOpenConfirDialog: React.Dispatch<React.SetStateAction<boolean>>;
   cajaAbierta: CajaAbierta | null;
   reloadContext: () => Promise<void>;
+  //
+  cuentas: CuentasBancariasSelect[];
 }
 
 function CajaForm({
@@ -63,6 +66,7 @@ function CajaForm({
   setOpenConfirDialog,
   cajaAbierta,
   reloadContext,
+  cuentas,
 }: CajaInicioProps) {
   const [openCierreCajaDialog, setOpenCierreCajaDialog] = useState(false);
 
@@ -73,21 +77,6 @@ function CajaForm({
       ? new Date(cajaAbierta.fechaApertura)
       : cajaAbierta.fechaApertura
     : new Date();
-
-  const cuentasBancariasMock = [
-    {
-      id: 1,
-      banco: "Banco Industrial",
-      numero: "1234567890",
-      alias: "Cuenta Principal",
-    },
-    {
-      id: 2,
-      banco: "Banrural",
-      numero: "0987654321",
-      alias: "Cuenta Secundaria",
-    },
-  ];
 
   return (
     <Card className="w-full">
@@ -231,12 +220,13 @@ function CajaForm({
 
       {hasOpen && cajaAbierta && (
         <CierreCajaDialog
+          cuentas={cuentas}
           reloadContext={reloadContext}
           open={openCierreCajaDialog}
           onOpenChange={setOpenCierreCajaDialog}
           registroCajaId={cajaAbierta.id}
           usuarioCierreId={cerrarCajaDto?.usuarioCierra ?? 0}
-          cuentasBancarias={cuentasBancariasMock}
+          cuentasBancarias={cuentas}
           onClosed={() => {
             // Callback when V2 close is completed - you can add reload logic here
             console.log("Caja cerrada con V2");

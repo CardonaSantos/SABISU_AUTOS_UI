@@ -65,6 +65,7 @@ import {
 import { createMovimientoFinanciero } from "./api";
 import { useStore } from "@/components/Context/ContextSucursal";
 import { getUltimaCajaAbierta } from "../api";
+import { formattFechaWithMinutes } from "@/Pages/Utils/Utils";
 
 // Opciones para subtipos
 const GASTO_OPERATIVO_OPTIONS: Array<{
@@ -90,8 +91,7 @@ const COSTO_VENTA_OPTIONS: Array<{ value: CostoVentaTipo; label: string }> = [
 ];
 
 const MOTIVO_VALUES = [
-  "VENTA",
-  "OTRO_INGRESO",
+  // "OTRO_INGRESO",
   "GASTO_OPERATIVO",
   "COMPRA_MERCADERIA",
   "COSTO_ASOCIADO",
@@ -101,6 +101,7 @@ const MOTIVO_VALUES = [
   "AJUSTE_SOBRANTE",
   "AJUSTE_FALTANTE",
   "DEVOLUCION",
+  "BANCO_A_CAJA",
 ] as const;
 
 const METODO_PAGO_VALUES = [
@@ -148,7 +149,11 @@ const createValidationSchema = (
       .enum(METODO_PAGO_VALUES) // puedes añadir { message: "..."} si quieres
       .optional()
       .refine((val) => {
-        if (motivo === "DEPOSITO_CIERRE" || motivo === "PAGO_PROVEEDOR_BANCO") {
+        if (
+          motivo === "DEPOSITO_CIERRE" ||
+          motivo === "PAGO_PROVEEDOR_BANCO" ||
+          motivo === "BANCO_A_CAJA"
+        ) {
           return val === "TRANSFERENCIA" || val === "DEPOSITO";
         }
         return true;
@@ -288,7 +293,8 @@ export function MovimientoFinancieroForm({
   useEffect(() => {
     if (
       watchedMotivo === "DEPOSITO_CIERRE" ||
-      watchedMotivo === "PAGO_PROVEEDOR_BANCO"
+      watchedMotivo === "PAGO_PROVEEDOR_BANCO" ||
+      watchedMotivo === "BANCO_A_CAJA" // 👈 agrega esto . nuevo
     ) {
       form.setValue("metodoPago", "TRANSFERENCIA");
     }
@@ -310,12 +316,24 @@ export function MovimientoFinancieroForm({
   };
 
   // Manejar toggle de depósito parcial/total
-  const handleToggleDepositoCierre = (isTotal: boolean) => {
+  // const handleToggleDepositoCierre = (isTotal: boolean) => {
+  //   setIsDepositoCierreTotal(isTotal);
+  //   if (!isTotal) {
+  //     loadPreviaCierre();
+  //   } else {
+  //     form.setValue("monto", 0);
+  //   }
+  // };
+  const handleToggleDepositoCierre = async (isTotal: boolean) => {
     setIsDepositoCierreTotal(isTotal);
-    if (!isTotal) {
-      loadPreviaCierre();
+    if (isTotal) {
+      await loadPreviaCierre();
+      if (typeof efectivoDisponible === "number") {
+        form.setValue("monto", efectivoDisponible); // 👈 monto total
+      }
     } else {
       form.setValue("monto", 0);
+      await loadPreviaCierre();
     }
   };
 
@@ -356,10 +374,11 @@ export function MovimientoFinancieroForm({
         usuarioId: userID,
         motivo: data.motivo!,
         metodoPago: data.metodoPago,
-        monto:
-          watchedMotivo === "DEPOSITO_CIERRE" && isDepositoCierreTotal
-            ? 0
-            : data.monto,
+        // monto:
+        //   watchedMotivo === "DEPOSITO_CIERRE" && isDepositoCierreTotal
+        //     ? 0
+        //     : data.monto,
+        monto: data.monto,
         descripcion: data.descripcion,
         referencia: data.referencia,
       };
@@ -707,8 +726,7 @@ export function MovimientoFinancieroForm({
                               key={cuenta.id}
                               value={cuenta.id.toString()}
                             >
-                              {cuenta.banco} - {cuenta.numero}{" "}
-                              {cuenta.alias && `(${cuenta.alias})`}
+                              {cuenta.alias} - {cuenta.banco}{" "}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -770,7 +788,8 @@ export function MovimientoFinancieroForm({
                 <div className="flex items-center gap-2 p-3 bg-green-50 text-green-700 rounded-md">
                   <CheckCircle className="h-4 w-4" />
                   <span className="text-sm">
-                    Caja abierta disponible (ID: {cajaAbierta.id})
+                    Caja abierta disponible (
+                    {formattFechaWithMinutes(cajaAbierta.fechaApertura)})
                   </span>
                 </div>
               )}

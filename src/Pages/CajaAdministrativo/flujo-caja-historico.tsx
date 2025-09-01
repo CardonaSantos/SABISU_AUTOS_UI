@@ -96,6 +96,17 @@ export default function FlujoHistoricoPage() {
     if (errorGlobal) toast.error(getApiErrorMessageAxios(errorGlobal));
   }, [errorSucursal, errorGlobal]);
 
+  useEffect(() => {
+    // si no hay seleccion manual, intenta con el ctx, si no, toma la primera disponible
+    if (!sucursal && optionsSucursales.length > 0) {
+      const fromCtx =
+        sucursalIdCtx && sucursalIdCtx > 0
+          ? optionsSucursales.find((o) => o.value === sucursalIdCtx)
+          : null;
+      setSucursal(fromCtx ?? optionsSucursales[0]);
+    }
+  }, [sucursal, sucursalIdCtx, optionsSucursales]);
+
   if (isError) {
     return (
       <div className="p-4 text-destructive flex items-center gap-2">

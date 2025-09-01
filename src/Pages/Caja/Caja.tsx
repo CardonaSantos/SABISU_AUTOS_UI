@@ -20,6 +20,9 @@ import { Proveedor } from "./Movimientos/types";
 import { getCuentasBancariasArray, getProveedores } from "./Movimientos/api";
 import { CuentaBancaria } from "./Movimientos/movimientos-financieros";
 import CajaForm from "./caja-form";
+import { useApiQuery } from "@/hooks/genericoCall/genericoCallHook";
+import { CuentasBancariasSelect } from "@/Types/CuentasBancarias/CuentasBancariasSelect";
+import { getApiErrorMessageAxios } from "../Utils/UtilsErrorApi";
 function Caja() {
   const sucursalID: number = useStore((state) => state.sucursalId) ?? 0;
   const userID: number = useStore((state) => state.userId) ?? 0;
@@ -270,6 +273,23 @@ function Caja() {
   };
   console.log("El monto anterior es: ", cajaMontoAnterior);
 
+  const {
+    data: cuentas = [], // ✅ siempre array
+    isError,
+    error,
+  } = useApiQuery<CuentasBancariasSelect[]>(
+    ["cuentas-bancarias-select"],
+    "/cuentas-bancarias/get-simple-select",
+    undefined,
+    { initialData: [] } // o placeholderData: []
+  );
+
+  useEffect(() => {
+    if (isError && error) {
+      toast.error(getApiErrorMessageAxios(error));
+    }
+  }, [isError, error]);
+
   return (
     <div className="container mx-auto">
       <motion.div {...DesvanecerHaciaArriba} className="w-full">
@@ -297,6 +317,7 @@ function Caja() {
                 {/* El hijo ocupa todo el ancho disponible */}
                 <div className="w-full">
                   <CajaForm
+                    cuentas={cuentas}
                     hasOpen={hasOpen}
                     nuevaCaja={nuevaCaja}
                     handleChangeGeneric={handleChangeGeneric}

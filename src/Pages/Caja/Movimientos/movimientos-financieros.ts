@@ -9,8 +9,20 @@ export type ClasificacionAdmin =
   | "AJUSTE"
   | "CONTRAVENTA";
 
+// export type MotivoMovimiento =
+//   | "VENTA"
+//   | "OTRO_INGRESO"
+//   | "GASTO_OPERATIVO"
+//   | "COMPRA_MERCADERIA"
+//   | "COSTO_ASOCIADO"
+//   | "DEPOSITO_CIERRE"
+//   | "DEPOSITO_PROVEEDOR"
+//   | "PAGO_PROVEEDOR_BANCO"
+//   | "AJUSTE_SOBRANTE"
+//   | "AJUSTE_FALTANTE"
+//   | "DEVOLUCION";
 export type MotivoMovimiento =
-  | "VENTA"
+  // | "VENTA"
   | "OTRO_INGRESO"
   | "GASTO_OPERATIVO"
   | "COMPRA_MERCADERIA"
@@ -20,7 +32,8 @@ export type MotivoMovimiento =
   | "PAGO_PROVEEDOR_BANCO"
   | "AJUSTE_SOBRANTE"
   | "AJUSTE_FALTANTE"
-  | "DEVOLUCION";
+  | "DEVOLUCION"
+  | "BANCO_A_CAJA";
 
 export type MetodoPago =
   | "EFECTIVO"
@@ -119,17 +132,18 @@ export interface MovimientoFinancieroFormProps {
 // ===== Opciones para selects (UI helpers) =====
 export const MOTIVO_OPTIONS: Array<{ value: MotivoMovimiento; label: string }> =
   [
-    { value: "VENTA", label: "Venta" },
-    { value: "OTRO_INGRESO", label: "Otro ingreso" },
+    { value: "BANCO_A_CAJA", label: "Banco → Caja (recarga de efectivo)" }, // 👈 NUEVO
+    // { value: "VENTA", label: "Venta" },
+    // { value: "OTRO_INGRESO", label: "Otro ingreso" },
     { value: "GASTO_OPERATIVO", label: "Gasto operativo" },
     { value: "COMPRA_MERCADERIA", label: "Compra mercadería" },
     { value: "COSTO_ASOCIADO", label: "Costo asociado (flete/encomienda)" },
-    { value: "DEPOSITO_CIERRE", label: "Depósito de cierre (Caja → Banco)" },
+    // { value: "DEPOSITO_CIERRE", label: "Depósito de cierre (Caja → Banco)" },// ARRUINA MI LOGICA DE CIERRE
     { value: "DEPOSITO_PROVEEDOR", label: "Depósito a proveedor (efectivo)" },
     { value: "PAGO_PROVEEDOR_BANCO", label: "Pago a proveedor (Banco)" },
-    { value: "AJUSTE_SOBRANTE", label: "Ajuste sobrante" },
-    { value: "AJUSTE_FALTANTE", label: "Ajuste faltante" },
-    { value: "DEVOLUCION", label: "Devolución / nota crédito" },
+    // { value: "AJUSTE_SOBRANTE", label: "Ajuste sobrante" },//NO SE QUE DEBERIA HACER
+    // { value: "AJUSTE_FALTANTE", label: "Ajuste faltante" }, //NO SE QUE DEBERIA HACER
+    // { value: "DEVOLUCION", label: "Devolución / nota crédito" }, // NO LO USARÉ
   ];
 
 export const METODO_PAGO_OPTIONS: Array<{ value: MetodoPago; label: string }> =
@@ -159,10 +173,15 @@ type UiRule = {
 
 // Matriz de visibilidad/requerimientos por motivo (guía para la UI)
 export const UI_RULES: Record<MotivoMovimiento, UiRule> = {
-  VENTA: {
-    needsCajaIf: (mp) => mp === "EFECTIVO",
-    requireProveedor: false,
-    requireCuenta: (mp) => mp !== "EFECTIVO",
+  // VENTA: {
+  //   needsCajaIf: (mp) => mp === "EFECTIVO",
+  //   requireProveedor: false,
+  //   requireCuenta: (mp) => mp !== "EFECTIVO",
+  // },
+  BANCO_A_CAJA: {
+    // Afecta caja y banco ⇒ requiere caja abierta y cuenta
+    needsCajaIf: () => true,
+    requireCuenta: () => true,
   },
   OTRO_INGRESO: {
     needsCajaIf: (mp) => mp === "EFECTIVO",

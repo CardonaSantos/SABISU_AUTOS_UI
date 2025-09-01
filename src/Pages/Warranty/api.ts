@@ -65,6 +65,6 @@ export const submitWarrantyRegistration = async (
     return response;
   } catch (error) {
     console.error("Error submitting warranty:", error);
-    throw new Error("Error al registrar la garantía");
+    throw error;
   }
 };

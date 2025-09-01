@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-query";
 import { axiosClient } from "../getClientsSelect/Queries/axiosClient";
 
-const API_URL = import.meta.env.VITE_API_URL;
+// const API_URL = import.meta.env.VITE_API_URL;
 
 // -------- GET (useQuery) ----------
 /**
@@ -24,12 +24,18 @@ export function useApiQuery<TData>(
   key: QueryKey,
   endpoint: string,
   config?: AxiosRequestConfig,
-  options?: Omit<UseQueryOptions<TData, Error>, "queryKey" | "queryFn">
+  options?: Omit<
+    UseQueryOptions<TData, Error, TData, QueryKey>,
+    "queryKey" | "queryFn"
+  >
 ) {
-  return useQuery<TData, Error>({
+  return useQuery<TData, Error, TData, QueryKey>({
     queryKey: key,
     queryFn: async () => {
-      const { data } = await axiosClient.get<TData>(endpoint, config);
+      const { data } = await axiosClient.get<TData>(
+        endpoint.startsWith("/") ? endpoint : `/${endpoint}`,
+        config
+      );
       return data;
     },
     ...options,
@@ -65,7 +71,7 @@ export function useApiMutation<
     // 🔥 función que se ejecuta al llamar mutate/mutateAsync
     mutationFn: async (variables: TVariables) => {
       const { data } = await axiosClient.request<TData>({
-        url: `${API_URL}/${endpoint}`,
+        url: endpoint,
         method,
         // Solo algunos métodos aceptan body
         data: ["post", "put", "patch"].includes(method) ? variables : undefined,
@@ -74,6 +80,7 @@ export function useApiMutation<
       return data;
     },
 
+    // 🎛️ permitimos sobreescribir comportamiento (onSuccess, onError, etc.)
     ...options,
   });
 }

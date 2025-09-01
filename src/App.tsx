@@ -81,6 +81,7 @@ import FlujoCajaHistoricoMain from "./Pages/CajaAdministrativo/flujo-caja-histor
 import CostosVentaHistoricoPage from "./Pages/CajaAdministrativo/_costo-ventas-historicos/CostosVentaHistoricoPage";
 import GastoOperativoHistoricoPage from "./Pages/CajaAdministrativo/_gastos-operativos-historicos/GastoOperativoHistoricoPage";
 import FlujoEfectivoPage from "./Pages/CajaAdministrativo/_flujoEfectivo/FlujoEfectivoPage";
+import CuentasBancariasPage from "./Pages/cuentas-bancarias/CuentasBancariasPage";
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -409,6 +410,15 @@ function App() {
               element={
                 <ProtectRouteAdmin>
                   <HistoricoSucursal />
+                </ProtectRouteAdmin>
+              }
+            />
+
+            <Route
+              path="/cuentas-bancarias"
+              element={
+                <ProtectRouteAdmin>
+                  <CuentasBancariasPage />
                 </ProtectRouteAdmin>
               }
             />

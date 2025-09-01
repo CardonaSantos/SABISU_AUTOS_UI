@@ -24,6 +24,7 @@ import CardGarantiaCreate from "./CardGarantiaCreate";
 import DesvanecerHaciaArriba from "@/Crm/Motion/DashboardAnimations";
 import { WarrantyList } from "./garantiasMap/warranty-list";
 import { GarantiaDto } from "./interfacesTable";
+import { getApiErrorMessageAxios } from "../Utils/UtilsErrorApi";
 // Sub-componentes para la sección de detalles
 
 export default function ReceiveWarrantyPage() {
@@ -128,6 +129,8 @@ export default function ReceiveWarrantyPage() {
   const handleSubmitRegistGarantia = async () => {
     if (isSubmittingGarantia) return;
     setIsSubmittingGarantia(true);
+    console.log("El payload es: ", formData);
+    console.log("El cantidadDevuelta es: ", formData.cantidad);
 
     toast.promise(
       submitWarrantyRegistration({
@@ -137,7 +140,7 @@ export default function ReceiveWarrantyPage() {
       {
         loading: "Registrando garantía...",
         success: "Registro insertado correctamente",
-        error: "Error al registrar garantía",
+        error: (error) => getApiErrorMessageAxios(error),
       }
     );
     setIsSubmittingGarantia(false);

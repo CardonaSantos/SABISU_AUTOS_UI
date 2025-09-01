@@ -38,6 +38,7 @@ import { toast } from "sonner";
 import { CerrarCajaV2Dto, PreviaCierreResponse } from "./cierre.types";
 import { cerrarCajaV2 } from "./caja.api";
 import { getPreviaCierre } from "./types2";
+import { CuentasBancariasSelect } from "@/Types/CuentasBancarias/CuentasBancariasSelect";
 
 // ------------------------------------------------------
 // Types locales
@@ -58,6 +59,8 @@ type CierreCajaDialogProps = {
   cuentasBancarias: CuentaBancaria[];
   onClosed?: () => void;
   reloadContext: () => Promise<void>;
+  //nuevos
+  cuentas: CuentasBancariasSelect[];
 };
 
 // ------------------------------------------------------
@@ -246,9 +249,7 @@ export function CierreCajaDialog({
 
   const formatCuentaBancaria = (cuenta: CuentaBancaria) => {
     const numeroMasked = `****${cuenta.numero.slice(-4)}`;
-    return `${cuenta.banco} - ${
-      cuenta.alias || numeroMasked
-    } (${numeroMasked})`;
+    return `${cuenta.alias} - ${cuenta.banco || numeroMasked}`;
   };
 
   return (
